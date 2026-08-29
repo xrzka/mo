@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-29T03:40:00Z",
+  "generated_at": "2026-08-29T04:20:00Z",
   "note": "示例数据。新增资源在 items 数组里加一项即可，section 取值：novel / manga / anime / game / ai",
   "items": [
     {
@@ -8,7 +8,11 @@
       "section": "novel",
       "description": "这是一条示例数据，用来演示卡片长什么样。把 data/items.json 里的内容换成真实资源即可。",
       "url": "https://example.com/",
-      "tags": ["在线阅读", "轻小说", "示例"],
+      "tags": [
+        "在线阅读",
+        "轻小说",
+        "示例"
+      ],
       "kind": "网站",
       "need_login": false,
       "update_info": "每日更新",
@@ -20,7 +24,10 @@
       "section": "manga",
       "description": "漫画分区的示例条目。",
       "url": "https://example.org/",
-      "tags": ["在线看", "示例"],
+      "tags": [
+        "在线看",
+        "示例"
+      ],
       "kind": "网站",
       "need_login": true,
       "update_info": "周更",
@@ -32,7 +39,10 @@
       "section": "anime",
       "description": "动画分区的示例条目。",
       "url": "https://example.net/",
-      "tags": ["在线播放", "示例"],
+      "tags": [
+        "在线播放",
+        "示例"
+      ],
       "kind": "网站",
       "need_login": false,
       "update_info": "季番跟进",
@@ -44,24 +54,124 @@
       "section": "game",
       "description": "游戏分区的示例条目。",
       "url": "https://example.dev/",
-      "tags": ["下载", "示例"],
+      "tags": [
+        "下载",
+        "示例"
+      ],
       "kind": "资源下载",
       "need_login": false,
       "update_info": "不定期",
       "note": ""
     },
     {
-      "id": "demo-ai-1",
-      "name": "示例 AI 工具",
+      "id": "relay-agentrouter",
+      "name": "AgentRouter",
       "section": "ai",
-      "description": "AI 分区的示例条目。",
-      "url": "https://example.io/",
-      "tags": ["工具", "示例"],
-      "kind": "在线工具",
+      "description": "注册赠送额度最高的一档，每日重新登录即可领取签到额度。支持 gpt-5.6-sol 与 Claude Opus 4.8 / 5。",
+      "url": "https://agentrouter.org/register?aff=kW2C",
+      "tags": [
+        "注册送$175",
+        "签到$25",
+        "GitHub 满一年"
+      ],
+      "kind": "AI API 中转站",
       "need_login": true,
-      "update_info": "持续更新",
-      "note": ""
+      "update_info": "每日可签到",
+      "note": "GitHub 账号需注册满1年以上。 可用模型：gpt-5.6-sol、claude-opus-4.8、claude-opus-5。"
+    },
+    {
+      "id": "relay-tabitoken",
+      "name": "TabiToken",
+      "section": "ai",
+      "description": "GitHub 注册即赠 120 刀，支持签到。可用 Claude Opus 4.8 与 Opus 5。",
+      "url": "https://tabitoken.com/sign-up?aff=Wm9B",
+      "tags": [
+        "注册送$120",
+        "可签到"
+      ],
+      "kind": "AI API 中转站",
+      "need_login": true,
+      "update_info": "每日可签到",
+      "note": "可用模型：claude-opus-4.8、claude-opus-5。"
+    },
+    {
+      "id": "relay-kktoken",
+      "name": "KKToken",
+      "section": "ai",
+      "description": "tab / go / just 系列的新站，注册送 100，签到 20。注意：该站无法直连，需自备网络代理。",
+      "url": "https://kktoken.cc/sign-up?aff=8dui",
+      "tags": [
+        "注册送$100",
+        "签到$20",
+        "需代理",
+        "GitHub 满一年"
+      ],
+      "kind": "AI API 中转站",
+      "need_login": true,
+      "update_info": "每日可签到",
+      "note": "GitHub 账号需注册满1年以上。 该站无法直连，需自备网络代理。 可用模型：claude-opus-4.8、claude-opus-5。"
+    },
+    {
+      "id": "relay-justwoker",
+      "name": "JustWoker",
+      "section": "ai",
+      "description": "GitHub 账号需满一年，注册赠送 90 刀，每日可签到 20 刀。可用 Claude Opus 4.8 与 Opus 5。",
+      "url": "https://api.justwoker.icu/sign-up?aff=TAQH",
+      "tags": [
+        "注册送$90",
+        "签到$20",
+        "GitHub 满一年"
+      ],
+      "kind": "AI API 中转站",
+      "need_login": true,
+      "update_info": "每日可签到",
+      "note": "GitHub 账号需注册满1年以上。 可用模型：claude-opus-4.8、claude-opus-5。"
+    },
+    {
+      "id": "relay-gorouter",
+      "name": "GoRouter",
+      "section": "ai",
+      "description": "GitHub 注册，赠送 70 刀，支持签到。可用 Claude Opus 5。",
+      "url": "https://gorouter.app/sign-up?aff=qhON",
+      "tags": [
+        "注册送$70",
+        "可签到"
+      ],
+      "kind": "AI API 中转站",
+      "need_login": true,
+      "update_info": "每日可签到",
+      "note": "可用模型：claude-opus-5。"
+    },
+    {
+      "id": "relay-true-sota",
+      "name": "True-SOTA",
+      "section": "ai",
+      "description": "注册赠送 20 刀，Claude (kiro) 分组倍率 0.35，是本表中已知倍率最低的一档。",
+      "url": "https://true-sota.com/register?aff=8TVU5WM7YRC7",
+      "tags": [
+        "注册送$20",
+        "倍率0.35"
+      ],
+      "kind": "AI API 中转站",
+      "need_login": true,
+      "update_info": "注册即用",
+      "note": "可用模型：claude (kiro)。"
+    },
+    {
+      "id": "relay-yjs",
+      "name": "YJS API",
+      "section": "ai",
+      "description": "长期免费供应 DeepSeek-V4-Flash；其余模型依各家官方免费资源活动弹性开放、不定时提供。注册无赠送额度，无签到。",
+      "url": "https://api.yjs.im/sign-up?aff=Qpsx",
+      "tags": [
+        "长期免费",
+        "DeepSeek",
+        "无赠送无签到"
+      ],
+      "kind": "AI API 中转站",
+      "need_login": true,
+      "update_info": "不定时开放",
+      "note": "可用模型：DeepSeek-V4-Flash。"
     }
   ]
 }
-
