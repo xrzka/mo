@@ -9,8 +9,8 @@
       content="墨小说漫画 · 小说、漫画、动画、游戏、AI 资源导航，分区整理，点击直达。"
     />
     <title>墨小说漫画 · 资源导航</title>
-    <link rel="stylesheet" href="styles.css?v=20260829" />
-    <script src="app.js?v=20260829" defer></script>
+    <link rel="stylesheet" href="styles.css?v=20260830" />
+    <script src="app.js?v=20260830" defer></script>
   </head>
   <body>
     <a class="skip-link" href="#feed">跳到资源列表</a>
@@ -52,6 +52,7 @@
         </div>
       </section>
       <nav class="tab-bar" aria-label="资源分区" data-tabs></nav>
+      <nav class="subtab-bar" aria-label="小分区" data-subtabs hidden></nav>
 
       <section class="feed-section" id="feed" aria-labelledby="feed-title">
         <div class="section-heading">
@@ -116,6 +117,11 @@
             <div><dt>更新情况</dt><dd data-field="updateInfo"></dd></div>
           </dl>
           <p class="detail-note" data-field="note"></p>
+          <div class="pw-row" data-field="passwordWrap">
+            <span class="pw-label">提取码</span>
+            <code class="pw-code" data-field="password"></code>
+            <button type="button" class="pw-copy" data-field="copyPw">复制</button>
+          </div>
           <div class="detail-actions">
             <a class="visit-link" data-field="link" target="_blank" rel="noreferrer noopener">
               打开站点 ↗

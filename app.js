@@ -8,14 +8,32 @@
 
   const DATA_URL = "data/items.json";
 
-  /** 分区定义。新增分区在这里加一项，data/items.json 里 section 用对应 id。 */
+  /** 分区定义。新增分区在这里加一项，data/items.json 里 section 用对应 id。
+   *  subs 为可选的小分区；卡片的 subsection 字段对应这里的 id。 */
   const SECTIONS = [
     { id: "all", label: "全部", icon: "◆" },
-    { id: "novel", label: "小说", icon: "📖" },
-    { id: "manga", label: "漫画", icon: "🎨" },
+    {
+      id: "novel",
+      label: "小说",
+      icon: "📖",
+      subs: [
+        { id: "kr", label: "韩轻" },
+        { id: "jp", label: "日轻" },
+      ],
+    },
+    {
+      id: "manga",
+      label: "漫画",
+      icon: "🎨",
+      subs: [
+        { id: "kr", label: "韩漫" },
+        { id: "jp", label: "日漫" },
+      ],
+    },
     { id: "anime", label: "动画", icon: "🎬" },
     { id: "game", label: "游戏", icon: "🎮" },
     { id: "ai", label: "AI", icon: "✦" },
+    { id: "collection", label: "收录", icon: "🗂" },
   ];
 
   const SECTION_MAP = new Map(SECTIONS.map((s) => [s.id, s]));
@@ -24,6 +42,7 @@
     items: [],
     generatedAt: null,
     section: "all",
+    sub: "all",
     q: "",
   };
 
@@ -39,18 +58,22 @@
   /** 收敛原始数据，缺字段给安全默认值；未知分区归到 novel 以免丢卡片。 */
   function normalize(raw, index) {
     const section = SECTION_MAP.has(raw.section) && raw.section !== "all" ? raw.section : "novel";
+    const subs = SECTION_MAP.get(section).subs || [];
+    const sub = subs.some((s) => s.id === raw.subsection) ? raw.subsection : null;
     return {
       id: raw.id || "item-" + index,
       name: raw.name || "未命名资源",
       description: raw.description || "暂无简介",
       url: raw.url || "",
       section,
+      sub,
       icon: raw.icon || SECTION_MAP.get(section).icon,
       tags: Array.isArray(raw.tags) ? raw.tags.slice(0, 6) : [],
       kind: raw.kind || "网站",
       needLogin: raw.need_login === true,
       updateInfo: raw.update_info || "未标注",
       note: raw.note || "",
+      password: raw.password || "",
     };
   }
 
@@ -64,9 +87,16 @@
     );
   }
 
+  /** 分区匹配；小分区只在选中主分区时生效。 */
+  const inSection = (item, sectionId, subId = "all") => {
+    if (sectionId !== "all" && item.section !== sectionId) return false;
+    if (sectionId !== "all" && subId !== "all" && item.sub !== subId) return false;
+    return true;
+  };
+
   const visibleItems = () =>
     state.items.filter(
-      (it) => (state.section === "all" || it.section === state.section) && matchesQuery(it, state.q)
+      (it) => inSection(it, state.section, state.sub) && matchesQuery(it, state.q)
     );
 
   /* ---------- 渲染 ---------- */
@@ -77,7 +107,7 @@
     SECTIONS.forEach((s) => {
       // 计数只受搜索词影响，不受当前分区影响，这样切换分区时数字稳定
       const n = state.items.filter(
-        (it) => (s.id === "all" || it.section === s.id) && matchesQuery(it, state.q)
+        (it) => inSection(it, s.id) && matchesQuery(it, state.q)
       ).length;
 
       const btn = document.createElement("button");
@@ -94,6 +124,44 @@
 
       btn.addEventListener("click", () => {
         state.section = s.id;
+        state.sub = "all"; // 换主分区时重置小分区
+        render();
+      });
+      bar.appendChild(btn);
+    });
+  }
+
+  /** 小分区标签栏：只在当前主分区定义了 subs 时显示。 */
+  function renderSubTabs() {
+    const bar = $("[data-subtabs]");
+    bar.textContent = "";
+    const subs = (SECTION_MAP.get(state.section) || {}).subs;
+    if (!subs) {
+      bar.hidden = true;
+      return;
+    }
+    bar.hidden = false;
+
+    const inCurrent = state.items.filter(
+      (it) => it.section === state.section && matchesQuery(it, state.q)
+    );
+    const options = [{ id: "all", label: "全部" }, ...subs];
+
+    options.forEach((o) => {
+      const n = inCurrent.filter((it) => o.id === "all" || it.sub === o.id).length;
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "subtab-btn";
+      btn.setAttribute("aria-selected", String(state.sub === o.id));
+      btn.textContent = o.label;
+
+      const cnt = document.createElement("span");
+      cnt.className = "tab-count";
+      cnt.textContent = n;
+      btn.appendChild(cnt);
+
+      btn.addEventListener("click", () => {
+        state.sub = o.id;
         render();
       });
       bar.appendChild(btn);
@@ -107,7 +175,11 @@
     field("icon").textContent = item.icon;
     field("name").textContent = item.name;
     field("description").textContent = item.description;
-    field("section").textContent = SECTION_MAP.get(item.section).label;
+
+    const secDef = SECTION_MAP.get(item.section);
+    const subDef = (secDef.subs || []).find((s) => s.id === item.sub);
+    // 有小分区就显示小分区名，更具体
+    field("section").textContent = subDef ? subDef.label : secDef.label;
 
     const tagList = field("tags");
     item.tags.forEach((t) => {
@@ -120,6 +192,25 @@
     field("login").textContent = item.needLogin ? "需要" : "不需要";
     field("updateInfo").textContent = item.updateInfo;
     field("note").textContent = item.note;
+
+    // 提取码：有则显示，点击可复制
+    const pwWrap = field("passwordWrap");
+    if (item.password) {
+      field("password").textContent = item.password;
+      const btn = field("copyPw");
+      btn.addEventListener("click", async (e) => {
+        e.stopPropagation();
+        try {
+          await navigator.clipboard.writeText(item.password);
+          btn.textContent = "已复制";
+          setTimeout(() => (btn.textContent = "复制"), 1500);
+        } catch {
+          btn.textContent = "请手动复制";
+        }
+      });
+    } else {
+      pwWrap.remove();
+    }
 
     const link = field("link");
     // 只放行 http(s)，挡掉 javascript: 之类的伪协议
@@ -155,14 +246,15 @@
     feed.appendChild(frag);
 
     $("[data-empty]").hidden = list.length > 0;
-    const label = SECTION_MAP.get(state.section).label;
-    $("[data-result-count]").textContent = list.length
-      ? `${label} · 共 ${list.length} 个资源`
-      : "";
+    const secDef = SECTION_MAP.get(state.section);
+    const subDef = (secDef.subs || []).find((s) => s.id === state.sub);
+    const label = subDef ? `${secDef.label} · ${subDef.label}` : secDef.label;
+    $("[data-result-count]").textContent = list.length ? `${label} · 共 ${list.length} 个资源` : "";
   }
 
   function render() {
     renderTabs();
+    renderSubTabs();
     renderFeed();
     $('[data-stat="total"]').textContent = String(state.items.length).padStart(2, "0");
   }

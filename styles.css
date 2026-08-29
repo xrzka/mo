@@ -383,6 +383,70 @@ h1 {
   border: 1px dashed var(--border);
   border-radius: var(--radius);
 }
+/* ---------- 小分区标签栏 ---------- */
+.subtab-bar {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 0 0 16px;
+  margin-top: -8px;
+}
+.subtab-bar[hidden] { display: none; }
+
+.subtab-btn {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 13px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.subtab-btn:hover { color: var(--accent); }
+.subtab-btn[aria-selected="true"] {
+  background: var(--accent-soft);
+  border-color: var(--border);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* ---------- 提取码 ---------- */
+.pw-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 14px;
+  flex-wrap: wrap;
+}
+.pw-label { color: var(--text-muted); font-size: 12px; }
+.pw-code {
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--bg);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  user-select: all;
+}
+.pw-copy {
+  padding: 4px 11px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--bg-elevated);
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.pw-copy:hover { border-color: var(--accent); color: var(--accent); }
+
 /* ---------- 免责声明 + 页脚 ---------- */
 .notice-section {
   margin-top: 44px;
