@@ -48,6 +48,43 @@ def is_adult_game(name: str) -> bool:
     return not any(k in name for k in GAME_SAFE_KEYWORDS)
 
 
+# 归类修正：表格里位置不对的条目，按标题关键词强制归到正确分区。
+# 写在这里而不是导入后手改，否则下次重跑会被覆盖回去。
+RECLASSIFY = [
+    ("APP合集", "collection", "合集入口"),
+    ("单击网盘分享就会跳转", "collection", "说明"),
+    ("可露希尔小卖部", "tool", "工具 / 网站"),
+    ("视频压缩包解压说明", "tool", "工具 / 网站"),
+    ("解压教程", "tool", "工具 / 网站"),
+]
+
+# 名称修正：表格里写错的标题，按 URL 匹配后覆盖（依据是实际页面 title）
+RENAME_BY_URL = {
+    "https://ef.yituliu.cn/resources/essence-recognizer/":
+        "【网站】终末地一图流 · 基质识别（自动识别武器基质）",
+}
+
+
+def apply_fixups(items: list[dict]) -> int:
+    """套用归类与名称修正，返回改动条数。"""
+    n = 0
+    for item in items:
+        name = item.get("name", "")
+        for keyword, section, kind in RECLASSIFY:
+            if keyword in name and item.get("section") != section:
+                item["section"] = section
+                item["kind"] = kind
+                item.pop("subsection", None)
+                n += 1
+                break
+        fixed = RENAME_BY_URL.get(item.get("url", ""))
+        if fixed and item["name"] != fixed:
+            item["name"] = fixed
+            item["description"] = fixed
+            n += 1
+    return n
+
+
 def read_sheets(xlsx: Path) -> dict[str, dict[int, dict[str, str]]]:
     """直接解 zip 读工作表，返回 {工作表名: {行号: {列字母: 值}}}。"""
     with zipfile.ZipFile(xlsx) as zf:
@@ -382,6 +419,11 @@ def main() -> int:
         seen.add(it["id"])
         deduped.append(it)
     new_items = deduped
+
+    fixed = apply_fixups(new_items)
+    if fixed:
+        print(f"套用归类/名称修正：{fixed} 处")
+
     from collections import Counter
     dist = Counter(
         (it["section"], it.get("subsection") or "-") for it in new_items
@@ -395,14 +437,24 @@ def main() -> int:
         it for it in (dst.get("items") or [])
         if not str(it.get("id", "")).startswith(IMPORT_PREFIX)
     ]
-    old_imported = len(dst.get("items", [])) - len(kept)
-    print(f"\n原有导入条目 {old_imported} 条将被替换，其他 {len(kept)} 条保留")
+    old = {
+        it["id"]: it
+        for it in (dst.get("items") or [])
+        if str(it.get("id", "")).startswith(IMPORT_PREFIX)
+    }
+    new_ids = {it["id"] for it in new_items}
+    added = [it for it in new_items if it["id"] not in old]
+    removed = [it for it in old.values() if it["id"] not in new_ids]
+
+    print(f"\n对比上次导入：新增 {len(added)}，移除 {len(removed)}，"
+          f"其余 {len(new_items) - len(added)} 条按最新表格刷新")
+    print(f"非导入条目 {len(kept)} 条保留不动")
+    for it in added[:10]:
+        print(f"  + [{it['section']}] {it['name'][:44]}")
+    for it in removed[:10]:
+        print(f"  - [{it.get('section')}] {str(it.get('name'))[:44]}")
 
     if args.dry_run:
-        print("\n前 8 条预览：")
-        for it in new_items[:8]:
-            pw = f" 提取码={it['password']}" if it.get("password") else ""
-            print(f"  [{it['section']}/{it.get('subsection','-')}] {it['name'][:44]}{pw}")
         print("\n--dry-run：未写入文件")
         return 0
 

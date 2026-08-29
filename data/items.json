@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-29T12:00:44Z",
+  "generated_at": "2026-08-29T12:34:16Z",
   "note": "示例数据。新增资源在 items 数组里加一项即可，section 取值：novel / manga / anime / game / ai",
   "items": [
     {
@@ -585,13 +585,13 @@
     {
       "id": "xlsx-game-2",
       "name": "解压教程",
-      "section": "game",
+      "section": "tool",
       "description": "解压教程",
       "url": "https://drive.uc.cn/s/b5262bb7a2974?public=1",
       "tags": [
         "UC 网盘"
       ],
-      "kind": "游戏资源",
+      "kind": "工具 / 网站",
       "need_login": false,
       "update_info": "网盘分享",
       "note": "",
@@ -600,13 +600,13 @@
     {
       "id": "xlsx-game-3",
       "name": "视频压缩包解压说明",
-      "section": "game",
+      "section": "tool",
       "description": "视频压缩包解压说明",
       "url": "https://www.kdocs.cn/l/csm6NmW4MZsG",
       "tags": [
         "金山文档"
       ],
-      "kind": "游戏资源",
+      "kind": "工具 / 网站",
       "need_login": false,
       "update_info": "网盘分享",
       "note": ""
@@ -1841,9 +1841,9 @@
     },
     {
       "id": "xlsx-tool-73",
-      "name": "【PC】终末地基质小助手（用于自动锁定武器基质）",
+      "name": "【网站】终末地一图流 · 基质识别（自动识别武器基质）",
       "section": "tool",
-      "description": "【PC】终末地基质小助手（用于自动锁定武器基质）",
+      "description": "【网站】终末地一图流 · 基质识别（自动识别武器基质）",
       "url": "https://ef.yituliu.cn/resources/essence-recognizer/",
       "tags": [
         "PC",
