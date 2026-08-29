@@ -34,6 +34,20 @@ PAN_NAMES = {
     "www.kdocs.cn": "金山文档",
     "kdocs.cn": "金山文档",
 }
+# 游戏区白名单：明确无成人内容的工具、网站与通用说明，
+# 白名单之外的游戏条目一律标记 adult=True（宁可多标，不可漏标）
+GAME_SAFE_KEYWORDS = [
+    "ce工具", "终末地基质规划器", "终末地基质小助手", "超卓文本编辑器",
+    "steam官网", "steamDB", "外星仔加速器", "Watt Toolkit", "Epic游戏商城",
+    "可露希尔小卖部", "视频压缩包解压说明", "单击网盘分享", "末世孤雄",
+    "末世装备", "末世孵化", "龙珠之跨维度", "解压查看", "下载后后缀改为",
+]
+
+
+def is_adult_game(name: str) -> bool:
+    return not any(k in name for k in GAME_SAFE_KEYWORDS)
+
+
 def read_sheets(xlsx: Path) -> dict[str, dict[int, dict[str, str]]]:
     """直接解 zip 读工作表，返回 {工作表名: {行号: {列字母: 值}}}。"""
     with zipfile.ZipFile(xlsx) as zf:
@@ -235,12 +249,13 @@ def import_game_sheet(rows: dict[int, dict[str, str]]) -> list[dict]:
             continue
 
         seq += 1
-        items.append(
-            make_item(
-                seq, name, url, password, "game", None, "游戏资源",
-                extra_tags=guess_platform_tags(name),
-            )
+        item = make_item(
+            seq, name, url, password, "game", None, "游戏资源",
+            extra_tags=guess_platform_tags(name),
         )
+        if is_adult_game(name):
+            item["adult"] = True
+        items.append(item)
 
     return items
 

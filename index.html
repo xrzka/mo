@@ -9,8 +9,8 @@
       content="墨小说漫画 · 小说、漫画、动画、游戏、AI 资源导航，分区整理，点击直达。"
     />
     <title>墨小说漫画 · 资源导航</title>
-    <link rel="stylesheet" href="styles.css?v=20260830" />
-    <script src="app.js?v=20260830" defer></script>
+    <link rel="stylesheet" href="styles.css?v=20260830b" />
+    <script src="app.js?v=20260830b" defer></script>
   </head>
   <body>
     <a class="skip-link" href="#feed">跳到资源列表</a>
@@ -24,6 +24,16 @@
         <span class="nav-hint">分区资源 · 点击直达</span>
       </nav>
       <div class="header-actions">
+        <button
+          type="button"
+          class="mode-toggle"
+          data-mode-toggle
+          aria-pressed="false"
+          title="切换成年 / 未成年模式"
+        >
+          <span aria-hidden="true">🔒</span>
+          <span data-mode-label>未成年模式</span>
+        </button>
         <button type="button" class="theme-toggle" data-theme-toggle aria-pressed="false">
           <span aria-hidden="true">◐</span>
           <span class="visually-hidden">切换深浅色主题</span>
@@ -78,6 +88,7 @@
         </form>
 
         <p class="result-count" data-result-count aria-live="polite"></p>
+        <p class="mode-hint" data-mode-hint aria-live="polite"></p>
         <div class="feed-list" data-feed></div>
         <p class="empty-state" data-empty hidden>这个分区还没有收录资源，或没有匹配的搜索结果。</p>
       </section>
@@ -95,6 +106,23 @@
       <p>墨小说漫画 · 反馈群 <strong>1031507826</strong></p>
       <p class="footer-sub">数据更新 <span data-footer-updated>--</span></p>
     </footer>
+
+    <div class="age-dialog" data-age-dialog hidden role="dialog" aria-modal="true" aria-labelledby="age-title">
+      <div class="age-panel">
+        <h2 id="age-title">确认年龄</h2>
+        <p class="age-text">
+          成年模式会显示包含成人向内容的资源。请确认你已满 18 周岁，
+          且所在地区法律允许浏览此类内容。
+        </p>
+        <p class="age-sub">
+          本站资源均为网络搜集，仅供学习交流，不得用于商业用途或传播给未成年人。
+        </p>
+        <div class="age-actions">
+          <button type="button" class="age-cancel" data-age-cancel>取消</button>
+          <button type="button" class="age-confirm" data-age-confirm>我已满 18 周岁</button>
+        </div>
+      </div>
+    </div>
 
     <template data-card-template>
       <article class="feed-card" tabindex="0" role="button" aria-expanded="false">

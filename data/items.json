@@ -624,7 +624,8 @@
       "kind": "游戏资源",
       "need_login": false,
       "update_info": "网盘分享",
-      "note": ""
+      "note": "",
+      "adult": true
     },
     {
       "id": "xlsx-game-5",
@@ -639,7 +640,8 @@
       "kind": "游戏资源",
       "need_login": false,
       "update_info": "网盘分享",
-      "note": ""
+      "note": "",
+      "adult": true
     },
     {
       "id": "xlsx-game-6",
@@ -654,7 +656,8 @@
       "kind": "游戏资源",
       "need_login": false,
       "update_info": "网盘分享",
-      "note": ""
+      "note": "",
+      "adult": true
     },
     {
       "id": "xlsx-game-7",
@@ -669,7 +672,8 @@
       "kind": "游戏资源",
       "need_login": false,
       "update_info": "网盘分享",
-      "note": ""
+      "note": "",
+      "adult": true
     },
     {
       "id": "xlsx-game-8",
@@ -684,7 +688,8 @@
       "kind": "游戏资源",
       "need_login": false,
       "update_info": "网盘分享",
-      "note": ""
+      "note": "",
+      "adult": true
     },
     {
       "id": "xlsx-game-9",
@@ -700,7 +705,8 @@
       "need_login": false,
       "update_info": "网盘分享",
       "note": "",
-      "password": "ipfm"
+      "password": "ipfm",
+      "adult": true
     },
     {
       "id": "xlsx-game-10",
@@ -731,7 +737,8 @@
       "need_login": false,
       "update_info": "网盘分享",
       "note": "",
-      "password": "kijc"
+      "password": "kijc",
+      "adult": true
     },
     {
       "id": "xlsx-game-12",
@@ -748,7 +755,8 @@
       "need_login": false,
       "update_info": "网盘分享",
       "note": "",
-      "password": "bg55"
+      "password": "bg55",
+      "adult": true
     },
     {
       "id": "xlsx-game-13",
@@ -764,7 +772,8 @@
       "need_login": false,
       "update_info": "网盘分享",
       "note": "",
-      "password": "8u1e"
+      "password": "8u1e",
+      "adult": true
     },
     {
       "id": "xlsx-game-14",
@@ -781,7 +790,8 @@
       "need_login": false,
       "update_info": "网盘分享",
       "note": "",
-      "password": "ee2b"
+      "password": "ee2b",
+      "adult": true
     },
     {
       "id": "xlsx-game-15",
@@ -796,7 +806,8 @@
       "kind": "游戏资源",
       "need_login": false,
       "update_info": "网盘分享",
-      "note": ""
+      "note": "",
+      "adult": true
     },
     {
       "id": "xlsx-game-16",
@@ -827,7 +838,8 @@
       "kind": "游戏资源",
       "need_login": false,
       "update_info": "网盘分享",
-      "note": ""
+      "note": "",
+      "adult": true
     },
     {
       "id": "xlsx-game-18",
@@ -843,7 +855,8 @@
       "kind": "游戏资源",
       "need_login": false,
       "update_info": "网盘分享",
-      "note": ""
+      "note": "",
+      "adult": true
     },
     {
       "id": "xlsx-game-19",
@@ -858,7 +871,8 @@
       "kind": "游戏资源",
       "need_login": false,
       "update_info": "网盘分享",
-      "note": ""
+      "note": "",
+      "adult": true
     },
     {
       "id": "xlsx-game-20",
@@ -887,7 +901,8 @@
       "kind": "游戏资源",
       "need_login": false,
       "update_info": "网盘分享",
-      "note": ""
+      "note": "",
+      "adult": true
     },
     {
       "id": "xlsx-game-22",
@@ -903,7 +918,8 @@
       "need_login": false,
       "update_info": "网盘分享",
       "note": "",
-      "password": "em4m"
+      "password": "em4m",
+      "adult": true
     },
     {
       "id": "xlsx-game-23",
@@ -920,7 +936,8 @@
       "need_login": false,
       "update_info": "网盘分享",
       "note": "",
-      "password": "j66x"
+      "password": "j66x",
+      "adult": true
     },
     {
       "id": "xlsx-game-24",
@@ -935,7 +952,8 @@
       "kind": "游戏资源",
       "need_login": false,
       "update_info": "网盘分享",
-      "note": ""
+      "note": "",
+      "adult": true
     },
     {
       "id": "xlsx-game-25",
@@ -950,7 +968,8 @@
       "kind": "游戏资源",
       "need_login": false,
       "update_info": "网盘分享",
-      "note": ""
+      "note": "",
+      "adult": true
     },
     {
       "id": "xlsx-game-26",
@@ -966,7 +985,8 @@
       "kind": "游戏资源",
       "need_login": false,
       "update_info": "网盘分享",
-      "note": ""
+      "note": "",
+      "adult": true
     },
     {
       "id": "xlsx-game-27",
@@ -982,7 +1002,8 @@
       "kind": "游戏资源",
       "need_login": false,
       "update_info": "网盘分享",
-      "note": ""
+      "note": "",
+      "adult": true
     },
     {
       "id": "xlsx-game-28",
@@ -998,7 +1019,8 @@
       "need_login": false,
       "update_info": "网盘分享",
       "note": "",
-      "password": "qhmr"
+      "password": "qhmr",
+      "adult": true
     },
     {
       "id": "xlsx-game-29",
@@ -1014,7 +1036,8 @@
       "kind": "游戏资源",
       "need_login": false,
       "update_info": "网盘分享",
-      "note": ""
+      "note": "",
+      "adult": true
     },
     {
       "id": "xlsx-game-30",
@@ -1029,7 +1052,8 @@
       "kind": "游戏资源",
       "need_login": false,
       "update_info": "网盘分享",
-      "note": ""
+      "note": "",
+      "adult": true
     },
     {
       "id": "xlsx-game-31",
@@ -1044,7 +1068,8 @@
       "kind": "游戏资源",
       "need_login": false,
       "update_info": "网盘分享",
-      "note": ""
+      "note": "",
+      "adult": true
     },
     {
       "id": "xlsx-game-32",
@@ -1059,7 +1084,8 @@
       "kind": "游戏资源",
       "need_login": false,
       "update_info": "网盘分享",
-      "note": ""
+      "note": "",
+      "adult": true
     },
     {
       "id": "xlsx-game-33",
@@ -1075,7 +1101,8 @@
       "kind": "游戏资源",
       "need_login": false,
       "update_info": "网盘分享",
-      "note": ""
+      "note": "",
+      "adult": true
     },
     {
       "id": "xlsx-game-34",
@@ -1090,7 +1117,8 @@
       "kind": "游戏资源",
       "need_login": false,
       "update_info": "网盘分享",
-      "note": ""
+      "note": "",
+      "adult": true
     },
     {
       "id": "xlsx-game-35",
@@ -1105,7 +1133,8 @@
       "kind": "游戏资源",
       "need_login": false,
       "update_info": "网盘分享",
-      "note": ""
+      "note": "",
+      "adult": true
     },
     {
       "id": "xlsx-game-36",
@@ -1119,7 +1148,8 @@
       "kind": "游戏资源",
       "need_login": false,
       "update_info": "网盘分享",
-      "note": ""
+      "note": "",
+      "adult": true
     },
     {
       "id": "xlsx-game-37",
@@ -1134,7 +1164,8 @@
       "kind": "游戏资源",
       "need_login": false,
       "update_info": "网盘分享",
-      "note": ""
+      "note": "",
+      "adult": true
     },
     {
       "id": "xlsx-game-38",
@@ -1149,7 +1180,8 @@
       "kind": "游戏资源",
       "need_login": false,
       "update_info": "网盘分享",
-      "note": ""
+      "note": "",
+      "adult": true
     },
     {
       "id": "xlsx-game-39",
@@ -1164,7 +1196,8 @@
       "kind": "游戏资源",
       "need_login": false,
       "update_info": "网盘分享",
-      "note": ""
+      "note": "",
+      "adult": true
     },
     {
       "id": "xlsx-game-40",
@@ -1179,7 +1212,8 @@
       "kind": "游戏资源",
       "need_login": false,
       "update_info": "网盘分享",
-      "note": ""
+      "note": "",
+      "adult": true
     },
     {
       "id": "xlsx-game-41",
@@ -1194,7 +1228,8 @@
       "kind": "游戏资源",
       "need_login": false,
       "update_info": "网盘分享",
-      "note": ""
+      "note": "",
+      "adult": true
     },
     {
       "id": "xlsx-game-42",
@@ -1209,7 +1244,8 @@
       "kind": "游戏资源",
       "need_login": false,
       "update_info": "网盘分享",
-      "note": ""
+      "note": "",
+      "adult": true
     },
     {
       "id": "xlsx-game-43",
@@ -1224,7 +1260,8 @@
       "kind": "游戏资源",
       "need_login": false,
       "update_info": "网盘分享",
-      "note": ""
+      "note": "",
+      "adult": true
     },
     {
       "id": "xlsx-game-44",
@@ -1239,7 +1276,8 @@
       "kind": "游戏资源",
       "need_login": false,
       "update_info": "网盘分享",
-      "note": ""
+      "note": "",
+      "adult": true
     },
     {
       "id": "xlsx-game-45",
@@ -1254,7 +1292,8 @@
       "kind": "游戏资源",
       "need_login": false,
       "update_info": "网盘分享",
-      "note": ""
+      "note": "",
+      "adult": true
     },
     {
       "id": "xlsx-game-46",
@@ -1269,7 +1308,8 @@
       "kind": "游戏资源",
       "need_login": false,
       "update_info": "网盘分享",
-      "note": ""
+      "note": "",
+      "adult": true
     },
     {
       "id": "xlsx-game-47",
@@ -1284,7 +1324,8 @@
       "kind": "游戏资源",
       "need_login": false,
       "update_info": "网盘分享",
-      "note": ""
+      "note": "",
+      "adult": true
     },
     {
       "id": "xlsx-game-48",
@@ -1299,7 +1340,8 @@
       "kind": "游戏资源",
       "need_login": false,
       "update_info": "网盘分享",
-      "note": ""
+      "note": "",
+      "adult": true
     },
     {
       "id": "xlsx-game-49",
@@ -1314,7 +1356,8 @@
       "kind": "游戏资源",
       "need_login": false,
       "update_info": "网盘分享",
-      "note": ""
+      "note": "",
+      "adult": true
     },
     {
       "id": "xlsx-game-50",
@@ -1329,7 +1372,8 @@
       "kind": "游戏资源",
       "need_login": false,
       "update_info": "网盘分享",
-      "note": ""
+      "note": "",
+      "adult": true
     },
     {
       "id": "xlsx-game-51",
@@ -1345,7 +1389,8 @@
       "need_login": false,
       "update_info": "网盘分享",
       "note": "",
-      "password": "hxcg"
+      "password": "hxcg",
+      "adult": true
     },
     {
       "id": "xlsx-game-52",
@@ -1361,7 +1406,8 @@
       "need_login": false,
       "update_info": "网盘分享",
       "note": "",
-      "password": "pe5h"
+      "password": "pe5h",
+      "adult": true
     },
     {
       "id": "xlsx-game-53",
@@ -1377,7 +1423,8 @@
       "need_login": false,
       "update_info": "网盘分享",
       "note": "",
-      "password": "emqa"
+      "password": "emqa",
+      "adult": true
     },
     {
       "id": "xlsx-game-54",
@@ -1392,7 +1439,8 @@
       "kind": "游戏资源",
       "need_login": false,
       "update_info": "网盘分享",
-      "note": ""
+      "note": "",
+      "adult": true
     },
     {
       "id": "xlsx-game-55",
@@ -1407,7 +1455,8 @@
       "kind": "游戏资源",
       "need_login": false,
       "update_info": "网盘分享",
-      "note": ""
+      "note": "",
+      "adult": true
     },
     {
       "id": "xlsx-game-56",
@@ -1422,7 +1471,8 @@
       "kind": "游戏资源",
       "need_login": false,
       "update_info": "网盘分享",
-      "note": ""
+      "note": "",
+      "adult": true
     },
     {
       "id": "xlsx-game-57",
@@ -1438,7 +1488,8 @@
       "need_login": false,
       "update_info": "网盘分享",
       "note": "",
-      "password": "s52u"
+      "password": "s52u",
+      "adult": true
     },
     {
       "id": "xlsx-game-58",
@@ -1454,7 +1505,8 @@
       "kind": "游戏资源",
       "need_login": false,
       "update_info": "网盘分享",
-      "note": ""
+      "note": "",
+      "adult": true
     },
     {
       "id": "xlsx-game-59",
@@ -1469,7 +1521,8 @@
       "kind": "游戏资源",
       "need_login": false,
       "update_info": "网盘分享",
-      "note": ""
+      "note": "",
+      "adult": true
     },
     {
       "id": "xlsx-game-60",
@@ -1486,7 +1539,8 @@
       "need_login": false,
       "update_info": "网盘分享",
       "note": "",
-      "password": "5iw9"
+      "password": "5iw9",
+      "adult": true
     },
     {
       "id": "xlsx-game-61",
@@ -1501,7 +1555,8 @@
       "kind": "游戏资源",
       "need_login": false,
       "update_info": "网盘分享",
-      "note": ""
+      "note": "",
+      "adult": true
     },
     {
       "id": "xlsx-game-62",
@@ -1517,7 +1572,8 @@
       "need_login": false,
       "update_info": "网盘分享",
       "note": "",
-      "password": "735c"
+      "password": "735c",
+      "adult": true
     },
     {
       "id": "xlsx-game-63",
@@ -1532,7 +1588,8 @@
       "kind": "游戏资源",
       "need_login": false,
       "update_info": "网盘分享",
-      "note": ""
+      "note": "",
+      "adult": true
     },
     {
       "id": "xlsx-game-64",
@@ -1548,7 +1605,8 @@
       "need_login": false,
       "update_info": "网盘分享",
       "note": "",
-      "password": "9qha"
+      "password": "9qha",
+      "adult": true
     },
     {
       "id": "xlsx-game-65",
@@ -1563,7 +1621,8 @@
       "kind": "游戏资源",
       "need_login": false,
       "update_info": "网盘分享",
-      "note": ""
+      "note": "",
+      "adult": true
     },
     {
       "id": "xlsx-game-66",
@@ -1578,7 +1637,8 @@
       "kind": "游戏资源",
       "need_login": false,
       "update_info": "网盘分享",
-      "note": ""
+      "note": "",
+      "adult": true
     },
     {
       "id": "xlsx-game-67",
@@ -1608,7 +1668,8 @@
       "kind": "游戏资源",
       "need_login": false,
       "update_info": "网盘分享",
-      "note": ""
+      "note": "",
+      "adult": true
     },
     {
       "id": "xlsx-game-69",

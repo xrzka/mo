@@ -44,6 +44,7 @@
     section: "all",
     sub: "all",
     q: "",
+    adultMode: false, // 默认未成年模式，成人向内容不显示
   };
 
   const $ = (sel, root = document) => root.querySelector(sel);
@@ -74,6 +75,7 @@
       updateInfo: raw.update_info || "未标注",
       note: raw.note || "",
       password: raw.password || "",
+      adult: raw.adult === true,
     };
   }
 
@@ -94,8 +96,11 @@
     return true;
   };
 
+  /** 未成年模式下过滤掉成人向条目。所有计数与列表都必须经过这一层。 */
+  const allowedItems = () => state.items.filter((it) => state.adultMode || !it.adult);
+
   const visibleItems = () =>
-    state.items.filter(
+    allowedItems().filter(
       (it) => inSection(it, state.section, state.sub) && matchesQuery(it, state.q)
     );
 
@@ -104,11 +109,10 @@
   function renderTabs() {
     const bar = $("[data-tabs]");
     bar.textContent = "";
+    const pool = allowedItems();
     SECTIONS.forEach((s) => {
       // 计数只受搜索词影响，不受当前分区影响，这样切换分区时数字稳定
-      const n = state.items.filter(
-        (it) => inSection(it, s.id) && matchesQuery(it, state.q)
-      ).length;
+      const n = pool.filter((it) => inSection(it, s.id) && matchesQuery(it, state.q)).length;
 
       const btn = document.createElement("button");
       btn.type = "button";
@@ -142,7 +146,7 @@
     }
     bar.hidden = false;
 
-    const inCurrent = state.items.filter(
+    const inCurrent = allowedItems().filter(
       (it) => it.section === state.section && matchesQuery(it, state.q)
     );
     const options = [{ id: "all", label: "全部" }, ...subs];
@@ -256,8 +260,73 @@
     renderTabs();
     renderSubTabs();
     renderFeed();
-    $('[data-stat="total"]').textContent = String(state.items.length).padStart(2, "0");
+    $('[data-stat="total"]').textContent = String(allowedItems().length).padStart(2, "0");
   }
+  /* ---------- 成年 / 未成年模式 ---------- */
+
+  /** 更新模式按钮的文字与状态。 */
+  function renderModeUI() {
+    const btn = $("[data-mode-toggle]");
+    if (!btn) return;
+    btn.setAttribute("aria-pressed", String(state.adultMode));
+    $("[data-mode-label]").textContent = state.adultMode ? "成年模式" : "未成年模式";
+
+    const hidden = state.items.filter((it) => it.adult).length;
+    const hint = $("[data-mode-hint]");
+    if (hint) {
+      hint.textContent = state.adultMode
+        ? ""
+        : hidden
+          ? `已隐藏 ${hidden} 个成人向资源`
+          : "";
+    }
+  }
+
+  /** 切到成年模式必须经过确认弹窗；关掉不需要确认。 */
+  function bindMode() {
+    const btn = $("[data-mode-toggle]");
+    const dialog = $("[data-age-dialog]");
+    if (!btn || !dialog) return;
+
+    // 刻意不做持久化：每次打开页面都回到未成年模式
+    btn.addEventListener("click", () => {
+      if (state.adultMode) {
+        state.adultMode = false;
+        renderModeUI();
+        render();
+        return;
+      }
+      dialog.hidden = false;
+      $("[data-age-confirm]").focus();
+    });
+
+    $("[data-age-confirm]").addEventListener("click", () => {
+      state.adultMode = true;
+      dialog.hidden = true;
+      renderModeUI();
+      render();
+    });
+
+    $("[data-age-cancel]").addEventListener("click", () => {
+      dialog.hidden = true;
+      btn.focus();
+    });
+
+    dialog.addEventListener("click", (e) => {
+      if (e.target === dialog) {
+        dialog.hidden = true;
+        btn.focus();
+      }
+    });
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && !dialog.hidden) {
+        dialog.hidden = true;
+        btn.focus();
+      }
+    });
+  }
+
   /* ---------- 事件绑定 ---------- */
 
   function bindControls() {
@@ -293,6 +362,7 @@
   async function init() {
     bindTheme();
     bindControls();
+    bindMode();
     try {
       const res = await fetch(DATA_URL, { cache: "no-cache" });
       if (!res.ok) throw new Error("HTTP " + res.status);
@@ -301,6 +371,7 @@
       state.items = raw.map(normalize);
       state.generatedAt = payload.generated_at || null;
       $("[data-footer-updated]").textContent = fmtDate(state.generatedAt);
+      renderModeUI();
       render();
     } catch (err) {
       const feed = $("[data-feed]");

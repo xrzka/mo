@@ -8,6 +8,8 @@
   --accent-soft: #f0eae3;
   --ok: #4a7c59;
   --ok-soft: #e8f0ea;
+  --warn: #b4453a;
+  --warn-soft: #fbe9e7;
   --radius: 14px;
   --shadow: 0 1px 2px rgba(40, 35, 30, 0.05), 0 8px 24px rgba(40, 35, 30, 0.05);
 }
@@ -22,6 +24,8 @@
   --accent-soft: #2b2822;
   --ok: #7fb98d;
   --ok-soft: #22301f;
+  --warn: #e08b80;
+  --warn-soft: #352624;
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.25);
 }
 
@@ -446,6 +450,84 @@ h1 {
   cursor: pointer;
 }
 .pw-copy:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ---------- 成年 / 未成年模式 ---------- */
+.header-actions { display: flex; align-items: center; gap: 8px; }
+
+.mode-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 13px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-elevated);
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.mode-toggle:hover { border-color: var(--accent); color: var(--accent); }
+.mode-toggle[aria-pressed="true"] {
+  background: var(--warn-soft, #fbe9e7);
+  border-color: var(--warn, #b4453a);
+  color: var(--warn, #b4453a);
+  font-weight: 600;
+}
+
+.mode-hint {
+  margin: -6px 0 12px;
+  color: var(--text-muted);
+  font-size: 12.5px;
+}
+.mode-hint:empty { display: none; }
+
+.age-dialog {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(3px);
+}
+.age-dialog[hidden] { display: none; }
+
+.age-panel {
+  width: min(430px, 100%);
+  padding: 24px 26px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+.age-panel h2 { margin: 0 0 12px; font-size: 19px; }
+.age-text { margin: 0 0 10px; font-size: 14px; line-height: 1.75; }
+.age-sub { margin: 0 0 20px; color: var(--text-muted); font-size: 12.5px; line-height: 1.7; }
+
+.age-actions { display: flex; gap: 10px; justify-content: flex-end; }
+.age-cancel, .age-confirm {
+  padding: 9px 17px;
+  border-radius: 9px;
+  font: inherit;
+  font-size: 13.5px;
+  cursor: pointer;
+}
+.age-cancel {
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-muted);
+}
+.age-cancel:hover { color: var(--text); }
+.age-confirm {
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
+.age-confirm:hover { filter: brightness(1.1); }
 
 /* ---------- 免责声明 + 页脚 ---------- */
 .notice-section {
