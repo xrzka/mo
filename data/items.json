@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-29T12:34:16Z",
+  "generated_at": "2026-08-29T17:57:03Z",
   "note": "示例数据。新增资源在 items 数组里加一项即可，section 取值：novel / manga / anime / game / ai",
   "items": [
     {
@@ -111,6 +111,118 @@
       "need_login": true,
       "update_info": "不定时开放",
       "note": "可用模型：DeepSeek-V4-Flash。"
+    },
+    {
+      "id": "manual-guide-1",
+      "name": "看上万韩轻教程（安卓 + iOS）",
+      "section": "guide",
+      "description": "小说站的使用教程，安卓和 iOS 都有说明。新手先看这个。",
+      "url": "https://www.kdocs.cn/l/cmHagtxYgbc2",
+      "tags": [
+        "教程",
+        "安卓",
+        "iOS",
+        "金山文档"
+      ],
+      "kind": "教程文档",
+      "need_login": false,
+      "update_info": "长期有效",
+      "note": ""
+    },
+    {
+      "id": "manual-guide-2",
+      "name": "网页看漫画教程（安卓 + iOS）",
+      "section": "guide",
+      "description": "在浏览器里看漫画的配置方法，安卓和 iOS 都有说明。",
+      "url": "https://www.kdocs.cn/l/cbn29Wbnpg7P",
+      "tags": [
+        "教程",
+        "漫画",
+        "安卓",
+        "iOS"
+      ],
+      "kind": "教程文档",
+      "need_login": false,
+      "update_info": "长期有效",
+      "note": ""
+    },
+    {
+      "id": "manual-guide-3",
+      "name": "小说站为什么上不了",
+      "section": "guide",
+      "description": "小说站打不开时的排查方法。",
+      "url": "https://pan.quark.cn/s/e42ae735c648",
+      "tags": [
+        "问题排查",
+        "夸克网盘"
+      ],
+      "kind": "问题解答",
+      "need_login": false,
+      "update_info": "长期有效",
+      "note": ""
+    },
+    {
+      "id": "manual-guide-4",
+      "name": "解压 / 常见问题解答文档",
+      "section": "guide",
+      "description": "解压失败、文件打不开之类的问题先看这份文档，多数问题里面都有答案。",
+      "url": "https://www.kdocs.cn/l/cvhnZ8QGHuuN",
+      "tags": [
+        "解压",
+        "问题解答",
+        "必看"
+      ],
+      "kind": "问题解答",
+      "need_login": false,
+      "update_info": "长期有效",
+      "note": "遇到问题建议先自己搜一下关键词，很多都是常见情况。"
+    },
+    {
+      "id": "manual-guide-5",
+      "name": "小说站积分不够怎么赚积分",
+      "section": "guide",
+      "description": "小说站积分不足看不了小说时，赚取积分的方法。",
+      "url": "https://www.kdocs.cn/l/cmGEUrfxquDq",
+      "tags": [
+        "积分",
+        "教程"
+      ],
+      "kind": "教程文档",
+      "need_login": false,
+      "update_info": "长期有效",
+      "note": ""
+    },
+    {
+      "id": "manual-collection-1",
+      "name": "资源目录查询总表（含分享的网站与游戏合集）",
+      "section": "collection",
+      "description": "全部资源的目录总表，名称旁边就是对应地址。分享的网站和游戏合集都在第一个链接里。",
+      "url": "https://drive.uc.cn/s/5080326fadde4?public=1",
+      "tags": [
+        "资源目录",
+        "总表",
+        "UC 网盘"
+      ],
+      "kind": "目录总表",
+      "need_login": false,
+      "update_info": "持续更新",
+      "note": "找不到资源时：把目录文档下载到本地打开，用表格的查找功能搜资源名。复制地址时注意不要多复制或漏复制字符，复制错了打不开。之后需要新目录，回到这个地址取里面最新的即可。"
+    },
+    {
+      "id": "manual-music-1",
+      "name": "听音乐资源",
+      "section": "music",
+      "description": "音乐资源合集。",
+      "url": "https://pan.baidu.com/s/1MZZNcOmcNKakMzahbiI1RQ?pwd=qbz2",
+      "password": "qbz2",
+      "tags": [
+        "音乐",
+        "百度网盘"
+      ],
+      "kind": "网盘资源",
+      "need_login": false,
+      "update_info": "网盘分享",
+      "note": ""
     },
     {
       "id": "xlsx-collection-1",

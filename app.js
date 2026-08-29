@@ -32,8 +32,10 @@
     },
     { id: "anime", label: "动画", icon: "🎬" },
     { id: "game", label: "游戏", icon: "🎮" },
+    { id: "music", label: "音乐", icon: "🎵" },
     { id: "tool", label: "工具", icon: "🔧" },
     { id: "ai", label: "AI", icon: "✦" },
+    { id: "guide", label: "教程 / 问题", icon: "💡" },
     { id: "collection", label: "收录", icon: "🗂" },
   ];
 
@@ -374,6 +376,18 @@
     });
   }
 
+  /** 公告里的「教程 / 问题区」跳转。 */
+  function bindNoticeJump() {
+    const btn = $("[data-goto-guide]");
+    if (!btn) return;
+    btn.addEventListener("click", () => {
+      state.section = "guide";
+      state.sub = "all";
+      render();
+      $("#feed").scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }
+
   /* ---------- 事件绑定 ---------- */
 
   function bindControls() {
@@ -410,6 +424,7 @@
     bindTheme();
     bindControls();
     bindMode();
+    bindNoticeJump();
     try {
       const res = await fetch(DATA_URL, { cache: "no-cache" });
       if (!res.ok) throw new Error("HTTP " + res.status);

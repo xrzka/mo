@@ -401,6 +401,42 @@ h1 {
   border: 1px dashed var(--border);
   border-radius: var(--radius);
 }
+/* ---------- 入站公告 ---------- */
+.notice-board {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 16px 18px;
+  margin: 0 0 20px;
+  background: var(--accent-soft);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius);
+}
+
+.notice-board-icon { font-size: 18px; line-height: 1.5; }
+.notice-board-body { min-width: 0; }
+.notice-board h2 {
+  margin: 0 0 4px;
+  font-size: 14px;
+  color: var(--accent);
+}
+.notice-board p { margin: 0; font-size: 13.5px; line-height: 1.75; }
+.notice-board-sub { margin-top: 3px !important; color: var(--text-muted); font-size: 12.5px !important; }
+
+.inline-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+.inline-link:hover { filter: brightness(1.15); }
+
 /* ---------- 小分区标签栏 ---------- */
 .subtab-bar {
   display: flex;

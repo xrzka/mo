@@ -128,7 +128,9 @@ r'<c r="([A-Z]+)(\d+)"([^>]*?)(?:/>|>(.*?)</c>)'
 }
 ```
 
-`section` 取值：`novel` 小说、`manga` 漫画、`anime` 动画、`game` 游戏、`tool` 工具、`ai` AI、`collection` 收录。填错或留空会自动归到小说分区，不会丢卡片。
+`section` 取值：`novel` 小说、`manga` 漫画、`anime` 动画、`game` 游戏、`music` 音乐、`tool` 工具、`ai` AI、`guide` 教程/问题、`collection` 收录。填错或留空会自动归到小说分区，不会丢卡片。
+
+**手工添加的条目 id 请用 `manual-` 前缀**，这样 xlsx 重跑导入时不会被清掉（已验证）。
 
 `tags` 最多显示 6 个，`icon` 可选，不填则用分区默认图标。
 
