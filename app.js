@@ -41,6 +41,9 @@
 
   const SECTION_MAP = new Map(SECTIONS.map((s) => [s.id, s]));
 
+  const PAGE_SIZES = [10, 20, 30, 50, 100];
+  const DEFAULT_PAGE_SIZE = 20;
+
   const state = {
     items: [],
     generatedAt: null,
@@ -48,6 +51,8 @@
     sub: "all",
     q: "",
     adultMode: false, // 默认未成年模式，成人向内容不显示
+    page: 1,
+    pageSize: DEFAULT_PAGE_SIZE,
   };
 
   const $ = (sel, root = document) => root.querySelector(sel);
@@ -125,6 +130,17 @@
       (it) => inSection(it, state.section, state.sub) && matchesQuery(it, state.q)
     );
 
+  const totalPages = (total) => Math.max(1, Math.ceil(total / state.pageSize));
+
+  /** 当前页的条目。页码越界时自动收敛到最后一页。 */
+  function pagedItems(list) {
+    const pages = totalPages(list.length);
+    if (state.page > pages) state.page = pages;
+    if (state.page < 1) state.page = 1;
+    const start = (state.page - 1) * state.pageSize;
+    return list.slice(start, start + state.pageSize);
+  }
+
   /* ---------- 渲染 ---------- */
 
   function renderTabs() {
@@ -150,6 +166,7 @@
       btn.addEventListener("click", () => {
         state.section = s.id;
         state.sub = "all"; // 换主分区时重置小分区
+        state.page = 1;
         render();
       });
       bar.appendChild(btn);
@@ -187,6 +204,7 @@
 
       btn.addEventListener("click", () => {
         state.sub = o.id;
+        state.page = 1;
         render();
       });
       bar.appendChild(btn);
@@ -292,17 +310,144 @@
 
   function renderFeed() {
     const list = visibleItems();
+    const page = pagedItems(list);
     const feed = $("[data-feed]");
     feed.textContent = "";
     const frag = document.createDocumentFragment();
-    list.forEach((it) => frag.appendChild(buildCard(it)));
+    page.forEach((it) => frag.appendChild(buildCard(it)));
     feed.appendChild(frag);
 
     $("[data-empty]").hidden = list.length > 0;
     const secDef = SECTION_MAP.get(state.section);
     const subDef = (secDef.subs || []).find((s) => s.id === state.sub);
     const label = subDef ? `${secDef.label} · ${subDef.label}` : secDef.label;
-    $("[data-result-count]").textContent = list.length ? `${label} · 共 ${list.length} 个资源` : "";
+    $("[data-result-count]").textContent = list.length
+      ? `${label} · 共 ${list.length} 个资源`
+      : "";
+
+    renderPager(list.length);
+  }
+
+  /** 页码按钮序列：首尾各留 1 个，当前页左右各留 1 个，其余用省略号。 */
+  function pageNumbers(current, total) {
+    if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+    const out = new Set([1, total, current]);
+    if (current - 1 > 1) out.add(current - 1);
+    if (current + 1 < total) out.add(current + 1);
+    const nums = [...out].sort((a, b) => a - b);
+    const withGaps = [];
+    nums.forEach((n, i) => {
+      if (i && n - nums[i - 1] > 1) withGaps.push("gap");
+      withGaps.push(n);
+    });
+    return withGaps;
+  }
+
+  /** 翻页条：共 N 条、每页条数、上/下一页、页码、跳转框。 */
+  function renderPager(total) {
+    const box = $("[data-pager]");
+    if (!box) return;
+    box.textContent = "";
+
+    // 一页就装得下且用的是默认页长时不显示，避免白占一行
+    if (total <= state.pageSize && state.pageSize === DEFAULT_PAGE_SIZE) {
+      box.hidden = true;
+      return;
+    }
+    box.hidden = false;
+
+    const pages = totalPages(total);
+    const goto = (p) => {
+      state.page = Math.min(Math.max(1, p), pages);
+      renderFeed();
+      $("#feed").scrollIntoView({ behavior: "smooth", block: "start" });
+    };
+
+    const info = document.createElement("span");
+    info.className = "pager-info";
+    info.textContent = `共 ${total} 条`;
+    box.appendChild(info);
+
+    const sizeSel = document.createElement("select");
+    sizeSel.className = "pager-size";
+    sizeSel.setAttribute("aria-label", "每页显示条数");
+    PAGE_SIZES.forEach((n) => {
+      const o = document.createElement("option");
+      o.value = String(n);
+      o.textContent = `${n} 条/页`;
+      if (n === state.pageSize) o.selected = true;
+      sizeSel.appendChild(o);
+    });
+    sizeSel.addEventListener("change", () => {
+      state.pageSize = Number(sizeSel.value) || DEFAULT_PAGE_SIZE;
+      state.page = 1;
+      renderFeed();
+    });
+    box.appendChild(sizeSel);
+    const prev = document.createElement("button");
+    prev.type = "button";
+    prev.className = "pager-btn";
+    prev.textContent = "‹";
+    prev.setAttribute("aria-label", "上一页");
+    prev.disabled = state.page <= 1;
+    prev.addEventListener("click", () => goto(state.page - 1));
+    box.appendChild(prev);
+
+    pageNumbers(state.page, pages).forEach((n) => {
+      if (n === "gap") {
+        const g = document.createElement("span");
+        g.className = "pager-gap";
+        g.textContent = "…";
+        box.appendChild(g);
+        return;
+      }
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "pager-btn";
+      b.textContent = String(n);
+      if (n === state.page) {
+        b.classList.add("current");
+        b.setAttribute("aria-current", "page");
+      }
+      b.addEventListener("click", () => goto(n));
+      box.appendChild(b);
+    });
+
+    const next = document.createElement("button");
+    next.type = "button";
+    next.className = "pager-btn";
+    next.textContent = "›";
+    next.setAttribute("aria-label", "下一页");
+    next.disabled = state.page >= pages;
+    next.addEventListener("click", () => goto(state.page + 1));
+    box.appendChild(next);
+
+    // 页数多时才给跳转框，少的时候直接点页码更快
+    if (pages > 3) {
+      const label = document.createElement("label");
+      label.className = "pager-jump";
+      label.appendChild(document.createTextNode("前往"));
+      const inp = document.createElement("input");
+      inp.type = "number";
+      inp.min = "1";
+      inp.max = String(pages);
+      inp.value = String(state.page);
+      inp.setAttribute("aria-label", `跳转页码，共 ${pages} 页`);
+      const jump = () => {
+        const v = Number(inp.value);
+        if (Number.isFinite(v) && v >= 1) goto(v);
+      };
+      inp.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          jump();
+        }
+      });
+      inp.addEventListener("change", jump);
+      label.appendChild(inp);
+      label.appendChild(document.createTextNode("页"));
+      box.appendChild(label);
+    }
   }
 
   function render() {
@@ -341,6 +486,7 @@
     btn.addEventListener("click", () => {
       if (state.adultMode) {
         state.adultMode = false;
+        state.page = 1;
         renderModeUI();
         render();
         return;
@@ -351,6 +497,7 @@
 
     $("[data-age-confirm]").addEventListener("click", () => {
       state.adultMode = true;
+      state.page = 1;
       dialog.hidden = true;
       renderModeUI();
       render();
@@ -383,6 +530,7 @@
     btn.addEventListener("click", () => {
       state.section = "guide";
       state.sub = "all";
+      state.page = 1;
       render();
       $("#feed").scrollIntoView({ behavior: "smooth", block: "start" });
     });
@@ -395,6 +543,7 @@
     if (input) {
       input.addEventListener("input", () => {
         state.q = input.value.trim();
+        state.page = 1; // 换搜索词回到第一页，否则可能停在空页
         render();
       });
     }
