@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="index,follow,max-image-preview:large" />
+    <meta
+      name="description"
+      content="墨小说漫画 · 小说、漫画、动画、游戏、AI 资源导航，分区整理，点击直达。"
+    />
+    <title>墨小说漫画 · 资源导航</title>
+    <link rel="stylesheet" href="styles.css?v=20260829" />
+    <script src="app.js?v=20260829" defer></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#feed">跳到资源列表</a>
+
+    <header class="site-header" id="top">
+      <a class="brand" href="#top" aria-label="返回页面顶部">
+        <span class="brand-mark" aria-hidden="true">墨</span>
+        <span>墨小说漫画</span>
+      </a>
+      <nav class="site-nav" aria-label="页面导航">
+        <span class="nav-hint">分区资源 · 点击直达</span>
+      </nav>
+      <div class="header-actions">
+        <button type="button" class="theme-toggle" data-theme-toggle aria-pressed="false">
+          <span aria-hidden="true">◐</span>
+          <span class="visually-hidden">切换深浅色主题</span>
+        </button>
+      </div>
+    </header>
+
+    <main>
+      <section class="intro" aria-labelledby="page-title">
+        <div class="intro-copy">
+          <div class="intro-kicker">
+            <p class="eyebrow">MO RESOURCE DIRECTORY</p>
+            <span class="update-status">
+              <span class="update-dot" aria-hidden="true"></span>
+              <span>持续更新中</span>
+            </span>
+          </div>
+          <h1 id="page-title">墨小说漫画</h1>
+          <p class="intro-text">
+            小说、漫画、动画、游戏、AI 资源分区整理，一页看完，点击直达。
+          </p>
+        </div>
+        <div class="directory-summary" aria-label="资源汇总">
+          <strong data-stat="total">--</strong>
+          <span>当前收录</span>
+        </div>
+      </section>
+      <nav class="tab-bar" aria-label="资源分区" data-tabs></nav>
+
+      <section class="feed-section" id="feed" aria-labelledby="feed-title">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">HANDPICKED</p>
+            <h2 id="feed-title">资源推荐</h2>
+          </div>
+          <p class="section-note">整张卡片均可点击</p>
+        </div>
+
+        <form class="controls" data-controls role="search" aria-label="搜索资源">
+          <div class="control search-control">
+            <label for="q">搜索名称、简介或标签</label>
+            <input
+              type="search"
+              id="q"
+              name="q"
+              placeholder="例如 轻小说、在线阅读、下载"
+              autocomplete="off"
+              data-filter="q"
+            />
+          </div>
+        </form>
+
+        <p class="result-count" data-result-count aria-live="polite"></p>
+        <div class="feed-list" data-feed></div>
+        <p class="empty-state" data-empty hidden>这个分区还没有收录资源，或没有匹配的搜索结果。</p>
+      </section>
+
+      <section class="notice-section" id="notice" aria-labelledby="notice-title">
+        <h2 id="notice-title">免责声明</h2>
+        <p class="notice-text">
+          本站提供的软件资源，非原创内容，均为网络搜集，归原作者所有，仅用于学习交流，
+          请勿信资源内广告，谨防损失！禁止商业用途、转售、非法谋利。
+        </p>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <p>墨小说漫画 · 反馈群 <strong>1031507826</strong></p>
+      <p class="footer-sub">数据更新 <span data-footer-updated>--</span></p>
+    </footer>
+
+    <template data-card-template>
+      <article class="feed-card" tabindex="0" role="button" aria-expanded="false">
+        <div class="card-main">
+          <div class="card-icon" data-field="icon" aria-hidden="true"></div>
+          <div class="card-body">
+            <div class="card-title-row">
+              <h3 class="card-title" data-field="name"></h3>
+              <span class="section-pill" data-field="section"></span>
+            </div>
+            <p class="card-desc" data-field="description"></p>
+            <ul class="tag-list" data-field="tags"></ul>
+          </div>
+          <div class="card-arrow" aria-hidden="true">›</div>
+        </div>
+        <div class="card-detail" data-detail hidden>
+          <dl class="detail-grid">
+            <div><dt>资源类型</dt><dd data-field="kind"></dd></div>
+            <div><dt>是否需要登录</dt><dd data-field="login"></dd></div>
+            <div><dt>更新情况</dt><dd data-field="updateInfo"></dd></div>
+          </dl>
+          <p class="detail-note" data-field="note"></p>
+          <div class="detail-actions">
+            <a class="visit-link" data-field="link" target="_blank" rel="noreferrer noopener">
+              打开站点 ↗
+            </a>
+          </div>
+        </div>
+      </article>
+    </template>
+  </body>
+</html>
+
+

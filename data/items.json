@@ -1,0 +1,67 @@
+{
+  "generated_at": "2026-08-29T03:40:00Z",
+  "note": "示例数据。新增资源在 items 数组里加一项即可，section 取值：novel / manga / anime / game / ai",
+  "items": [
+    {
+      "id": "demo-novel-1",
+      "name": "示例小说站",
+      "section": "novel",
+      "description": "这是一条示例数据，用来演示卡片长什么样。把 data/items.json 里的内容换成真实资源即可。",
+      "url": "https://example.com/",
+      "tags": ["在线阅读", "轻小说", "示例"],
+      "kind": "网站",
+      "need_login": false,
+      "update_info": "每日更新",
+      "note": "备注栏，可以写使用提示、注意事项，留空则不显示。"
+    },
+    {
+      "id": "demo-manga-1",
+      "name": "示例漫画站",
+      "section": "manga",
+      "description": "漫画分区的示例条目。",
+      "url": "https://example.org/",
+      "tags": ["在线看", "示例"],
+      "kind": "网站",
+      "need_login": true,
+      "update_info": "周更",
+      "note": ""
+    },
+    {
+      "id": "demo-anime-1",
+      "name": "示例动画站",
+      "section": "anime",
+      "description": "动画分区的示例条目。",
+      "url": "https://example.net/",
+      "tags": ["在线播放", "示例"],
+      "kind": "网站",
+      "need_login": false,
+      "update_info": "季番跟进",
+      "note": ""
+    },
+    {
+      "id": "demo-game-1",
+      "name": "示例游戏资源",
+      "section": "game",
+      "description": "游戏分区的示例条目。",
+      "url": "https://example.dev/",
+      "tags": ["下载", "示例"],
+      "kind": "资源下载",
+      "need_login": false,
+      "update_info": "不定期",
+      "note": ""
+    },
+    {
+      "id": "demo-ai-1",
+      "name": "示例 AI 工具",
+      "section": "ai",
+      "description": "AI 分区的示例条目。",
+      "url": "https://example.io/",
+      "tags": ["工具", "示例"],
+      "kind": "在线工具",
+      "need_login": true,
+      "update_info": "持续更新",
+      "note": ""
+    }
+  ]
+}
+
