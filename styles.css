@@ -365,6 +365,20 @@ h1 {
 }
 .detail-note:empty { display: none; }
 
+.detail-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.link-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .visit-link {
   display: inline-flex;
   align-items: center;

@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-29T11:18:57Z",
+  "generated_at": "2026-08-29T12:00:44Z",
   "note": "示例数据。新增资源在 items 数组里加一项即可，section 取值：novel / manga / anime / game / ai",
   "items": [
     {
@@ -583,42 +583,12 @@
       "note": ""
     },
     {
-      "id": "xlsx-tool-2",
-      "name": "分享gal上千游戏合集",
-      "section": "tool",
-      "description": "分享gal上千游戏合集",
+      "id": "xlsx-game-2",
+      "name": "解压教程",
+      "section": "game",
+      "description": "解压教程",
       "url": "https://drive.uc.cn/s/b5262bb7a2974?public=1",
       "tags": [
-        "UC 网盘"
-      ],
-      "kind": "工具 / 网站",
-      "need_login": false,
-      "update_info": "长期可用",
-      "note": "",
-      "adult": true
-    },
-    {
-      "id": "xlsx-tool-3",
-      "name": "视频压缩包解压说明",
-      "section": "tool",
-      "description": "视频压缩包解压说明",
-      "url": "https://www.kdocs.cn/l/csm6NmW4MZsG",
-      "tags": [
-        "金山文档"
-      ],
-      "kind": "工具 / 网站",
-      "need_login": false,
-      "update_info": "长期可用",
-      "note": ""
-    },
-    {
-      "id": "xlsx-game-4",
-      "name": "【PC】贤者与人妻/人妻冒险+全回想 （汉化需翻译工具mtool）",
-      "section": "game",
-      "description": "【PC】贤者与人妻/人妻冒险+全回想 （汉化需翻译工具mtool）",
-      "url": "https://drive.uc.cn/s/68e541f1172d4?public=1",
-      "tags": [
-        "PC",
         "UC 网盘"
       ],
       "kind": "游戏资源",
@@ -628,10 +598,39 @@
       "adult": true
     },
     {
-      "id": "xlsx-game-5",
-      "name": "【PC】老牛吃嫩草/NTRレッスン2(基本全回想)",
+      "id": "xlsx-game-3",
+      "name": "视频压缩包解压说明",
       "section": "game",
-      "description": "【PC】老牛吃嫩草/NTRレッスン2(基本全回想)",
+      "description": "视频压缩包解压说明",
+      "url": "https://www.kdocs.cn/l/csm6NmW4MZsG",
+      "tags": [
+        "金山文档"
+      ],
+      "kind": "游戏资源",
+      "need_login": false,
+      "update_info": "网盘分享",
+      "note": ""
+    },
+    {
+      "id": "xlsx-game-4",
+      "name": "【双端】末世孤雄(0+1+2+3)",
+      "section": "game",
+      "description": "【双端】末世孤雄(0+1+2+3)",
+      "url": "https://drive.uc.cn/s/68e541f1172d4?public=1",
+      "tags": [
+        "双端",
+        "UC 网盘"
+      ],
+      "kind": "游戏资源",
+      "need_login": false,
+      "update_info": "网盘分享",
+      "note": ""
+    },
+    {
+      "id": "xlsx-game-5",
+      "name": "【PC】贤者与人妻/人妻冒险+全回想 （汉化需翻译工具mtool）",
+      "section": "game",
+      "description": "【PC】贤者与人妻/人妻冒险+全回想 （汉化需翻译工具mtool）",
       "url": "https://drive.uc.cn/s/fb38f655e1244?public=1",
       "tags": [
         "PC",
@@ -645,9 +644,9 @@
     },
     {
       "id": "xlsx-game-6",
-      "name": "【PC】卧龙凤雏家庭/让家人陷入怀孕麻烦（汉化需翻译工具mtool）",
+      "name": "【PC】老牛吃嫩草/NTRレッスン2(基本全回想)",
       "section": "game",
-      "description": "【PC】卧龙凤雏家庭/让家人陷入怀孕麻烦（汉化需翻译工具mtool）",
+      "description": "【PC】老牛吃嫩草/NTRレッスン2(基本全回想)",
       "url": "https://drive.uc.cn/s/e17665825f4c4?public=1",
       "tags": [
         "PC",
@@ -661,12 +660,12 @@
     },
     {
       "id": "xlsx-game-7",
-      "name": "【双端】魔法侦探塞雷皮亚斯（PC汉化需翻译工具mtool）",
+      "name": "【PC】卧龙凤雏家庭/让家人陷入怀孕麻烦（汉化需翻译工具mtool）",
       "section": "game",
-      "description": "【双端】魔法侦探塞雷皮亚斯（PC汉化需翻译工具mtool）",
+      "description": "【PC】卧龙凤雏家庭/让家人陷入怀孕麻烦（汉化需翻译工具mtool）",
       "url": "https://drive.uc.cn/s/df03041d47b24?public=1",
       "tags": [
-        "双端",
+        "PC",
         "UC 网盘"
       ],
       "kind": "游戏资源",
@@ -677,25 +676,40 @@
     },
     {
       "id": "xlsx-game-8",
-      "name": "【双端】沙漠追猎者~沙漠潜行者 Desert Stalker V0.20.3.1官中动态步兵+全CG",
+      "name": "【双端】魔法侦探塞雷皮亚斯（PC汉化需翻译工具mtool）",
       "section": "game",
-      "description": "【双端】沙漠追猎者~沙漠潜行者 Desert Stalker V0.20.3.1官中动态步兵+全CG",
+      "description": "【双端】魔法侦探塞雷皮亚斯（PC汉化需翻译工具mtool）",
       "url": "https://drive.uc.cn/s/38117b1c732b4?public=1",
       "tags": [
         "双端",
-        "UC 网盘"
+        "UC 网盘",
+        "夸克网盘"
       ],
       "kind": "游戏资源",
       "need_login": false,
       "update_info": "网盘分享",
       "note": "",
+      "links": [
+        {
+          "name": "UC 网盘",
+          "url": "https://drive.uc.cn/s/38117b1c732b4?public=1",
+          "password": "",
+          "label": ""
+        },
+        {
+          "name": "夸克网盘",
+          "url": "https://pan.quark.cn/s/d4a988ad3878",
+          "password": "",
+          "label": ""
+        }
+      ],
       "adult": true
     },
     {
       "id": "xlsx-game-9",
-      "name": "【双端】[妹控神作ADV新安卓]悠之空 ハルカナソラ 汉化步兵版+全CG存档",
+      "name": "【双端】沙漠追猎者~沙漠潜行者 Desert Stalker V0.20.3.1官中动态步兵+全CG",
       "section": "game",
-      "description": "【双端】[妹控神作ADV新安卓]悠之空 ハルカナソラ 汉化步兵版+全CG存档",
+      "description": "【双端】沙漠追猎者~沙漠潜行者 Desert Stalker V0.20.3.1官中动态步兵+全CG",
       "url": "https://pan.xunlei.com/s/VOn68DovtAulRilotUTyI1TkA1?pwd=ipfm",
       "tags": [
         "双端",
@@ -710,9 +724,9 @@
     },
     {
       "id": "xlsx-game-10",
-      "name": "【双端】死亡诅咒 YL版",
+      "name": "【双端】[妹控神作ADV新安卓]悠之空 ハルカナソラ 汉化步兵版+全CG存档",
       "section": "game",
-      "description": "【双端】死亡诅咒 YL版",
+      "description": "【双端】[妹控神作ADV新安卓]悠之空 ハルカナソラ 汉化步兵版+全CG存档",
       "url": "https://pan.xunlei.com/s/VOn69TbRkPkibMLs0OlcPWQbA1?pwd=e6dh",
       "tags": [
         "双端",
@@ -727,9 +741,9 @@
     },
     {
       "id": "xlsx-game-11",
-      "name": "【双端】变态按摩师和欲求不满的妻子 YL版",
+      "name": "【双端】死亡诅咒 YL版",
       "section": "game",
-      "description": "【双端】变态按摩师和欲求不满的妻子 YL版",
+      "description": "【双端】死亡诅咒 YL版",
       "url": "https://pan.baidu.com/s/1bo3RZVpP0poaUpmgJLp7-Q?pwd=kijc",
       "tags": [
         "双端",
@@ -744,13 +758,12 @@
     },
     {
       "id": "xlsx-game-12",
-      "name": "【双端】NTR精灵陨落NTR: When Elves Fall [v0.1]YL版",
+      "name": "【双端】变态按摩师和欲求不满的妻子 YL版",
       "section": "game",
-      "description": "【双端】NTR精灵陨落NTR: When Elves Fall [v0.1]YL版",
+      "description": "【双端】变态按摩师和欲求不满的妻子 YL版",
       "url": "https://pan.baidu.com/s/1R61F09SB4VMRJGq-wOHe1A?pwd=bg55",
       "tags": [
         "双端",
-        "v0.1",
         "百度网盘"
       ],
       "kind": "游戏资源",
@@ -762,12 +775,13 @@
     },
     {
       "id": "xlsx-game-13",
-      "name": "【双端】妻子是村里共享人妻 YL版",
+      "name": "【双端】NTR精灵陨落NTR: When Elves Fall [v0.1]YL版",
       "section": "game",
-      "description": "【双端】妻子是村里共享人妻 YL版",
+      "description": "【双端】NTR精灵陨落NTR: When Elves Fall [v0.1]YL版",
       "url": "https://pan.baidu.com/s/1x_Ee_0djsldcWWb1-SYkXw?pwd=8u1e",
       "tags": [
         "双端",
+        "v0.1",
         "百度网盘"
       ],
       "kind": "游戏资源",
@@ -779,13 +793,12 @@
     },
     {
       "id": "xlsx-game-14",
-      "name": "【双端】异域世界/陌生的世界/A Foreign World[Ep.9]",
+      "name": "【双端】妻子是村里共享人妻 YL版",
       "section": "game",
-      "description": "【双端】异域世界/陌生的世界/A Foreign World[Ep.9]",
+      "description": "【双端】妻子是村里共享人妻 YL版",
       "url": "https://pan.baidu.com/s/1YgAkI2Nkqh6tIV_xIagc5g?pwd=ee2b",
       "tags": [
         "双端",
-        "Ep.9",
         "百度网盘"
       ],
       "kind": "游戏资源",
@@ -797,10 +810,27 @@
     },
     {
       "id": "xlsx-game-15",
+      "name": "【双端】异域世界/陌生的世界/A Foreign World[Ep.9]",
+      "section": "game",
+      "description": "【双端】异域世界/陌生的世界/A Foreign World[Ep.9]",
+      "url": "https://pan.quark.cn/s/44e7af329e20",
+      "tags": [
+        "双端",
+        "Ep.9",
+        "夸克网盘"
+      ],
+      "kind": "游戏资源",
+      "need_login": false,
+      "update_info": "网盘分享",
+      "note": "",
+      "adult": true
+    },
+    {
+      "id": "xlsx-game-16",
       "name": "【双端】灰姑娘的玻璃项圈[Ver0.10.3]",
       "section": "game",
       "description": "【双端】灰姑娘的玻璃项圈[Ver0.10.3]",
-      "url": "https://pan.quark.cn/s/44e7af329e20",
+      "url": "https://pan.quark.cn/s/7d952884cecf",
       "tags": [
         "双端",
         "夸克网盘"
@@ -812,11 +842,11 @@
       "adult": true
     },
     {
-      "id": "xlsx-game-16",
+      "id": "xlsx-game-17",
       "name": "【双端】龙珠之跨维度愿望最终篇",
       "section": "game",
       "description": "【双端】龙珠之跨维度愿望最终篇",
-      "url": "https://pan.quark.cn/s/7d952884cecf",
+      "url": "https://pan.quark.cn/s/5c668c83dc65",
       "tags": [
         "双端",
         "夸克网盘"
@@ -827,11 +857,11 @@
       "note": ""
     },
     {
-      "id": "xlsx-game-17",
+      "id": "xlsx-game-18",
       "name": "【双端】万花筒 [Ver0.02]",
       "section": "game",
       "description": "【双端】万花筒 [Ver0.02]",
-      "url": "https://pan.quark.cn/s/5c668c83dc65",
+      "url": "https://pan.quark.cn/s/a88e33f07920",
       "tags": [
         "双端",
         "Ver0.02",
@@ -844,11 +874,11 @@
       "adult": true
     },
     {
-      "id": "xlsx-game-18",
+      "id": "xlsx-game-19",
       "name": "【双端】怪癖手机:滑动诱惑 [Ver1.0]",
       "section": "game",
       "description": "【双端】怪癖手机:滑动诱惑 [Ver1.0]",
-      "url": "https://pan.quark.cn/s/a88e33f07920",
+      "url": "https://pan.quark.cn/s/baf6d7f55006",
       "tags": [
         "双端",
         "Ver1.0",
@@ -861,11 +891,11 @@
       "adult": true
     },
     {
-      "id": "xlsx-game-19",
+      "id": "xlsx-game-20",
       "name": "【PC】爱与生活：幸福学生 v2.10 官中步兵版",
       "section": "game",
       "description": "【PC】爱与生活：幸福学生 v2.10 官中步兵版",
-      "url": "https://pan.quark.cn/s/baf6d7f55006",
+      "url": "https://pan.quark.cn/s/9919df696466",
       "tags": [
         "PC",
         "夸克网盘"
@@ -877,11 +907,11 @@
       "adult": true
     },
     {
-      "id": "xlsx-game-20",
+      "id": "xlsx-game-21",
       "name": "【双端】被我爸NTR了[Ver0.3.0]",
       "section": "game",
       "description": "【双端】被我爸NTR了[Ver0.3.0]",
-      "url": "https://pan.quark.cn/s/9919df696466",
+      "url": "https://pan.quark.cn/s/996296268efa",
       "tags": [
         "双端",
         "Ver0.3.0",
@@ -894,26 +924,10 @@
       "adult": true
     },
     {
-      "id": "xlsx-game-21",
+      "id": "xlsx-game-22",
       "name": "【PC】救生员狂热 v0.9.1a官中动态步兵~类似NTR狂热",
       "section": "game",
       "description": "【PC】救生员狂热 v0.9.1a官中动态步兵~类似NTR狂热",
-      "url": "https://pan.quark.cn/s/996296268efa",
-      "tags": [
-        "PC",
-        "夸克网盘"
-      ],
-      "kind": "游戏资源",
-      "need_login": false,
-      "update_info": "网盘分享",
-      "note": "",
-      "adult": true
-    },
-    {
-      "id": "xlsx-game-22",
-      "name": "【PC】按摩店经营 触摸模拟游戏 Ver1.2.1RT汉化正式版+存档",
-      "section": "game",
-      "description": "【PC】按摩店经营 触摸模拟游戏 Ver1.2.1RT汉化正式版+存档",
       "url": "https://pan.xunlei.com/s/VOn6InVf5tN4tX8RmbgDtYJIA1?pwd=em4m",
       "tags": [
         "PC",
@@ -928,13 +942,12 @@
     },
     {
       "id": "xlsx-game-23",
-      "name": "【PC】诱饵色狼调查员莉娜[Ver1.1.7]",
+      "name": "【PC】按摩店经营 触摸模拟游戏 Ver1.2.1RT汉化正式版+存档",
       "section": "game",
-      "description": "【PC】诱饵色狼调查员莉娜[Ver1.1.7]",
+      "description": "【PC】按摩店经营 触摸模拟游戏 Ver1.2.1RT汉化正式版+存档",
       "url": "https://pan.xunlei.com/s/VOn6JaRUmlt5onTQEpdN3aTyA1?pwd=j66x",
       "tags": [
         "PC",
-        "Ver1.1.7",
         "迅雷网盘"
       ],
       "kind": "游戏资源",
@@ -946,12 +959,13 @@
     },
     {
       "id": "xlsx-game-24",
-      "name": "【双端】蛇之交响曲/Symphony of the Serpent[Ver59031+作弊+存档]",
+      "name": "【PC】诱饵色狼调查员莉娜[Ver1.1.7]",
       "section": "game",
-      "description": "【双端】蛇之交响曲/Symphony of the Serpent[Ver59031+作弊+存档]",
+      "description": "【PC】诱饵色狼调查员莉娜[Ver1.1.7]",
       "url": "https://pan.quark.cn/s/9513cf3756c5",
       "tags": [
-        "双端",
+        "PC",
+        "Ver1.1.7",
         "夸克网盘"
       ],
       "kind": "游戏资源",
@@ -962,9 +976,9 @@
     },
     {
       "id": "xlsx-game-25",
-      "name": "【双端】 除灵猎人~零号羔羊 注：安卓端有bug，没有声音。所以玩这个游戏最好还是使用joi模拟器运行PC端，测试过了，joi可运行",
+      "name": "【双端】蛇之交响曲/Symphony of the Serpent[Ver59031+作弊+存档]",
       "section": "game",
-      "description": "【双端】 除灵猎人~零号羔羊 注：安卓端有bug，没有声音。所以玩这个游戏最好还是使用joi模拟器运行PC端，测试过了，joi可运行",
+      "description": "【双端】蛇之交响曲/Symphony of the Serpent[Ver59031+作弊+存档]",
       "url": "https://drive.uc.cn/s/ffc9fedc17524?public=1",
       "tags": [
         "双端",
@@ -978,13 +992,12 @@
     },
     {
       "id": "xlsx-game-26",
-      "name": "【PC】践踏之塔/Tower of Trample[1F~10F整合]",
+      "name": "【双端】 除灵猎人~零号羔羊 注：安卓端有bug，没有声音。所以玩这个游戏最好还是使用joi模拟器运行PC端，测试过了，joi可运行",
       "section": "game",
-      "description": "【PC】践踏之塔/Tower of Trample[1F~10F整合]",
+      "description": "【双端】 除灵猎人~零号羔羊 注：安卓端有bug，没有声音。所以玩这个游戏最好还是使用joi模拟器运行PC端，测试过了，joi可运行",
       "url": "https://pan.quark.cn/s/c6b20b221fef",
       "tags": [
-        "PC",
-        "1F~10F整合",
+        "双端",
         "夸克网盘"
       ],
       "kind": "游戏资源",
@@ -995,13 +1008,13 @@
     },
     {
       "id": "xlsx-game-27",
-      "name": "【PC】牝教师1-4合集[度盘] 3[uc] 解压码t.me/farrslgrpg",
+      "name": "【PC】践踏之塔/Tower of Trample[1F~10F整合]",
       "section": "game",
-      "description": "【PC】牝教师1-4合集[度盘] 3[uc] 解压码t.me/farrslgrpg",
+      "description": "【PC】践踏之塔/Tower of Trample[1F~10F整合]",
       "url": "https://drive.uc.cn/s/7af02fe636224?public=1",
       "tags": [
         "PC",
-        "度盘",
+        "1F~10F整合",
         "UC 网盘"
       ],
       "kind": "游戏资源",
@@ -1012,30 +1025,45 @@
     },
     {
       "id": "xlsx-game-28",
-      "name": "【PC】废村少女[去码版+DLC+全CG存档]",
+      "name": "【PC】牝教师1-4合集[度盘] 3[uc] 解压码t.me/farrslgrpg",
       "section": "game",
-      "description": "【PC】废村少女[去码版+DLC+全CG存档]",
+      "description": "【PC】牝教师1-4合集[度盘] 3[uc] 解压码t.me/farrslgrpg",
       "url": "https://pan.baidu.com/s/1PeFQ4QRq7aQZ6Nz7v1rI4A?pwd=qhmr",
       "tags": [
         "PC",
-        "百度网盘"
+        "度盘",
+        "百度网盘",
+        "UC 网盘"
       ],
       "kind": "游戏资源",
       "need_login": false,
       "update_info": "网盘分享",
       "note": "",
       "password": "qhmr",
+      "links": [
+        {
+          "name": "百度网盘",
+          "url": "https://pan.baidu.com/s/1PeFQ4QRq7aQZ6Nz7v1rI4A?pwd=qhmr",
+          "password": "qhmr",
+          "label": ""
+        },
+        {
+          "name": "UC 网盘",
+          "url": "https://drive.uc.cn/s/0b923ce5e0514?public=1",
+          "password": "",
+          "label": ""
+        }
+      ],
       "adult": true
     },
     {
       "id": "xlsx-game-29",
-      "name": "【PC】废村少女[贰]汉化硬盘版",
+      "name": "【PC】废村少女[去码版+DLC+全CG存档]",
       "section": "game",
-      "description": "【PC】废村少女[贰]汉化硬盘版",
+      "description": "【PC】废村少女[去码版+DLC+全CG存档]",
       "url": "https://pan.quark.cn/s/faefd106cc80",
       "tags": [
         "PC",
-        "贰",
         "夸克网盘"
       ],
       "kind": "游戏资源",
@@ -1046,12 +1074,13 @@
     },
     {
       "id": "xlsx-game-30",
-      "name": "【PC】废村少女［弐］精翻汉化版+全CG存档+特典",
+      "name": "【PC】废村少女[贰]汉化硬盘版",
       "section": "game",
-      "description": "【PC】废村少女［弐］精翻汉化版+全CG存档+特典",
+      "description": "【PC】废村少女[贰]汉化硬盘版",
       "url": "https://drive.uc.cn/s/be3fa85dd1404?public=1",
       "tags": [
         "PC",
+        "贰",
         "UC 网盘"
       ],
       "kind": "游戏资源",
@@ -1062,9 +1091,9 @@
     },
     {
       "id": "xlsx-game-31",
-      "name": "【PC】废村少女 番外篇 AI汉化版+全CG存档",
+      "name": "【PC】废村少女［弐］精翻汉化版+全CG存档+特典",
       "section": "game",
-      "description": "【PC】废村少女 番外篇 AI汉化版+全CG存档",
+      "description": "【PC】废村少女［弐］精翻汉化版+全CG存档+特典",
       "url": "https://drive.uc.cn/s/db4ed1e3ccf64?public=1",
       "tags": [
         "PC",
@@ -1078,9 +1107,9 @@
     },
     {
       "id": "xlsx-game-32",
-      "name": "【PC】废村少女 外? 外伝 精翻汉化版+全CG存档",
+      "name": "【PC】废村少女 番外篇 AI汉化版+全CG存档",
       "section": "game",
-      "description": "【PC】废村少女 外? 外伝 精翻汉化版+全CG存档",
+      "description": "【PC】废村少女 番外篇 AI汉化版+全CG存档",
       "url": "https://drive.uc.cn/s/4f1b6f1824b74?public=1",
       "tags": [
         "PC",
@@ -1094,13 +1123,12 @@
     },
     {
       "id": "xlsx-game-33",
-      "name": "【PC】色欲出口/Exit Lust[Ver1.0.1]",
+      "name": "【PC】废村少女 外? 外伝 精翻汉化版+全CG存档",
       "section": "game",
-      "description": "【PC】色欲出口/Exit Lust[Ver1.0.1]",
+      "description": "【PC】废村少女 外? 外伝 精翻汉化版+全CG存档",
       "url": "https://drive.uc.cn/s/47aac61e88ca4?public=1",
       "tags": [
         "PC",
-        "Ver1.0.1",
         "UC 网盘"
       ],
       "kind": "游戏资源",
@@ -1111,10 +1139,27 @@
     },
     {
       "id": "xlsx-game-34",
+      "name": "【PC】色欲出口/Exit Lust[Ver1.0.1]",
+      "section": "game",
+      "description": "【PC】色欲出口/Exit Lust[Ver1.0.1]",
+      "url": "https://pan.quark.cn/s/6f6ce5d425ee",
+      "tags": [
+        "PC",
+        "Ver1.0.1",
+        "夸克网盘"
+      ],
+      "kind": "游戏资源",
+      "need_login": false,
+      "update_info": "网盘分享",
+      "note": "",
+      "adult": true
+    },
+    {
+      "id": "xlsx-game-35",
       "name": "【PC】魔物娘农场/魔物娘之岛/Breeders of the Nephelym: Alpha",
       "section": "game",
       "description": "【PC】魔物娘农场/魔物娘之岛/Breeders of the Nephelym: Alpha",
-      "url": "https://pan.quark.cn/s/6f6ce5d425ee",
+      "url": "https://pan.quark.cn/s/023fb87049f9",
       "tags": [
         "PC",
         "夸克网盘"
@@ -1126,28 +1171,13 @@
       "adult": true
     },
     {
-      "id": "xlsx-game-35",
+      "id": "xlsx-game-36",
       "name": "【双端】沉没的承诺/The Sunken Promise",
       "section": "game",
       "description": "【双端】沉没的承诺/The Sunken Promise",
-      "url": "https://pan.quark.cn/s/023fb87049f9",
-      "tags": [
-        "双端",
-        "夸克网盘"
-      ],
-      "kind": "游戏资源",
-      "need_login": false,
-      "update_info": "网盘分享",
-      "note": "",
-      "adult": true
-    },
-    {
-      "id": "xlsx-game-36",
-      "name": "【PC/joiplay模拟器】忍耐色诱的告白游戏",
-      "section": "game",
-      "description": "【PC/joiplay模拟器】忍耐色诱的告白游戏",
       "url": "https://pan.quark.cn/s/09d4be86176c",
       "tags": [
+        "双端",
         "夸克网盘"
       ],
       "kind": "游戏资源",
@@ -1158,12 +1188,11 @@
     },
     {
       "id": "xlsx-game-37",
-      "name": "【双端】宇崎酱NTR Uzaki-Chan Wants to be your Sex Girlfriend",
+      "name": "【PC/joiplay模拟器】忍耐色诱的告白游戏",
       "section": "game",
-      "description": "【双端】宇崎酱NTR Uzaki-Chan Wants to be your Sex Girlfriend",
+      "description": "【PC/joiplay模拟器】忍耐色诱的告白游戏",
       "url": "https://drive.uc.cn/s/6d356b05e9784?public=1",
       "tags": [
-        "双端",
         "UC 网盘"
       ],
       "kind": "游戏资源",
@@ -1174,9 +1203,9 @@
     },
     {
       "id": "xlsx-game-38",
-      "name": "【双端】邪悪勇者一行 外道勇者一行",
+      "name": "【双端】宇崎酱NTR Uzaki-Chan Wants to be your Sex Girlfriend",
       "section": "game",
-      "description": "【双端】邪悪勇者一行 外道勇者一行",
+      "description": "【双端】宇崎酱NTR Uzaki-Chan Wants to be your Sex Girlfriend",
       "url": "https://pan.quark.cn/s/ce4b98b7df0c",
       "tags": [
         "双端",
@@ -1190,9 +1219,9 @@
     },
     {
       "id": "xlsx-game-39",
-      "name": "【双端】进入色情学园的处女渴望守护贞操 礼包码：304121",
+      "name": "【双端】邪悪勇者一行 外道勇者一行",
       "section": "game",
-      "description": "【双端】进入色情学园的处女渴望守护贞操 礼包码：304121",
+      "description": "【双端】邪悪勇者一行 外道勇者一行",
       "url": "https://drive.uc.cn/s/cefa79a448c04?public=1",
       "tags": [
         "双端",
@@ -1206,9 +1235,9 @@
     },
     {
       "id": "xlsx-game-40",
-      "name": "【双端】特工17 Agent17 Ver 0.26.6",
+      "name": "【双端】进入色情学园的处女渴望守护贞操 礼包码：304121",
       "section": "game",
-      "description": "【双端】特工17 Agent17 Ver 0.26.6",
+      "description": "【双端】进入色情学园的处女渴望守护贞操 礼包码：304121",
       "url": "https://drive.uc.cn/s/0b8781ac3b354?public=1",
       "tags": [
         "双端",
@@ -1222,9 +1251,9 @@
     },
     {
       "id": "xlsx-game-41",
-      "name": "【双端】边缘 - 终极版/The Edge Of – Definitive Edition",
+      "name": "【双端】特工17 Agent17 Ver 0.26.6",
       "section": "game",
-      "description": "【双端】边缘 - 终极版/The Edge Of – Definitive Edition",
+      "description": "【双端】特工17 Agent17 Ver 0.26.6",
       "url": "https://drive.uc.cn/s/ca47ddf494074?public=1",
       "tags": [
         "双端",
@@ -1238,9 +1267,9 @@
     },
     {
       "id": "xlsx-game-42",
-      "name": "【双端】流星ワールドアクター Gaslight Bullet",
+      "name": "【双端】边缘 - 终极版/The Edge Of – Definitive Edition",
       "section": "game",
-      "description": "【双端】流星ワールドアクター Gaslight Bullet",
+      "description": "【双端】边缘 - 终极版/The Edge Of – Definitive Edition",
       "url": "https://pan.quark.cn/s/084654fbcdee",
       "tags": [
         "双端",
@@ -1254,12 +1283,12 @@
     },
     {
       "id": "xlsx-game-43",
-      "name": "【PC】与离家出走少女的同居生活 家出少女との同棲生活",
+      "name": "【双端】流星ワールドアクター Gaslight Bullet",
       "section": "game",
-      "description": "【PC】与离家出走少女的同居生活 家出少女との同棲生活",
+      "description": "【双端】流星ワールドアクター Gaslight Bullet",
       "url": "https://drive.uc.cn/s/94d0f77907b44?public=1",
       "tags": [
-        "PC",
+        "双端",
         "UC 网盘"
       ],
       "kind": "游戏资源",
@@ -1270,9 +1299,9 @@
     },
     {
       "id": "xlsx-game-44",
-      "name": "【PC】暑假期间，我把朋友的恋人给ntr了/夏休み、僕は友達の彼女をNTRした",
+      "name": "【PC】与离家出走少女的同居生活 家出少女との同棲生活",
       "section": "game",
-      "description": "【PC】暑假期间，我把朋友的恋人给ntr了/夏休み、僕は友達の彼女をNTRした",
+      "description": "【PC】与离家出走少女的同居生活 家出少女との同棲生活",
       "url": "https://drive.uc.cn/s/04c278e73b484?public=1",
       "tags": [
         "PC",
@@ -1286,9 +1315,9 @@
     },
     {
       "id": "xlsx-game-45",
-      "name": "【PC】神具姬英雄反抗者多米/神具姫ヒーローアンチドミー Ver1.01 官方中文步兵版+存档",
+      "name": "【PC】暑假期间，我把朋友的恋人给ntr了/夏休み、僕は友達の彼女をNTRした",
       "section": "game",
-      "description": "【PC】神具姬英雄反抗者多米/神具姫ヒーローアンチドミー Ver1.01 官方中文步兵版+存档",
+      "description": "【PC】暑假期间，我把朋友的恋人给ntr了/夏休み、僕は友達の彼女をNTRした",
       "url": "https://drive.uc.cn/s/0e693508ddcc4?public=1",
       "tags": [
         "PC",
@@ -1302,10 +1331,26 @@
     },
     {
       "id": "xlsx-game-46",
+      "name": "【PC】神具姬英雄反抗者多米/神具姫ヒーローアンチドミー Ver1.01 官方中文步兵版+存档",
+      "section": "game",
+      "description": "【PC】神具姬英雄反抗者多米/神具姫ヒーローアンチドミー Ver1.01 官方中文步兵版+存档",
+      "url": "https://drive.uc.cn/s/4e2c295e6c084?public=1",
+      "tags": [
+        "PC",
+        "UC 网盘"
+      ],
+      "kind": "游戏资源",
+      "need_login": false,
+      "update_info": "网盘分享",
+      "note": "",
+      "adult": true
+    },
+    {
+      "id": "xlsx-game-47",
       "name": "【双端】赛洛布斯竞技场 SelobusArena",
       "section": "game",
       "description": "【双端】赛洛布斯竞技场 SelobusArena",
-      "url": "https://drive.uc.cn/s/4e2c295e6c084?public=1",
+      "url": "https://drive.uc.cn/s/7a56649930004?public=1",
       "tags": [
         "双端",
         "UC 网盘"
@@ -1317,11 +1362,11 @@
       "adult": true
     },
     {
-      "id": "xlsx-game-47",
+      "id": "xlsx-game-48",
       "name": "【PC】终末的自我主义 终末的拟我论 终末的另类利己主义 终末的另类自我主义",
       "section": "game",
       "description": "【PC】终末的自我主义 终末的拟我论 终末的另类利己主义 终末的另类自我主义",
-      "url": "https://drive.uc.cn/s/7a56649930004?public=1",
+      "url": "https://drive.uc.cn/s/025dfab563364?public=1",
       "tags": [
         "PC",
         "UC 网盘"
@@ -1333,11 +1378,11 @@
       "adult": true
     },
     {
-      "id": "xlsx-game-48",
+      "id": "xlsx-game-49",
       "name": "【PC/安卓joi】人妻派对NTR パーティーNTR Sver1.12 AI汉化版",
       "section": "game",
       "description": "【PC/安卓joi】人妻派对NTR パーティーNTR Sver1.12 AI汉化版",
-      "url": "https://drive.uc.cn/s/025dfab563364?public=1",
+      "url": "https://drive.uc.cn/s/d5c34d8221b54?public=1",
       "tags": [
         "PC/安卓joi",
         "UC 网盘"
@@ -1349,26 +1394,10 @@
       "adult": true
     },
     {
-      "id": "xlsx-game-49",
+      "id": "xlsx-game-50",
       "name": "【PC】UnHolY PraYeR v0331 官方中文版",
       "section": "game",
       "description": "【PC】UnHolY PraYeR v0331 官方中文版",
-      "url": "https://drive.uc.cn/s/d5c34d8221b54?public=1",
-      "tags": [
-        "PC",
-        "UC 网盘"
-      ],
-      "kind": "游戏资源",
-      "need_login": false,
-      "update_info": "网盘分享",
-      "note": "",
-      "adult": true
-    },
-    {
-      "id": "xlsx-game-50",
-      "name": "【PC】能干的后辈小葵酱 生肉",
-      "section": "game",
-      "description": "【PC】能干的后辈小葵酱 生肉",
       "url": "https://drive.uc.cn/s/c372d05a801f4?public=1",
       "tags": [
         "PC",
@@ -1382,35 +1411,65 @@
     },
     {
       "id": "xlsx-game-51",
-      "name": "【PC】回乡后,有超可爱幽灵在我家! 帰郷後、我が家に超可愛い幽霊が!? v1.0.1.36.st 官方中文无码版",
+      "name": "【PC】能干的后辈小葵酱 生肉",
       "section": "game",
-      "description": "【PC】回乡后,有超可爱幽灵在我家! 帰郷後、我が家に超可愛い幽霊が!? v1.0.1.36.st 官方中文无码版",
+      "description": "【PC】能干的后辈小葵酱 生肉",
       "url": "https://pan.baidu.com/s/1LQ5edkQlc0bvh45IXAwzjw?pwd=hxcg",
       "tags": [
         "PC",
-        "百度网盘"
+        "百度网盘",
+        "夸克网盘"
       ],
       "kind": "游戏资源",
       "need_login": false,
       "update_info": "网盘分享",
       "note": "",
       "password": "hxcg",
+      "links": [
+        {
+          "name": "百度网盘",
+          "url": "https://pan.baidu.com/s/1LQ5edkQlc0bvh45IXAwzjw?pwd=hxcg",
+          "password": "hxcg",
+          "label": ""
+        },
+        {
+          "name": "夸克网盘",
+          "url": "https://pan.quark.cn/s/e5e662740ef8",
+          "password": "",
+          "label": "体验版"
+        }
+      ],
       "adult": true
     },
     {
       "id": "xlsx-game-52",
-      "name": "x048",
+      "name": "【PC】回乡后,有超可爱幽灵在我家! 帰郷後、我が家に超可愛い幽霊が!? v1.0.1.36.st 官方中文无码版",
       "section": "game",
-      "description": "x048",
+      "description": "【PC】回乡后,有超可爱幽灵在我家! 帰郷後、我が家に超可愛い幽霊が!? v1.0.1.36.st 官方中文无码版",
       "url": "https://drive.uc.cn/s/e11230dd04f14?public=1",
       "tags": [
-        "UC 网盘"
+        "PC",
+        "UC 网盘",
+        "百度网盘"
       ],
       "kind": "游戏资源",
       "need_login": false,
       "update_info": "网盘分享",
       "note": "",
-      "password": "1ysv",
+      "links": [
+        {
+          "name": "UC 网盘",
+          "url": "https://drive.uc.cn/s/e11230dd04f14?public=1",
+          "password": "",
+          "label": ""
+        },
+        {
+          "name": "百度网盘",
+          "url": "https://pan.baidu.com/s/1dgVofVeU9aPE_J4z9afMAg?pwd=1ysv",
+          "password": "1ysv",
+          "label": ""
+        }
+      ],
       "adult": true
     },
     {
@@ -1421,13 +1480,27 @@
       "url": "https://drive.uc.cn/s/b637718fd61f4?public=1",
       "tags": [
         "双端",
-        "UC 网盘"
+        "UC 网盘",
+        "百度网盘"
       ],
       "kind": "游戏资源",
       "need_login": false,
       "update_info": "网盘分享",
       "note": "",
-      "password": "pe5h",
+      "links": [
+        {
+          "name": "UC 网盘",
+          "url": "https://drive.uc.cn/s/b637718fd61f4?public=1",
+          "password": "",
+          "label": ""
+        },
+        {
+          "name": "百度网盘",
+          "url": "https://pan.baidu.com/s/1O0yS3rpAFW7bCuwWQ2dLBw?pwd=pe5h",
+          "password": "pe5h",
+          "label": ""
+        }
+      ],
       "adult": true
     },
     {
@@ -1438,23 +1511,37 @@
       "url": "https://drive.uc.cn/s/7fe472d46b474?public=1",
       "tags": [
         "PC",
-        "UC 网盘"
+        "UC 网盘",
+        "百度网盘"
       ],
       "kind": "游戏资源",
       "need_login": false,
       "update_info": "网盘分享",
       "note": "",
-      "password": "emqa",
+      "links": [
+        {
+          "name": "UC 网盘",
+          "url": "https://drive.uc.cn/s/7fe472d46b474?public=1",
+          "password": "",
+          "label": ""
+        },
+        {
+          "name": "百度网盘",
+          "url": "https://pan.baidu.com/s/1nd1kTM65zoRpFT7dj21cDQ?pwd=emqa",
+          "password": "emqa",
+          "label": ""
+        }
+      ],
       "adult": true
     },
     {
       "id": "xlsx-game-55",
-      "name": "【PC】催眠偶像 Hypnotic Idol Ver1.026",
+      "name": "【az】种族之王",
       "section": "game",
-      "description": "【PC】催眠偶像 Hypnotic Idol Ver1.026",
+      "description": "【az】种族之王",
       "url": "https://pan.quark.cn/s/520fc34a6c75",
       "tags": [
-        "PC",
+        "az",
         "夸克网盘"
       ],
       "kind": "游戏资源",
@@ -1465,9 +1552,9 @@
     },
     {
       "id": "xlsx-game-56",
-      "name": "【PC】29岁的人妻想成为职业coser是否搞错了什么？ Ver1.0.10 官方中文步兵版",
+      "name": "【PC】催眠偶像 Hypnotic Idol Ver1.026",
       "section": "game",
-      "description": "【PC】29岁的人妻想成为职业coser是否搞错了什么？ Ver1.0.10 官方中文步兵版",
+      "description": "【PC】催眠偶像 Hypnotic Idol Ver1.026",
       "url": "https://drive.uc.cn/s/1c396f81c10f4?public=1",
       "tags": [
         "PC",
@@ -1481,9 +1568,9 @@
     },
     {
       "id": "xlsx-game-57",
-      "name": "【PC】剑侠风尘恋曲 V1.19+DLC 官中步兵版",
+      "name": "【PC】29岁的人妻想成为职业coser是否搞错了什么？ Ver1.0.10 官方中文步兵版",
       "section": "game",
-      "description": "【PC】剑侠风尘恋曲 V1.19+DLC 官中步兵版",
+      "description": "【PC】29岁的人妻想成为职业coser是否搞错了什么？ Ver1.0.10 官方中文步兵版",
       "url": "https://drive.uc.cn/s/e1a73a8ab0bb4?public=1",
       "tags": [
         "PC",
@@ -1497,9 +1584,9 @@
     },
     {
       "id": "xlsx-game-58",
-      "name": "【PC】夏日☆盐～童真男处男与处女未亡人さまぁ☆ソルト～童貞と処女の夫婦",
+      "name": "【PC】剑侠风尘恋曲 V1.19+DLC 官中步兵版",
       "section": "game",
-      "description": "【PC】夏日☆盐～童真男处男与处女未亡人さまぁ☆ソルト～童貞と処女の夫婦",
+      "description": "【PC】剑侠风尘恋曲 V1.19+DLC 官中步兵版",
       "url": "https://pan.baidu.com/s/1QE9kgPgf8BDiNFBByJjYDA?pwd=s52u",
       "tags": [
         "PC",
@@ -1514,13 +1601,12 @@
     },
     {
       "id": "xlsx-game-59",
-      "name": "[PC+安卓]忍者后宫-异族崛起第三章/火影崛起/次影崛起/Jikage Rising Arc 3[Ver2.32a]",
+      "name": "【PC】夏日☆盐～童真男处男与处女未亡人さまぁ☆ソルト～童貞と処女の夫婦",
       "section": "game",
-      "description": "[PC+安卓]忍者后宫-异族崛起第三章/火影崛起/次影崛起/Jikage Rising Arc 3[Ver2.32a]",
+      "description": "【PC】夏日☆盐～童真男处男与处女未亡人さまぁ☆ソルト～童貞と処女の夫婦",
       "url": "https://drive.uc.cn/s/b73e0585c7ef4?public=1",
       "tags": [
-        "PC+安卓",
-        "Ver2.32a",
+        "PC",
         "UC 网盘"
       ],
       "kind": "游戏资源",
@@ -1531,12 +1617,13 @@
     },
     {
       "id": "xlsx-game-60",
-      "name": "【PC+安卓】塞雷卡",
+      "name": "[PC+安卓]忍者后宫-异族崛起第三章/火影崛起/次影崛起/Jikage Rising Arc 3[Ver2.32a]",
       "section": "game",
-      "description": "【PC+安卓】塞雷卡",
+      "description": "[PC+安卓]忍者后宫-异族崛起第三章/火影崛起/次影崛起/Jikage Rising Arc 3[Ver2.32a]",
       "url": "https://pan.quark.cn/s/e772c4fc7918",
       "tags": [
         "PC+安卓",
+        "Ver2.32a",
         "夸克网盘"
       ],
       "kind": "游戏资源",
@@ -1547,13 +1634,12 @@
     },
     {
       "id": "xlsx-game-61",
-      "name": "【PC】寄生男～人妻不知何时已被我寄生～/寄生男 ～人妻はいつの間にか俺に寄生されている～[+全CG存档]",
+      "name": "【PC+安卓】塞雷卡",
       "section": "game",
-      "description": "【PC】寄生男～人妻不知何时已被我寄生～/寄生男 ～人妻はいつの間にか俺に寄生されている～[+全CG存档]",
+      "description": "【PC+安卓】塞雷卡",
       "url": "https://pan.baidu.com/s/1AD1jO9g64pXLulqLmS8efg?pwd=5iw9",
       "tags": [
-        "PC",
-        "+全CG存档",
+        "PC+安卓",
         "百度网盘"
       ],
       "kind": "游戏资源",
@@ -1565,12 +1651,13 @@
     },
     {
       "id": "xlsx-game-62",
-      "name": "【PC】三枚神符 三张护身符 三张符 三枚のおふ? v1.2 官方中文版",
+      "name": "【PC】寄生男～人妻不知何时已被我寄生～/寄生男 ～人妻はいつの間にか俺に寄生されている～[+全CG存档]",
       "section": "game",
-      "description": "【PC】三枚神符 三张护身符 三张符 三枚のおふ? v1.2 官方中文版",
+      "description": "【PC】寄生男～人妻不知何时已被我寄生～/寄生男 ～人妻はいつの間にか俺に寄生されている～[+全CG存档]",
       "url": "https://drive.uc.cn/s/59c530be7bce4?public=1",
       "tags": [
         "PC",
+        "+全CG存档",
         "UC 网盘"
       ],
       "kind": "游戏资源",
@@ -1581,29 +1668,43 @@
     },
     {
       "id": "xlsx-game-63",
-      "name": "【PC】甜蜜魅魔之家 Sweet Succubus Home V1.1.0 官中步兵版+存档",
+      "name": "【PC】三枚神符 三张护身符 三张符 三枚のおふ? v1.2 官方中文版",
       "section": "game",
-      "description": "【PC】甜蜜魅魔之家 Sweet Succubus Home V1.1.0 官中步兵版+存档",
+      "description": "【PC】三枚神符 三张护身符 三张符 三枚のおふ? v1.2 官方中文版",
       "url": "https://drive.uc.cn/s/04abc56427e94?public=1",
       "tags": [
         "PC",
-        "UC 网盘"
+        "UC 网盘",
+        "百度网盘"
       ],
       "kind": "游戏资源",
       "need_login": false,
       "update_info": "网盘分享",
       "note": "",
-      "password": "735c",
+      "links": [
+        {
+          "name": "UC 网盘",
+          "url": "https://drive.uc.cn/s/04abc56427e94?public=1",
+          "password": "",
+          "label": ""
+        },
+        {
+          "name": "百度网盘",
+          "url": "https://pan.baidu.com/s/1XGhOqxm9EcNborPJUHgI2g?pwd=735c",
+          "password": "735c",
+          "label": ""
+        }
+      ],
       "adult": true
     },
     {
       "id": "xlsx-game-64",
-      "name": "[安卓]夏日狂想曲",
+      "name": "【PC】甜蜜魅魔之家 Sweet Succubus Home V1.1.0 官中步兵版+存档",
       "section": "game",
-      "description": "[安卓]夏日狂想曲",
+      "description": "【PC】甜蜜魅魔之家 Sweet Succubus Home V1.1.0 官中步兵版+存档",
       "url": "https://drive.uc.cn/s/66bb89aaf03f4?public=1",
       "tags": [
-        "安卓",
+        "PC",
         "UC 网盘"
       ],
       "kind": "游戏资源",
@@ -1614,12 +1715,12 @@
     },
     {
       "id": "xlsx-game-65",
-      "name": "【PC】The original promise 最初约定的故事 V1.03 官方中文步兵版",
+      "name": "[安卓]夏日狂想曲",
       "section": "game",
-      "description": "【PC】The original promise 最初约定的故事 V1.03 官方中文步兵版",
+      "description": "[安卓]夏日狂想曲",
       "url": "https://pan.baidu.com/s/11iVXDalF5YVkeXb3FLSE0Q?pwd=9qha",
       "tags": [
-        "PC",
+        "安卓",
         "百度网盘"
       ],
       "kind": "游戏资源",
@@ -1631,26 +1732,10 @@
     },
     {
       "id": "xlsx-game-66",
-      "name": "【PC+安卓】AV摄影 IV?AV!! v1.2.1 官中步兵版",
+      "name": "【PC】The original promise 最初约定的故事 V1.03 官方中文步兵版",
       "section": "game",
-      "description": "【PC+安卓】AV摄影 IV?AV!! v1.2.1 官中步兵版",
+      "description": "【PC】The original promise 最初约定的故事 V1.03 官方中文步兵版",
       "url": "https://drive.uc.cn/s/4f99b9c91a884?public=1",
-      "tags": [
-        "PC+安卓",
-        "UC 网盘"
-      ],
-      "kind": "游戏资源",
-      "need_login": false,
-      "update_info": "网盘分享",
-      "note": "",
-      "adult": true
-    },
-    {
-      "id": "xlsx-game-67",
-      "name": "【PC】孕ませ!炎のおっばい超工口ソアプリ学園! 汉化+全解锁",
-      "section": "game",
-      "description": "【PC】孕ませ!炎のおっばい超工口ソアプリ学園! 汉化+全解锁",
-      "url": "https://drive.uc.cn/s/be79cf1329024?public=1",
       "tags": [
         "PC",
         "UC 网盘"
@@ -1662,12 +1747,29 @@
       "adult": true
     },
     {
-      "id": "xlsx-game-68",
-      "name": "x064",
+      "id": "xlsx-game-67",
+      "name": "【PC+安卓】AV摄影 IV?AV!! v1.2.1 官中步兵版",
       "section": "game",
-      "description": "x064",
+      "description": "【PC+安卓】AV摄影 IV?AV!! v1.2.1 官中步兵版",
+      "url": "https://drive.uc.cn/s/be79cf1329024?public=1",
+      "tags": [
+        "PC+安卓",
+        "UC 网盘"
+      ],
+      "kind": "游戏资源",
+      "need_login": false,
+      "update_info": "网盘分享",
+      "note": "",
+      "adult": true
+    },
+    {
+      "id": "xlsx-game-68",
+      "name": "【PC】孕ませ!炎のおっばい超工口ソアプリ学園! 汉化+全解锁",
+      "section": "game",
+      "description": "【PC】孕ませ!炎のおっばい超工口ソアプリ学園! 汉化+全解锁",
       "url": "https://pan.xunlei.com/s/VO6iRpkXR7eoojl8LRyNxL_IA1?pwd=fr3x",
       "tags": [
+        "PC",
         "迅雷网盘"
       ],
       "kind": "游戏资源",
@@ -1739,9 +1841,9 @@
     },
     {
       "id": "xlsx-tool-73",
-      "name": "【网站】终末地一图流 · 基质识别（自动识别武器基质）",
+      "name": "【PC】终末地基质小助手（用于自动锁定武器基质）",
       "section": "tool",
-      "description": "【网站】终末地一图流 · 基质识别（自动识别武器基质）",
+      "description": "【PC】终末地基质小助手（用于自动锁定武器基质）",
       "url": "https://ef.yituliu.cn/resources/essence-recognizer/",
       "tags": [
         "PC",
@@ -1828,20 +1930,78 @@
       "note": ""
     },
     {
-      "id": "xlsx-game-79",
-      "name": "【网站】可露希尔小卖部（免费托管明日方舟日常）",
+      "id": "xlsx-tool-79",
+      "name": "【网站】每周都有免费游戏 | Epic游戏商城",
       "section": "tool",
-      "description": "【网站】可露希尔小卖部（免费托管明日方舟日常）",
+      "description": "【网站】每周都有免费游戏 | Epic游戏商城",
       "url": "https://drive.uc.cn/s/1ac5a5afe31b4?public=1",
       "tags": [
         "网站",
-        "UC 网盘"
+        "UC 网盘",
+        "百度网盘",
+        "夸克网盘"
       ],
       "kind": "工具 / 网站",
       "need_login": false,
       "update_info": "长期可用",
       "note": "",
-      "password": "1m42"
+      "links": [
+        {
+          "name": "UC 网盘",
+          "url": "https://drive.uc.cn/s/1ac5a5afe31b4?public=1",
+          "password": "",
+          "label": ""
+        },
+        {
+          "name": "百度网盘",
+          "url": "https://pan.baidu.com/s/1FuUfTDeb0EmGR7TB-gdZsg?pwd=1m42",
+          "password": "1m42",
+          "label": ""
+        },
+        {
+          "name": "夸克网盘",
+          "url": "https://pan.quark.cn/s/4025911af4bc",
+          "password": "",
+          "label": ""
+        }
+      ]
+    },
+    {
+      "id": "xlsx-tool-80",
+      "name": "【网站】可露希尔小卖部（免费托管明日方舟日常）",
+      "section": "tool",
+      "description": "【网站】可露希尔小卖部（免费托管明日方舟日常）",
+      "url": "https://drive.uc.cn/s/f490e83c87fc4?public=1",
+      "tags": [
+        "网站",
+        "UC 网盘",
+        "百度网盘",
+        "夸克网盘"
+      ],
+      "kind": "工具 / 网站",
+      "need_login": false,
+      "update_info": "长期可用",
+      "note": "",
+      "links": [
+        {
+          "name": "UC 网盘",
+          "url": "https://drive.uc.cn/s/f490e83c87fc4?public=1",
+          "password": "",
+          "label": ""
+        },
+        {
+          "name": "百度网盘",
+          "url": "https://pan.baidu.com/s/1f0ypT6nFejWgczAxaLefIg?pwd=m3ax",
+          "password": "m3ax",
+          "label": ""
+        },
+        {
+          "name": "夸克网盘",
+          "url": "https://pan.quark.cn/s/b87f8c253b96",
+          "password": "",
+          "label": ""
+        }
+      ]
     }
   ]
 }

@@ -76,9 +76,20 @@ def read_sheets(xlsx: Path) -> dict[str, dict[int, dict[str, str]]]:
 
 
 def parse_sheet(xml: str, shared: list[str]) -> dict[int, dict[str, str]]:
+    """解析工作表。
+
+    注意：Excel 把空格子写成自闭合标签 `<c r="D5" s="6" t="s"/>`，
+    如果用 `<c ...>(.*?)</c>` 去匹配，会把 `/` 当成属性、并吞掉下一格的值，
+    导致整行列错位。所以这里必须显式区分自闭合与成对标签。
+    """
     rows: dict[int, dict[str, str]] = {}
-    for c in re.finditer(r'<c r="([A-Z]+)(\d+)"([^>]*)>(.*?)</c>', xml, re.S):
+    cell_re = re.compile(
+        r'<c r="([A-Z]+)(\d+)"([^>]*?)(?:/>|>(.*?)</c>)', re.S
+    )
+    for c in cell_re.finditer(xml):
         col, row, attrs, body = c.group(1), int(c.group(2)), c.group(3), c.group(4)
+        if body is None:  # 自闭合 = 空格子
+            continue
         typ = re.search(r't="([^"]+)"', attrs)
         typ = typ.group(1) if typ else "n"
         v = re.search(r"<v>(.*?)</v>", body, re.S)
@@ -140,18 +151,22 @@ def guess_platform_tags(title: str) -> list[str]:
 
 
 def make_item(
-    idx: int, name: str, url: str, password: str, section: str,
+    idx: int, name: str, links: list[dict], section: str,
     subsection: str | None, kind: str, note: str = "", extra_tags: list[str] | None = None,
 ) -> dict:
+    """links 为该资源的全部网盘源，第一个作为主链接。"""
     tags = list(extra_tags or [])
-    if url:
-        tags.append(pan_name(url))
+    for lk in links:
+        if lk["name"] not in tags:
+            tags.append(lk["name"])
+
+    primary = links[0] if links else {"url": "", "password": ""}
     item = {
         "id": f"{IMPORT_PREFIX}{section}-{idx}",
         "name": name[:80],
         "section": section,
         "description": note or name[:100],
-        "url": url,
+        "url": primary["url"],
         "tags": tags[:6],
         "kind": kind,
         "need_login": False,
@@ -160,8 +175,11 @@ def make_item(
     }
     if subsection:
         item["subsection"] = subsection
-    if password:
-        item["password"] = password
+    if primary.get("password"):
+        item["password"] = primary["password"]
+    # 多个网盘源时全部保留，前端渲染成多个按钮
+    if len(links) > 1:
+        item["links"] = links
     return item
 
 
@@ -199,12 +217,11 @@ def import_novel_sheet(rows: dict[int, dict[str, str]]) -> list[dict]:
             continue
 
         # 找出这一行的链接与标题
-        joined = f"{a} {b}"
-        url, password = split_link(joined)
+        links = collect_links([a, b])
         title_src = a if a and not URL_RE.search(a) else ""
         title = clean_title(title_src)
 
-        if not url:
+        if not links:
             # 纯文字行：可能是下一条的标题，也可能是说明文字
             if title:
                 pending_title = title
@@ -221,20 +238,58 @@ def import_novel_sheet(rows: dict[int, dict[str, str]]) -> list[dict]:
             kind = "合集入口"
         items.append(
             make_item(
-                seq, name, url, password, section, subsection, kind,
+                seq, name, links, section, subsection, kind,
                 extra_tags=guess_platform_tags(name),
             )
         )
 
     return items
+
+
+def collect_links(values: list[str]) -> list[dict]:
+    """收集一行里的所有网盘链接。同一资源常同时给百度/UC/夸克多个源。
+
+    提取码可能跟在链接同一格里（"...?pwd=xx 提取码: xx"），
+    也可能只在 URL 参数里，两种都处理。
+    """
+    links: list[dict] = []
+    seen: set[str] = set()
+    for cell in values:
+        if not cell:
+            continue
+        for raw in URL_RE.findall(cell):
+            url = raw.rstrip("#，,。、")
+            if url in seen:
+                continue
+            seen.add(url)
+            # 提取码优先找紧跟在该链接之后的文字
+            tail = cell.split(raw, 1)[1] if raw in cell else ""
+            pw = ""
+            m = PW_RE.search(tail[:40])
+            if m:
+                pw = m.group(1)
+            elif "pwd=" in url:
+                m2 = re.search(r"pwd=([A-Za-z0-9]+)", url)
+                if m2:
+                    pw = m2.group(1)
+            # 同格里链接后面跟的短说明，如"体验版"
+            label = ""
+            lm = re.match(r"\s*([一-鿿]{2,8})", tail)
+            if lm and "提取码" not in lm.group(1):
+                label = lm.group(1)
+            links.append({"name": pan_name(url), "url": url, "password": pw, "label": label})
+    return links
+
+
 def pick_title(values: list[str]) -> str:
     """选标题：优先带【】标记的列，否则取最长的非 URL 文本。
 
     不能简单取最长——游戏块的 B 列常写着很长的解压备注
     （例如 "x006 解压查看视频压缩包解压说明"），比真标题还长。
+    另外 "x047" 这类纯编号不是标题，要排除。
     """
     cands = [clean_title(v) for v in values if v and not URL_RE.match(v.strip())]
-    cands = [c for c in cands if len(c) > 3]
+    cands = [c for c in cands if len(c) > 3 and not re.fullmatch(r"[xXhH]\d{3,4}", c)]
     if not cands:
         return ""
     marked = [c for c in cands if re.search(r"[【\[]", c)]
@@ -244,65 +299,46 @@ def pick_title(values: list[str]) -> str:
 
 
 def import_game_sheet(rows: dict[int, dict[str, str]]) -> list[dict]:
-    """游戏表，两种排版混在一起：
+    """游戏工作表：A 列标题，B 列起是一个或多个网盘链接。
 
-    1. 游戏块：一行 3 格以上，如 B=链接、C=编号(x001)、D=标题 —— 同行配对
-    2. 工具块：一行只有 2 格，B=链接、C=标题，且**该行链接属于上一行的标题** —— 偏移配对
-
-    判据用「非空格子数」：>=3 格是游戏行，正好 2 格(链接+文字)是工具行。
-    偏移规律已用实际页面标题验证：endgear.top=装备精锻助手、steamdb.info=SteamDB、
-    et001.com=外星仔加速器、steampp.net=Watt Toolkit 共 6 处吻合。
+    A 列写着「游戏区」/「工具区」的行是分区标记，切换后续条目的归属。
     """
     items: list[dict] = []
+    section = "game"
     seq = 0
-    pending_title = ""  # 工具块里等待配链接的标题
+
+    marker_map = {"游戏区": "game", "工具区": "tool", "工具": "tool"}
 
     for row in sorted(rows):
         cells = rows[row]
         values = [cells.get(c, "") for c in ("A", "B", "C", "D", "E", "F")]
-        filled = [v for v in values if v]
-        b_cell = cells.get("B", "").strip()
+        a = cells.get("A", "").strip()
 
-        is_tool_row = URL_RE.match(b_cell) and len(filled) == 2
-
-        if is_tool_row:
-            url, password = split_link(b_cell)
-            title = pending_title
-            # 本行的文字留给下一行的链接
-            pending_title = pick_title([v for v in filled if v != b_cell])
-
-            if url and title:
-                seq += 1
-                item = make_item(
-                    seq, title, url, password, "tool", None, "工具 / 网站",
-                    extra_tags=guess_platform_tags(title),
-                )
-                item["update_info"] = "长期可用"
-                # 工具区里的 gal 合集之类仍是成人向内容，同样要标记
-                if re.search(r"gal|galgame|全CG|步兵", title, re.I):
-                    item["adult"] = True
-                items.append(item)
+        # 分区标记行：只有 A 列且是短标记
+        if a in marker_map and len([v for v in values if v]) == 1:
+            section = marker_map[a]
             continue
 
-        joined = " ".join(filled)
-        url, password = split_link(joined)
-        if not url:
-            t = pick_title(values)
-            if t:
-                pending_title = t
+        links = collect_links(values)
+        if not links:
             continue
 
         name = pick_title(values)
         if not name:
             continue
 
-        pending_title = ""
         seq += 1
+        kind = "工具 / 网站" if section == "tool" else "游戏资源"
         item = make_item(
-            seq, name, url, password, "game", None, "游戏资源",
+            seq, name, links, section, None, kind,
             extra_tags=guess_platform_tags(name),
         )
-        if is_adult_game(name):
+        if section == "tool":
+            item["update_info"] = "长期可用"
+            # 工具区里的 gal 合集之类仍是成人向内容
+            if re.search(r"gal|galgame|全CG|步兵", name, re.I):
+                item["adult"] = True
+        elif is_adult_game(name):
             item["adult"] = True
         items.append(item)
 

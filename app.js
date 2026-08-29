@@ -57,6 +57,18 @@
     if (isNaN(d)) return "—";
     return d.toLocaleDateString("zh-CN", { year: "numeric", month: "2-digit", day: "2-digit" });
   };
+  /** 复制到剪贴板，并在按钮上给出反馈。 */
+  async function copyText(text, btn) {
+    const original = "复制";
+    try {
+      await navigator.clipboard.writeText(text);
+      btn.textContent = "已复制";
+    } catch {
+      btn.textContent = "请手动复制";
+    }
+    setTimeout(() => (btn.textContent = original), 1500);
+  }
+
   /** 收敛原始数据，缺字段给安全默认值；未知分区归到 novel 以免丢卡片。 */
   function normalize(raw, index) {
     const section = SECTION_MAP.has(raw.section) && raw.section !== "all" ? raw.section : "novel";
@@ -77,6 +89,12 @@
       note: raw.note || "",
       password: raw.password || "",
       adult: raw.adult === true,
+      // 多网盘源；没有 links 字段时用主链接兜底成单元素数组
+      links: Array.isArray(raw.links) && raw.links.length
+        ? raw.links.filter((l) => l && /^https?:\/\//i.test(l.url))
+        : raw.url
+          ? [{ name: "打开", url: raw.url, password: raw.password || "" }]
+          : [],
     };
   }
 
@@ -198,29 +216,57 @@
     field("updateInfo").textContent = item.updateInfo;
     field("note").textContent = item.note;
 
-    // 提取码：有则显示，点击可复制
+    // 提取码：多个网盘源可能各有各的码，所以放在每个源的按钮旁边
     const pwWrap = field("passwordWrap");
-    if (item.password) {
-      field("password").textContent = item.password;
+    const singlePw = item.links.length === 1 ? item.links[0].password : "";
+    if (singlePw) {
+      field("password").textContent = singlePw;
       const btn = field("copyPw");
-      btn.addEventListener("click", async (e) => {
+      btn.addEventListener("click", (e) => {
         e.stopPropagation();
-        try {
-          await navigator.clipboard.writeText(item.password);
-          btn.textContent = "已复制";
-          setTimeout(() => (btn.textContent = "复制"), 1500);
-        } catch {
-          btn.textContent = "请手动复制";
-        }
+        copyText(singlePw, btn);
       });
     } else {
       pwWrap.remove();
     }
 
-    const link = field("link");
-    // 只放行 http(s)，挡掉 javascript: 之类的伪协议
-    if (/^https?:\/\//i.test(item.url)) link.href = item.url;
-    else link.remove();
+    // 网盘源按钮：一个源一个按钮，各自带提取码
+    const linkBox = field("links");
+    if (item.links.length) {
+      item.links.forEach((lk) => {
+        const row = document.createElement("div");
+        row.className = "link-row";
+
+        const a = document.createElement("a");
+        a.className = "visit-link";
+        a.href = lk.url;
+        a.target = "_blank";
+        a.rel = "noreferrer noopener";
+        a.textContent = (lk.label ? `${lk.name} · ${lk.label}` : lk.name) + " ↗";
+        row.appendChild(a);
+
+        // 多源时每个源的提取码单独给一个复制按钮
+        if (lk.password && item.links.length > 1) {
+          const code = document.createElement("code");
+          code.className = "pw-code";
+          code.textContent = lk.password;
+          row.appendChild(code);
+
+          const cp = document.createElement("button");
+          cp.type = "button";
+          cp.className = "pw-copy";
+          cp.textContent = "复制";
+          cp.addEventListener("click", (e) => {
+            e.stopPropagation();
+            copyText(lk.password, cp);
+          });
+          row.appendChild(cp);
+        }
+        linkBox.appendChild(row);
+      });
+    } else {
+      linkBox.remove();
+    }
 
     const detail = node.querySelector("[data-detail]");
     const toggle = () => {
