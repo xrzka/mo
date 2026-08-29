@@ -659,6 +659,51 @@ h1 {
   .pager-jump { margin-left: 0; }
 }
 
+/* ---------- 回到顶部 / 到底部 ---------- */
+.scroll-dock {
+  position: fixed;
+  right: clamp(12px, 2.5vw, 28px);
+  bottom: clamp(16px, 4vh, 40px);
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.scroll-dock[hidden] { display: none; }
+
+.scroll-btn {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--bg-elevated) 92%, transparent);
+  backdrop-filter: blur(8px);
+  color: var(--text-muted);
+  font-size: 17px;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: var(--shadow);
+  transition: color 0.15s, border-color 0.15s, transform 0.15s;
+}
+.scroll-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  transform: translateY(-2px);
+}
+.scroll-btn[hidden] { display: none; }
+
+@media (max-width: 560px) {
+  .scroll-btn { width: 36px; height: 36px; font-size: 15px; }
+}
+
+/* 尊重系统的减少动效设置 */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .scroll-btn { transition: none; }
+}
+
 /* ---------- 免责声明 + 页脚 ---------- */
 .notice-section {
   margin-top: 44px;

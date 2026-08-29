@@ -450,11 +450,15 @@
     }
   }
 
+  // 由 bindScrollDock() 赋值，用于内容变化后重算悬浮按钮显隐
+  let refreshScrollDock = () => {};
+
   function render() {
     renderTabs();
     renderSubTabs();
     renderFeed();
     $('[data-stat="total"]').textContent = String(allowedItems().length).padStart(2, "0");
+    refreshScrollDock();
   }
   /* ---------- 成年 / 未成年模式 ---------- */
 
@@ -536,6 +540,52 @@
     });
   }
 
+  /** 回到顶部 / 到底部悬浮按钮。页面不够长时整体隐藏。 */
+  function bindScrollDock() {
+    const dock = $("[data-scroll-dock]");
+    const upBtn = $("[data-scroll-top]");
+    const downBtn = $("[data-scroll-bottom]");
+    if (!dock || !upBtn || !downBtn) return;
+
+    const scrollTo = (top) => window.scrollTo({ top, behavior: "smooth" });
+    upBtn.addEventListener("click", () => scrollTo(0));
+    downBtn.addEventListener("click", () =>
+      scrollTo(document.documentElement.scrollHeight)
+    );
+
+    // 按滚动位置决定显示哪个方向，两端各留 120px 余量避免抖动
+    const update = () => {
+      const doc = document.documentElement;
+      const scrolled = window.scrollY;
+      const max = doc.scrollHeight - window.innerHeight;
+
+      if (max < 240) {
+        dock.hidden = true;
+        return;
+      }
+      dock.hidden = false;
+      upBtn.hidden = scrolled < 120;
+      downBtn.hidden = scrolled > max - 120;
+    };
+
+    // 滚动事件用 rAF 节流，避免每帧重复计算
+    let queued = false;
+    const onScroll = () => {
+      if (queued) return;
+      queued = true;
+      requestAnimationFrame(() => {
+        queued = false;
+        update();
+      });
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll, { passive: true });
+    update();
+
+    // 列表内容变化后页面高度会变，需要重算
+    return update;
+  }
+
   /* ---------- 事件绑定 ---------- */
 
   function bindControls() {
@@ -574,6 +624,7 @@
     bindControls();
     bindMode();
     bindNoticeJump();
+    refreshScrollDock = bindScrollDock() || (() => {});
     try {
       const res = await fetch(DATA_URL, { cache: "no-cache" });
       if (!res.ok) throw new Error("HTTP " + res.status);
