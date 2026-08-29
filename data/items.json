@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-29T10:25:51Z",
+  "generated_at": "2026-08-29T11:18:57Z",
   "note": "示例数据。新增资源在 items 数组里加一项即可，section 取值：novel / manga / anime / game / ai",
   "items": [
     {
@@ -571,44 +571,44 @@
     {
       "id": "xlsx-game-1",
       "name": "单击网盘分享就会跳转到对应的游戏资源 为什么有的没链接看右边",
-      "section": "game",
+      "section": "collection",
       "description": "单击网盘分享就会跳转到对应的游戏资源 为什么有的没链接看右边",
       "url": "https://www.kdocs.cn/l/cfGfX4vTMtSO",
       "tags": [
         "金山文档"
       ],
-      "kind": "游戏资源",
+      "kind": "说明",
       "need_login": false,
       "update_info": "网盘分享",
       "note": ""
     },
     {
-      "id": "xlsx-game-2",
-      "name": "视频压缩包解压说明",
-      "section": "game",
-      "description": "视频压缩包解压说明",
+      "id": "xlsx-tool-2",
+      "name": "分享gal上千游戏合集",
+      "section": "tool",
+      "description": "分享gal上千游戏合集",
       "url": "https://drive.uc.cn/s/b5262bb7a2974?public=1",
       "tags": [
         "UC 网盘"
       ],
-      "kind": "游戏资源",
+      "kind": "工具 / 网站",
       "need_login": false,
-      "update_info": "网盘分享",
-      "note": ""
+      "update_info": "长期可用",
+      "note": "",
+      "adult": true
     },
     {
-      "id": "xlsx-game-3",
-      "name": "【双端】末世孤雄(0+1+2+3)",
-      "section": "game",
-      "description": "【双端】末世孤雄(0+1+2+3)",
+      "id": "xlsx-tool-3",
+      "name": "视频压缩包解压说明",
+      "section": "tool",
+      "description": "视频压缩包解压说明",
       "url": "https://www.kdocs.cn/l/csm6NmW4MZsG",
       "tags": [
-        "双端",
         "金山文档"
       ],
-      "kind": "游戏资源",
+      "kind": "工具 / 网站",
       "need_login": false,
-      "update_info": "网盘分享",
+      "update_info": "长期可用",
       "note": ""
     },
     {
@@ -710,18 +710,20 @@
     },
     {
       "id": "xlsx-game-10",
-      "name": "x006 解压查看视频压缩包解压说明",
+      "name": "【双端】死亡诅咒 YL版",
       "section": "game",
-      "description": "x006 解压查看视频压缩包解压说明",
+      "description": "【双端】死亡诅咒 YL版",
       "url": "https://pan.xunlei.com/s/VOn69TbRkPkibMLs0OlcPWQbA1?pwd=e6dh",
       "tags": [
+        "双端",
         "迅雷网盘"
       ],
       "kind": "游戏资源",
       "need_login": false,
       "update_info": "网盘分享",
       "note": "",
-      "password": "e6dh"
+      "password": "e6dh",
+      "adult": true
     },
     {
       "id": "xlsx-game-11",
@@ -876,17 +878,20 @@
     },
     {
       "id": "xlsx-game-20",
-      "name": "x016 下载后后缀改为.zip后使用winrar解压,报错不用管,能解压出来即可, 解压密码mg",
+      "name": "【双端】被我爸NTR了[Ver0.3.0]",
       "section": "game",
-      "description": "x016 下载后后缀改为.zip后使用winrar解压,报错不用管,能解压出来即可, 解压密码mg",
+      "description": "【双端】被我爸NTR了[Ver0.3.0]",
       "url": "https://pan.quark.cn/s/9919df696466",
       "tags": [
+        "双端",
+        "Ver0.3.0",
         "夸克网盘"
       ],
       "kind": "游戏资源",
       "need_login": false,
       "update_info": "网盘分享",
-      "note": ""
+      "note": "",
+      "adult": true
     },
     {
       "id": "xlsx-game-21",
@@ -1394,6 +1399,22 @@
     },
     {
       "id": "xlsx-game-52",
+      "name": "x048",
+      "section": "game",
+      "description": "x048",
+      "url": "https://drive.uc.cn/s/e11230dd04f14?public=1",
+      "tags": [
+        "UC 网盘"
+      ],
+      "kind": "游戏资源",
+      "need_login": false,
+      "update_info": "网盘分享",
+      "note": "",
+      "password": "1ysv",
+      "adult": true
+    },
+    {
+      "id": "xlsx-game-53",
       "name": "【双端】女忍训练师/Naruto: Kunoichi Trainer Ver0.31",
       "section": "game",
       "description": "【双端】女忍训练师/Naruto: Kunoichi Trainer Ver0.31",
@@ -1410,7 +1431,7 @@
       "adult": true
     },
     {
-      "id": "xlsx-game-53",
+      "id": "xlsx-game-54",
       "name": "【PC】月神誓约:苍白的代行者 ルナティア誓約～蒼白の代行者 v1.0正式版+全CG 生肉",
       "section": "game",
       "description": "【PC】月神誓约:苍白的代行者 ルナティア誓約～蒼白の代行者 v1.0正式版+全CG 生肉",
@@ -1427,7 +1448,7 @@
       "adult": true
     },
     {
-      "id": "xlsx-game-54",
+      "id": "xlsx-game-55",
       "name": "【PC】催眠偶像 Hypnotic Idol Ver1.026",
       "section": "game",
       "description": "【PC】催眠偶像 Hypnotic Idol Ver1.026",
@@ -1443,7 +1464,7 @@
       "adult": true
     },
     {
-      "id": "xlsx-game-55",
+      "id": "xlsx-game-56",
       "name": "【PC】29岁的人妻想成为职业coser是否搞错了什么？ Ver1.0.10 官方中文步兵版",
       "section": "game",
       "description": "【PC】29岁的人妻想成为职业coser是否搞错了什么？ Ver1.0.10 官方中文步兵版",
@@ -1459,7 +1480,7 @@
       "adult": true
     },
     {
-      "id": "xlsx-game-56",
+      "id": "xlsx-game-57",
       "name": "【PC】剑侠风尘恋曲 V1.19+DLC 官中步兵版",
       "section": "game",
       "description": "【PC】剑侠风尘恋曲 V1.19+DLC 官中步兵版",
@@ -1475,7 +1496,7 @@
       "adult": true
     },
     {
-      "id": "xlsx-game-57",
+      "id": "xlsx-game-58",
       "name": "【PC】夏日☆盐～童真男处男与处女未亡人さまぁ☆ソルト～童貞と処女の夫婦",
       "section": "game",
       "description": "【PC】夏日☆盐～童真男处男与处女未亡人さまぁ☆ソルト～童貞と処女の夫婦",
@@ -1492,7 +1513,7 @@
       "adult": true
     },
     {
-      "id": "xlsx-game-58",
+      "id": "xlsx-game-59",
       "name": "[PC+安卓]忍者后宫-异族崛起第三章/火影崛起/次影崛起/Jikage Rising Arc 3[Ver2.32a]",
       "section": "game",
       "description": "[PC+安卓]忍者后宫-异族崛起第三章/火影崛起/次影崛起/Jikage Rising Arc 3[Ver2.32a]",
@@ -1509,7 +1530,7 @@
       "adult": true
     },
     {
-      "id": "xlsx-game-59",
+      "id": "xlsx-game-60",
       "name": "【PC+安卓】塞雷卡",
       "section": "game",
       "description": "【PC+安卓】塞雷卡",
@@ -1525,7 +1546,7 @@
       "adult": true
     },
     {
-      "id": "xlsx-game-60",
+      "id": "xlsx-game-61",
       "name": "【PC】寄生男～人妻不知何时已被我寄生～/寄生男 ～人妻はいつの間にか俺に寄生されている～[+全CG存档]",
       "section": "game",
       "description": "【PC】寄生男～人妻不知何时已被我寄生～/寄生男 ～人妻はいつの間にか俺に寄生されている～[+全CG存档]",
@@ -1543,7 +1564,7 @@
       "adult": true
     },
     {
-      "id": "xlsx-game-61",
+      "id": "xlsx-game-62",
       "name": "【PC】三枚神符 三张护身符 三张符 三枚のおふ? v1.2 官方中文版",
       "section": "game",
       "description": "【PC】三枚神符 三张护身符 三张符 三枚のおふ? v1.2 官方中文版",
@@ -1559,7 +1580,7 @@
       "adult": true
     },
     {
-      "id": "xlsx-game-62",
+      "id": "xlsx-game-63",
       "name": "【PC】甜蜜魅魔之家 Sweet Succubus Home V1.1.0 官中步兵版+存档",
       "section": "game",
       "description": "【PC】甜蜜魅魔之家 Sweet Succubus Home V1.1.0 官中步兵版+存档",
@@ -1576,7 +1597,7 @@
       "adult": true
     },
     {
-      "id": "xlsx-game-63",
+      "id": "xlsx-game-64",
       "name": "[安卓]夏日狂想曲",
       "section": "game",
       "description": "[安卓]夏日狂想曲",
@@ -1592,7 +1613,7 @@
       "adult": true
     },
     {
-      "id": "xlsx-game-64",
+      "id": "xlsx-game-65",
       "name": "【PC】The original promise 最初约定的故事 V1.03 官方中文步兵版",
       "section": "game",
       "description": "【PC】The original promise 最初约定的故事 V1.03 官方中文步兵版",
@@ -1609,7 +1630,7 @@
       "adult": true
     },
     {
-      "id": "xlsx-game-65",
+      "id": "xlsx-game-66",
       "name": "【PC+安卓】AV摄影 IV?AV!! v1.2.1 官中步兵版",
       "section": "game",
       "description": "【PC+安卓】AV摄影 IV?AV!! v1.2.1 官中步兵版",
@@ -1625,7 +1646,7 @@
       "adult": true
     },
     {
-      "id": "xlsx-game-66",
+      "id": "xlsx-game-67",
       "name": "【PC】孕ませ!炎のおっばい超工口ソアプリ学園! 汉化+全解锁",
       "section": "game",
       "description": "【PC】孕ませ!炎のおっばい超工口ソアプリ学園! 汉化+全解锁",
@@ -1641,169 +1662,184 @@
       "adult": true
     },
     {
-      "id": "xlsx-game-67",
-      "name": "【PC】ce工具（用于改游戏的数值，比如游戏金币，好感度。）",
-      "section": "game",
-      "description": "【PC】ce工具（用于改游戏的数值，比如游戏金币，好感度。）",
-      "url": "https://drive.uc.cn/s/073aa59008634?public=1",
-      "tags": [
-        "PC",
-        "UC 网盘"
-      ],
-      "kind": "游戏资源",
-      "need_login": false,
-      "update_info": "网盘分享",
-      "note": ""
-    },
-    {
       "id": "xlsx-game-68",
-      "name": "【网站】终末地装备精锻助手（小bug，部分护手被错误分类至配件类型）",
+      "name": "x064",
       "section": "game",
-      "description": "【网站】终末地装备精锻助手（小bug，部分护手被错误分类至配件类型）",
-      "url": "https://drive.uc.cn/s/57129c9e4a024?public=1",
+      "description": "x064",
+      "url": "https://pan.xunlei.com/s/VO6iRpkXR7eoojl8LRyNxL_IA1?pwd=fr3x",
       "tags": [
-        "网站",
-        "UC 网盘"
+        "迅雷网盘"
       ],
       "kind": "游戏资源",
       "need_login": false,
       "update_info": "网盘分享",
       "note": "",
+      "password": "fr3x",
       "adult": true
     },
     {
-      "id": "xlsx-game-69",
-      "name": "【网站】终末地基质规划器（用于选择武器查看对应基质刷取地图）",
-      "section": "game",
-      "description": "【网站】终末地基质规划器（用于选择武器查看对应基质刷取地图）",
+      "id": "xlsx-tool-69",
+      "name": "【PC】翻译工具mtool",
+      "section": "tool",
+      "description": "【PC】翻译工具mtool",
+      "url": "https://drive.uc.cn/s/073aa59008634?public=1",
+      "tags": [
+        "PC",
+        "UC 网盘"
+      ],
+      "kind": "工具 / 网站",
+      "need_login": false,
+      "update_info": "长期可用",
+      "note": ""
+    },
+    {
+      "id": "xlsx-tool-70",
+      "name": "【PC】ce工具（用于改游戏的数值，比如游戏金币，好感度。）",
+      "section": "tool",
+      "description": "【PC】ce工具（用于改游戏的数值，比如游戏金币，好感度。）",
+      "url": "https://drive.uc.cn/s/57129c9e4a024?public=1",
+      "tags": [
+        "PC",
+        "UC 网盘"
+      ],
+      "kind": "工具 / 网站",
+      "need_login": false,
+      "update_info": "长期可用",
+      "note": ""
+    },
+    {
+      "id": "xlsx-tool-71",
+      "name": "【网站】终末地装备精锻助手（小bug，部分护手被错误分类至配件类型）",
+      "section": "tool",
+      "description": "【网站】终末地装备精锻助手（小bug，部分护手被错误分类至配件类型）",
       "url": "https://endgear.top",
       "tags": [
         "网站",
         "网盘"
       ],
-      "kind": "游戏资源",
+      "kind": "工具 / 网站",
       "need_login": false,
-      "update_info": "网盘分享",
+      "update_info": "长期可用",
       "note": ""
     },
     {
-      "id": "xlsx-game-70",
-      "name": "【PC】终末地基质小助手（用于自动锁定武器基质）",
-      "section": "game",
-      "description": "【PC】终末地基质小助手（用于自动锁定武器基质）",
+      "id": "xlsx-tool-72",
+      "name": "【网站】终末地基质规划器（用于选择武器查看对应基质刷取地图）",
+      "section": "tool",
+      "description": "【网站】终末地基质规划器（用于选择武器查看对应基质刷取地图）",
       "url": "https://end.canmoe.com",
+      "tags": [
+        "网站",
+        "网盘"
+      ],
+      "kind": "工具 / 网站",
+      "need_login": false,
+      "update_info": "长期可用",
+      "note": ""
+    },
+    {
+      "id": "xlsx-tool-73",
+      "name": "【网站】终末地一图流 · 基质识别（自动识别武器基质）",
+      "section": "tool",
+      "description": "【网站】终末地一图流 · 基质识别（自动识别武器基质）",
+      "url": "https://ef.yituliu.cn/resources/essence-recognizer/",
       "tags": [
         "PC",
         "网盘"
       ],
-      "kind": "游戏资源",
+      "kind": "工具 / 网站",
       "need_login": false,
-      "update_info": "网盘分享",
+      "update_info": "长期可用",
       "note": ""
     },
     {
-      "id": "xlsx-game-71",
+      "id": "xlsx-tool-74",
       "name": "【AZ/安卓】超卓文本编辑器（备忘录）",
-      "section": "game",
+      "section": "tool",
       "description": "【AZ/安卓】超卓文本编辑器（备忘录）",
-      "url": "https://ef.yituliu.cn/resources/essence-recognizer/",
-      "tags": [
-        "AZ/安卓",
-        "网盘"
-      ],
-      "kind": "游戏资源",
-      "need_login": false,
-      "update_info": "网盘分享",
-      "note": ""
-    },
-    {
-      "id": "xlsx-game-72",
-      "name": "【网站】steam官网（可能不能直接进，要用到下面俩个用来加速才能进）",
-      "section": "game",
-      "description": "【网站】steam官网（可能不能直接进，要用到下面俩个用来加速才能进）",
       "url": "https://drive.uc.cn/s/cfb9a694ae694?public=1",
       "tags": [
-        "网站",
+        "AZ/安卓",
         "UC 网盘"
       ],
-      "kind": "游戏资源",
+      "kind": "工具 / 网站",
       "need_login": false,
-      "update_info": "网盘分享",
+      "update_info": "长期可用",
       "note": ""
     },
     {
-      "id": "xlsx-game-73",
-      "name": "【网站】steamDB（用于查询游戏不同地区的价格和史低价）",
-      "section": "game",
-      "description": "【网站】steamDB（用于查询游戏不同地区的价格和史低价）",
+      "id": "xlsx-tool-75",
+      "name": "【网站】steam官网（可能不能直接进，要用到下面俩个用来加速才能进）",
+      "section": "tool",
+      "description": "【网站】steam官网（可能不能直接进，要用到下面俩个用来加速才能进）",
       "url": "https://store.steampowered.com/0?l=schinese",
       "tags": [
         "网站",
         "网盘"
       ],
-      "kind": "游戏资源",
+      "kind": "工具 / 网站",
       "need_login": false,
-      "update_info": "网盘分享",
+      "update_info": "长期可用",
       "note": ""
     },
     {
-      "id": "xlsx-game-74",
-      "name": "【双端】外星仔加速器(免费加速steam)",
-      "section": "game",
-      "description": "【双端】外星仔加速器(免费加速steam)",
+      "id": "xlsx-tool-76",
+      "name": "【网站】steamDB（用于查询游戏不同地区的价格和史低价）",
+      "section": "tool",
+      "description": "【网站】steamDB（用于查询游戏不同地区的价格和史低价）",
       "url": "https://steamdb.info",
-      "tags": [
-        "双端",
-        "网盘"
-      ],
-      "kind": "游戏资源",
-      "need_login": false,
-      "update_info": "网盘分享",
-      "note": ""
-    },
-    {
-      "id": "xlsx-game-75",
-      "name": "【PC】Watt Toolkit/steam++（免费加速steam和github）",
-      "section": "game",
-      "description": "【PC】Watt Toolkit/steam++（免费加速steam和github）",
-      "url": "https://www.et001.com",
-      "tags": [
-        "PC",
-        "网盘"
-      ],
-      "kind": "游戏资源",
-      "need_login": false,
-      "update_info": "网盘分享",
-      "note": ""
-    },
-    {
-      "id": "xlsx-game-76",
-      "name": "【网站】每周都有免费游戏 | Epic游戏商城",
-      "section": "game",
-      "description": "【网站】每周都有免费游戏 | Epic游戏商城",
-      "url": "https://steampp.net",
       "tags": [
         "网站",
         "网盘"
       ],
-      "kind": "游戏资源",
+      "kind": "工具 / 网站",
       "need_login": false,
-      "update_info": "网盘分享",
+      "update_info": "长期可用",
       "note": ""
     },
     {
-      "id": "xlsx-game-77",
+      "id": "xlsx-tool-77",
+      "name": "【双端】外星仔加速器(免费加速steam)",
+      "section": "tool",
+      "description": "【双端】外星仔加速器(免费加速steam)",
+      "url": "https://www.et001.com",
+      "tags": [
+        "双端",
+        "网盘"
+      ],
+      "kind": "工具 / 网站",
+      "need_login": false,
+      "update_info": "长期可用",
+      "note": ""
+    },
+    {
+      "id": "xlsx-tool-78",
+      "name": "【PC】Watt Toolkit/steam++（免费加速steam和github）",
+      "section": "tool",
+      "description": "【PC】Watt Toolkit/steam++（免费加速steam和github）",
+      "url": "https://steampp.net",
+      "tags": [
+        "PC",
+        "网盘"
+      ],
+      "kind": "工具 / 网站",
+      "need_login": false,
+      "update_info": "长期可用",
+      "note": ""
+    },
+    {
+      "id": "xlsx-game-79",
       "name": "【网站】可露希尔小卖部（免费托管明日方舟日常）",
-      "section": "game",
+      "section": "tool",
       "description": "【网站】可露希尔小卖部（免费托管明日方舟日常）",
       "url": "https://drive.uc.cn/s/1ac5a5afe31b4?public=1",
       "tags": [
         "网站",
         "UC 网盘"
       ],
-      "kind": "游戏资源",
+      "kind": "工具 / 网站",
       "need_login": false,
-      "update_info": "网盘分享",
+      "update_info": "长期可用",
       "note": "",
       "password": "1m42"
     }

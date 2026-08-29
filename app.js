@@ -32,6 +32,7 @@
     },
     { id: "anime", label: "动画", icon: "🎬" },
     { id: "game", label: "游戏", icon: "🎮" },
+    { id: "tool", label: "工具", icon: "🔧" },
     { id: "ai", label: "AI", icon: "✦" },
     { id: "collection", label: "收录", icon: "🗂" },
   ];

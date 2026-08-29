@@ -41,6 +41,19 @@ python sync_ai_section.py             # 确认后写入
 
 游戏区的标记规则在 `import_from_xlsx.py` 的 `GAME_SAFE_KEYWORDS` 里：白名单内（工具、加速器、资讯站等）不标记，**白名单之外的游戏条目一律标记为成人向**。宁可多标不可漏标，新增游戏资源时如果是正常内容，把关键词加进白名单。
 
+## xlsx 导入的排版陷阱
+
+游戏工作表里混了两种排版，`import_from_xlsx.py` 按「非空格子数」区分：
+
+- **游戏行**（≥3 格）：`B=链接  C=编号  D=标题` —— 同行配对
+- **工具行**（正好 2 格）：`B=链接  C=标题`，但该行的**链接属于上一行的标题** —— 偏移配对
+
+第二种如果按同行配对会全体错位一格。修正后的配对已用实际页面标题验证：
+`endgear.top`=装备精锻助手、`end.canmoe.com`=CEP 规划器、`steamdb.info`=SteamDB、
+`et001.com`=外星仔加速器、`steampp.net`=Watt Toolkit，均吻合。
+
+改这块逻辑后务必重新验证，抓一下各 URL 的 `<title>` 跟条目名对比。
+
 ## 怎么加资源
 
 编辑 `data/items.json`，在 `items` 数组里加一项：
@@ -60,7 +73,7 @@ python sync_ai_section.py             # 确认后写入
 }
 ```
 
-`section` 取值：`novel` 小说、`manga` 漫画、`anime` 动画、`game` 游戏、`ai` AI。填错或留空会自动归到小说分区，不会丢卡片。
+`section` 取值：`novel` 小说、`manga` 漫画、`anime` 动画、`game` 游戏、`tool` 工具、`ai` AI、`collection` 收录。填错或留空会自动归到小说分区，不会丢卡片。
 
 `tags` 最多显示 6 个，`icon` 可选，不填则用分区默认图标。
 

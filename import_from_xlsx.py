@@ -227,27 +227,76 @@ def import_novel_sheet(rows: dict[int, dict[str, str]]) -> list[dict]:
         )
 
     return items
+def pick_title(values: list[str]) -> str:
+    """选标题：优先带【】标记的列，否则取最长的非 URL 文本。
+
+    不能简单取最长——游戏块的 B 列常写着很长的解压备注
+    （例如 "x006 解压查看视频压缩包解压说明"），比真标题还长。
+    """
+    cands = [clean_title(v) for v in values if v and not URL_RE.match(v.strip())]
+    cands = [c for c in cands if len(c) > 3]
+    if not cands:
+        return ""
+    marked = [c for c in cands if re.search(r"[【\[]", c)]
+    if marked:
+        return max(marked, key=len)
+    return max(cands, key=len)
+
+
 def import_game_sheet(rows: dict[int, dict[str, str]]) -> list[dict]:
-    """游戏表：链接和标题散落在 B/C/D/E 列，取该行第一个 URL 和最长的非 URL 文本。"""
+    """游戏表，两种排版混在一起：
+
+    1. 游戏块：一行 3 格以上，如 B=链接、C=编号(x001)、D=标题 —— 同行配对
+    2. 工具块：一行只有 2 格，B=链接、C=标题，且**该行链接属于上一行的标题** —— 偏移配对
+
+    判据用「非空格子数」：>=3 格是游戏行，正好 2 格(链接+文字)是工具行。
+    偏移规律已用实际页面标题验证：endgear.top=装备精锻助手、steamdb.info=SteamDB、
+    et001.com=外星仔加速器、steampp.net=Watt Toolkit 共 6 处吻合。
+    """
     items: list[dict] = []
     seq = 0
+    pending_title = ""  # 工具块里等待配链接的标题
 
     for row in sorted(rows):
         cells = rows[row]
         values = [cells.get(c, "") for c in ("A", "B", "C", "D", "E", "F")]
-        joined = " ".join(v for v in values if v)
+        filled = [v for v in values if v]
+        b_cell = cells.get("B", "").strip()
 
-        url, password = split_link(joined)
-        if not url:
+        is_tool_row = URL_RE.match(b_cell) and len(filled) == 2
+
+        if is_tool_row:
+            url, password = split_link(b_cell)
+            title = pending_title
+            # 本行的文字留给下一行的链接
+            pending_title = pick_title([v for v in filled if v != b_cell])
+
+            if url and title:
+                seq += 1
+                item = make_item(
+                    seq, title, url, password, "tool", None, "工具 / 网站",
+                    extra_tags=guess_platform_tags(title),
+                )
+                item["update_info"] = "长期可用"
+                # 工具区里的 gal 合集之类仍是成人向内容，同样要标记
+                if re.search(r"gal|galgame|全CG|步兵", title, re.I):
+                    item["adult"] = True
+                items.append(item)
             continue
 
-        # 标题取该行最长的非 URL 文本
-        candidates = [clean_title(v) for v in values if v and not URL_RE.match(v.strip())]
-        candidates = [c for c in candidates if len(c) > 4 and not c.lower().startswith("http")]
-        name = max(candidates, key=len) if candidates else ""
+        joined = " ".join(filled)
+        url, password = split_link(joined)
+        if not url:
+            t = pick_title(values)
+            if t:
+                pending_title = t
+            continue
+
+        name = pick_title(values)
         if not name:
             continue
 
+        pending_title = ""
         seq += 1
         item = make_item(
             seq, name, url, password, "game", None, "游戏资源",
