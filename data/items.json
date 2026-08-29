@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-29T04:20:00Z",
+  "generated_at": "2026-08-29T07:14:49Z",
   "note": "示例数据。新增资源在 items 数组里加一项即可，section 取值：novel / manga / anime / game / ai",
   "items": [
     {
@@ -166,7 +166,7 @@
       "tags": [
         "长期免费",
         "DeepSeek",
-        "无赠送无签到"
+        "不定时开放"
       ],
       "kind": "AI API 中转站",
       "need_login": true,

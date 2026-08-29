@@ -12,6 +12,24 @@
 | `data/items.json` | 资源数据，目前是 5 条示例 |
 | `.nojekyll` | 关掉 Jekyll，静态文件原样输出 |
 
+## AI 分区自动同步
+
+AI 分区的中转站数据不要手改，它由中转站榜单站同步而来。数据源是
+`../relay_board_site/data/resources.json`，改完那边跑一次：
+
+```bash
+cd mo_site
+python sync_ai_section.py --dry-run   # 先看会改什么
+python sync_ai_section.py             # 确认后写入
+```
+
+脚本会打印新增、移除、字段级变更明细。同步生成的条目 id 统一带 `relay-` 前缀，
+脚本只覆盖这些；**其他分区，以及 AI 分区里 id 不带 `relay-` 前缀的手工条目，都不会被动。**
+所以你想往 AI 分区加非中转站的资源，正常加就行，用别的 id 即可。
+
+榜单站数据为空时脚本会中止，避免误清空整个分区。写入走临时文件再替换，
+中途出错不会把 `items.json` 写坏。
+
 ## 怎么加资源
 
 编辑 `data/items.json`，在 `items` 数组里加一项：
