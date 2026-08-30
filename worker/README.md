@@ -5,18 +5,28 @@
 
 ## 当前部署状态
 
-**已部署，站点跑在全站模式。**
+**已部署，站点跑在全站模式。同一份逻辑挂在两个入口。**
 
 | 项目 | 值 |
 | --- | --- |
-| Worker 地址 | `https://mo-stats.werneruszcb71.workers.dev` |
+| 主入口（访客走这个） | `https://mo-stats.pages.dev` |
+| 备用入口 | `https://mo-stats.werneruszcb71.workers.dev` |
 | Cloudflare 账号 | `werneruszcb71@gmail.com` |
 | Account ID | `2282ef506abf2f1af6d4ddc4a25988af` |
 | D1 数据库 | `mo-stats`（区域 WNAM） |
 | database_id | `784254ea-5aa2-415c-bfd3-945b9cc4bd67` |
 | 定时清理 | 每天 03:17 UTC |
 
-地址已填进上一级的 `config.js`。要退回本机模式，把 `statsApi` 改成空字符串即可。
+**为什么有两个入口。** `*.workers.dev` 在国内被墙 —— DNS 被污染（解析到
+`31.13.95.48` 这种无关地址），拿到真实 IP `188.114.96.2` 直连也不通，
+同 IP 换个普通 SNI 同样不通，所以是 IP 段级别的封锁。访客的浏览器连不上，
+统计会静默退回本机模式。`*.pages.dev` 实测可以直连（20 次 19 通），
+所以主入口用它。
+
+两个入口读写**同一个 D1 库**，数据完全一致。`pages/functions/[[path]].js`
+直接 import `../../index.js`，没有第二份实现 —— 那份有测试盯着。
+
+`config.js` 里 `statsApi` 是数组，前端按顺序试，第一个通的就用。
 
 wrangler 的登录凭据和日志都在 `D:\local_translate_tool\wrangler_home`，不在 C 盘 ——
 用 `./wr.sh` 包装脚本跑所有 wrangler 命令来保证这一点（它设了 `XDG_CONFIG_HOME`
@@ -24,6 +34,15 @@ wrangler 的登录凭据和日志都在 `D:\local_translate_tool\wrangler_home`�
 
 **不部署也能用。** 不配的话前端走本机模式：点击数记在你自己浏览器的
 localStorage 里，排行榜和排序都正常，但只反映你这台设备，访问人数显示为不可用。
+
+### 更新 Pages 入口
+
+```bash
+cd worker/pages
+../wr.sh pages deploy
+```
+
+Worker 入口那边是 `cd worker && ./wr.sh deploy`。改了 `index.js` 要两边都发。
 
 ## 两种模式的差别
 
@@ -76,6 +95,18 @@ npm install -g wrangler        # 装过就跳过（装在 D:\npm-global）
 改用 `--command` 逐条建表就绕过了，`schema.sql` 里的语句一句句执行即可。
 `--command` 走的是另一个接口，稳定得多。
 
+**`*.workers.dev` 在国内不可达。** 这个坑最费时间。表现是浏览器里统计一直
+显示「本机统计」，看起来像后端没部署好，其实接口是通的 —— 只有能翻墙的网络
+能连上。排查路径：DNS 查到 `31.13.95.48`（污染），DoH 查到真实 IP
+`188.114.96.2`，直连真实 IP 超时，同 IP 换普通 SNI 也超时 → IP 段封锁，
+不是 SNI 封锁，也不是我的代码问题。解法是加一个 `pages.dev` 入口。
+
+**国内直连 pages.dev 的 TLS 握手偶发超时。** 实测首次加载约 20% 会失败。
+前端的 `pull()` 因此改成整轮候选跑完还失败就再重试一轮，命令行测试脚本
+`test_live.py` 也带了退避重试。加重试后真浏览器 8/8 都进全站模式。
+另外降级到本机模式后，点击仍会串行补报到候选地址，所以那 20% 的抖动
+不会导致丢数据。
+
 ### 可选：开限流
 
 不绑 KV 也能跑，只是没有防刷。要开的话：
@@ -90,17 +121,19 @@ npm install -g wrangler        # 装过就跳过（装在 D:\npm-global）
 ## 验证部署
 
 ```bash
-curl https://mo-stats.werneruszcb71.workers.dev/api/stats
+curl https://mo-stats.pages.dev/api/stats
 ```
 
 应该返回 `{"clicks":{...},"visitors":{...},"buckets":{...}}`。刚部署时全是空的。
 
-注意 `*.workers.dev` 在国内可能需要代理才能访问 —— 我验证时直连超时，走本地
-代理正常。这只影响你用命令行测接口，不影响访客：浏览器里的请求是从访客自己的
-网络发出的，能打开站点就能上报。
+备用入口要带代理才测得通：
 
-前端有兜底：接口挂了、域名写错了、超时了，都会自动退回本机模式，页面不会白屏。
-这条路径有测试覆盖（`test_browser.py` 的「后端不可用时降级」）。
+```bash
+curl --proxy http://127.0.0.1:7890 https://mo-stats.werneruszcb71.workers.dev/api/stats
+```
+
+前端有兜底：所有地址都不通时会自动退回本机模式，页面不会白屏。
+这条路径有测试覆盖（`test_browser.py` 的「后端全都不可用时降级」）。
 
 ## 接口
 
@@ -111,8 +144,8 @@ curl https://mo-stats.werneruszcb71.workers.dev/api/stats
 | POST | `/api/visit` | `{}`，当天访问人数 +1（去重后） |
 
 写接口只接受 `ALLOWED_ORIGINS`（`index.js` 顶部）里的来源，默认只有
-`https://xrzka.github.io`。换域名要改这里。读接口不限来源，方便你直接在
-浏览器里看数字。
+`https://xrzka.github.io`。换域名要改这里，改完两个入口都要重新部署。
+读接口不限来源，方便你直接在浏览器里看数字。
 
 ## 几个设计决定
 
@@ -148,19 +181,20 @@ node test_buckets.mjs            # 桶名算法、id 校验
 node test_frontend_parity.mjs    # 前后端桶名一致性、本机模式分桶、真实数据 id 合法性
 node test_selectors.mjs          # app.js 用的选择器在 index.html 里都存在
 node test_worker.mjs             # Worker 逻辑（真 SQL，node:sqlite 内存库当 D1）
-python test_browser.py           # 真 Chromium 端到端，含全站模式和降级
-python test_live.py --proxy http://127.0.0.1:7890   # 打已部署的真接口
+python test_browser.py           # 真 Chromium 端到端，含多地址回退、重试、降级
+python test_live.py              # 打线上真接口（默认 pages.dev，可直连）
+python test_live.py --api https://mo-stats.werneruszcb71.workers.dev --proxy http://127.0.0.1:7890
 ```
 
 `test_worker.mjs` 用 `node:sqlite`（Node 22+ 内置）跑真实 SQL，覆盖并发计数、
 访客去重、CORS、限流、注入串拦截、定时清理、榜单截断。`test_browser.py`
-用 Playwright 起真浏览器，本地 HTTP 桩假装 Worker，覆盖点击写入、跨天分桶、
-排行榜定位、未成年模式过滤、后端挂掉时降级 —— 它会把 `config.js` 路由桩掉，
-所以结果不依赖真实 Worker 通不通。
+用 Playwright 起真浏览器，本地 HTTP 桩假装后端，覆盖点击写入、跨天分桶、
+排行榜定位、未成年模式过滤、多地址回退、首轮失败重试、降级后补报、
+全部不通时降级 —— 它会把 `config.js` 路由桩掉，所以结果不依赖真实网络。
 
 `test_live.py` 打的是线上真接口，会往 D1 写一条 `live-smoke-<时间戳>` 再删掉。
 它必须伪装浏览器 UA：Cloudflare 边缘的机器人防护会用 403 挡 `Python-urllib`
-这类默认 UA，那一层在 Worker 之前，跟我们的代码无关。
+这类默认 UA，那一层在我们的代码之前。
 
 **两个已知局限：**
 
