@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-30T18:10:02Z",
+  "generated_at": "2026-08-30T19:02:06Z",
   "note": "示例数据。新增资源在 items 数组里加一项即可，section 取值：novel / manga / anime / game / ai",
   "items": [
     {
@@ -2029,12 +2029,13 @@
       "url": "https://tabitoken.com/sign-up?aff=Wm9B",
       "tags": [
         "注册送$120",
-        "可签到"
+        "可签到",
+        "勿只签到"
       ],
       "kind": "AI API 中转站",
       "need_login": true,
       "update_info": "每日可签到",
-      "note": "可用模型：claude-opus-4.8、claude-opus-5。"
+      "note": "官方未公布闲置封号规则。同类公益站有过「只签到不使用」被封的先例，建议签到之余保持实际调用。 可用模型：claude-opus-4.8、claude-opus-5。"
     },
     {
       "id": "relay-kktoken",
@@ -2046,12 +2047,13 @@
         "注册送$100",
         "签到$20",
         "需代理",
-        "GitHub 满一年"
+        "GitHub 满一年",
+        "勿只签到"
       ],
       "kind": "AI API 中转站",
       "need_login": true,
       "update_info": "每日可签到",
-      "note": "GitHub 账号需注册满1年以上。 该站无法直连，需自备网络代理。 可用模型：claude-opus-4.8、claude-opus-5。"
+      "note": "GitHub 账号需注册满1年以上。 该站无法直连，需自备网络代理。 官方未公布闲置封号规则。同类公益站有过「只签到不使用」被封的先例，建议签到之余保持实际调用。 可用模型：claude-opus-4.8、claude-opus-5。"
     },
     {
       "id": "relay-justwoker",
@@ -2062,12 +2064,13 @@
       "tags": [
         "注册送$90",
         "签到$20",
-        "GitHub 满一年"
+        "GitHub 满一年",
+        "勿只签到"
       ],
       "kind": "AI API 中转站",
       "need_login": true,
       "update_info": "每日可签到",
-      "note": "GitHub 账号需注册满1年以上。 可用模型：claude-opus-4.8、claude-opus-5。"
+      "note": "GitHub 账号需注册满1年以上。 官方未公布闲置封号规则。同类公益站有过「只签到不使用」被封的先例，建议签到之余保持实际调用。 可用模型：claude-opus-4.8、claude-opus-5。"
     },
     {
       "id": "relay-gorouter",
@@ -2077,12 +2080,13 @@
       "url": "https://gorouter.app/sign-up?aff=qhON",
       "tags": [
         "注册送$70",
-        "可签到"
+        "可签到",
+        "闲置封号"
       ],
       "kind": "AI API 中转站",
       "need_login": true,
       "update_info": "每日可签到",
-      "note": "可用模型：claude-opus-5。"
+      "note": "曾因长期只签到、不实际调用被封号。改为每日签到 + 多号轮流实际使用后至今正常。 可用模型：claude-opus-5。"
     },
     {
       "id": "relay-true-sota",
