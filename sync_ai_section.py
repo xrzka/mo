@@ -30,7 +30,8 @@ def currency_symbol(code: str | None) -> str:
 
 def build_tags(relay: dict) -> list[str]:
     """把额度、签到、倍率、网络与账号要求压成短标签，卡片上最多显示 6 个。"""
-    tags: list[str] = []
+    quota: list[str] = []   # 额度类：注册送 / 签到 / 倍率
+    limits: list[str] = []  # 门槛类：需代理 / GitHub 年限
     cur = currency_symbol(relay.get("bonus_currency"))
     benefits = relay.get("benefit_flags") or []
 
@@ -38,27 +39,32 @@ def build_tags(relay: dict) -> list[str]:
     checkin_bonus = relay.get("checkin_bonus")
 
     if register_bonus:
-        tags.append(f"注册送{cur}{register_bonus}")
+        quota.append(f"注册送{cur}{register_bonus}")
     if checkin_bonus:
-        tags.append(f"签到{cur}{checkin_bonus}")
+        quota.append(f"签到{cur}{checkin_bonus}")
     elif "checkin" in benefits:
         # 支持签到但没给具体额度
-        tags.append("可签到")
+        quota.append("可签到")
 
     multiplier = relay.get("displayed_multiplier")
     if isinstance(multiplier, (int, float)) and multiplier > 0:
-        tags.append(f"倍率{multiplier:g}")
+        quota.append(f"倍率{multiplier:g}")
 
     if relay.get("direct_connect") is False:
-        tags.append("需代理")
+        limits.append("需代理")
     if relay.get("github_age_required"):
-        tags.append("GitHub 满一年")
+        limits.append("GitHub 满一年")
 
-    if not tags:
-        # 没有额度/倍率信息的站（例如纯免费站），退回用榜单站自带的标签
-        tags = [str(t) for t in (relay.get("site_tags") or []) if t] or ["免费使用"]
+    # 没有额度信息的站（纯免费站）拿榜单站自带的标签当主描述。
+    # 注意不能只在 quota+limits 都空时才回退 —— 免费站往往也需要代理，
+    # 那样标签就只剩一个「需代理」，站点的实际卖点全丢了。
+    if not quota:
+        site_tags = [str(t) for t in (relay.get("site_tags") or []) if t]
+        # 榜单站的标签里可能已经写了「需代理」，去重避免重复显示
+        site_tags = [t for t in site_tags if t not in limits]
+        quota = site_tags or ["免费使用"]
 
-    return tags[:6]
+    return (quota + limits)[:6]
 
 
 def build_note(relay: dict) -> str:
