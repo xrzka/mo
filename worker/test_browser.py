@@ -52,6 +52,8 @@ class StatsStub(http.server.BaseHTTPRequestHandler):
 
     hits = {}
     visits = 0
+    # 需要各周期人数不同时设成 {"day":3,...}，默认所有周期都回 visits
+    per_period = None
 
     def _cors(self):
         self.send_header("Access-Control-Allow-Origin", "*")
@@ -65,10 +67,15 @@ class StatsStub(http.server.BaseHTTPRequestHandler):
 
     def do_GET(self):
         periods = ["day", "week", "month", "year", "all"]
+        visitors = (
+            dict(StatsStub.per_period)
+            if StatsStub.per_period
+            else {p: StatsStub.visits for p in periods}
+        )
         body = json.dumps(
             {
                 "clicks": {p: dict(StatsStub.hits) for p in periods},
-                "visitors": {p: StatsStub.visits for p in periods},
+                "visitors": visitors,
             }
         ).encode()
         self.send_response(200)
@@ -411,6 +418,95 @@ def test_degraded_click_reported(page, base, stub_port):
           page.evaluate("() => localStorage.getItem('mo-hits-v1') !== null"))
 
 
+def stats_tabs(page):
+    """返回排行榜周期标签的 (文字, 是否选中) 列表。"""
+    return page.eval_on_selector_all(
+        "[data-stats-tabs] .stats-tab",
+        "els => els.map(e => [e.textContent, e.getAttribute('aria-selected') === 'true'])",
+    )
+
+
+def test_period_tabs(page, base):
+    """周期标签切换：高亮要跟着走，榜单数据要跟着换。
+
+    这里盯的是一个真实出过的 bug：点标签只调了 renderStats() 没重画标签栏，
+    数据其实换了但高亮还留在「今日」上，看起来像点了没反应。
+    """
+    print("\n--- 周期标签切换 ---")
+    stub_config(page, "")
+    page.goto(base, wait_until="networkidle")
+
+    # 造数据：今日 3 次给 A，本月 7 次给 B，两个周期的榜单内容不同
+    page.evaluate(
+        """() => {
+            const pad = n => String(n).padStart(2, '0');
+            const d = new Date();
+            const day = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+            const month = `${d.getFullYear()}-${pad(d.getMonth()+1)}`;
+            localStorage.setItem('mo-hits-v1', JSON.stringify({
+                day:   { [day]:   { 'relay-agentrouter': 3 } },
+                month: { [month]: { 'relay-kktoken': 7 } },
+            }));
+        }"""
+    )
+    page.reload(wait_until="networkidle")
+    open_stats(page)
+
+    tabs = stats_tabs(page)
+    check("默认选中今日", tabs[0][1] is True and not any(t[1] for t in tabs[1:]),
+          str([t for t in tabs]))
+    rows = rank_rows(page)
+    check("今日榜显示 3 次", rows and rows[0]["n"] == 3, json.dumps(rows, ensure_ascii=False)[:100])
+
+    page.click('[data-stats-tabs] button:has-text("本月")')
+    page.wait_for_timeout(300)
+
+    tabs = stats_tabs(page)
+    sel = [t[0] for t in tabs if t[1]]
+    check("高亮跟着切到本月", sel == ["本月"], str(sel))
+    rows = rank_rows(page)
+    check("本月榜显示 7 次", rows and rows[0]["n"] == 7, json.dumps(rows, ensure_ascii=False)[:100])
+
+    # 切到没有数据的周期，应显示带周期名的空状态
+    page.click('[data-stats-tabs] button:has-text("本周")')
+    page.wait_for_timeout(300)
+    sel = [t[0] for t in stats_tabs(page) if t[1]]
+    check("高亮切到本周", sel == ["本周"], str(sel))
+    check("空周期显示占位", page.is_visible("[data-stats-empty]"))
+    empty = page.text_content("[data-stats-empty]")
+    check("空状态带周期名", "本周" in empty, empty.strip())
+
+    # 五个标签逐个点一遍，确认都能选中
+    for label in ["今日", "本周", "本月", "本年", "累计"]:
+        page.click(f'[data-stats-tabs] button:has-text("{label}")')
+        page.wait_for_timeout(150)
+        sel = [t[0] for t in stats_tabs(page) if t[1]]
+        check(f"标签「{label}」可选中", sel == [label], str(sel))
+
+
+def test_visitors_follow_period(page, base, stub_port):
+    """访问人数那行要跟着周期变，否则切标签时它一动不动像是坏了。"""
+    print("\n--- 访问人数跟随周期 ---")
+    StatsStub.hits.clear()
+    StatsStub.visits = 0
+    StatsStub.per_period = {"day": 3, "week": 11, "month": 25, "year": 40, "all": 55}
+    stub_config(page, f"http://127.0.0.1:{stub_port}")
+    page.goto(base, wait_until="networkidle")
+    page.wait_for_timeout(1200)
+    open_stats(page)
+
+    txt = page.text_content("[data-stats-visitors]")
+    check("默认显示今日人数", "今日访问人数 3 人" in txt, txt.strip()[:70])
+
+    page.click('[data-stats-tabs] button:has-text("累计")')
+    page.wait_for_timeout(300)
+    txt = page.text_content("[data-stats-visitors]")
+    check("切到累计后显示累计人数", "累计访问人数 55 人" in txt, txt.strip()[:70])
+    check("仍保留五周期对照", "本月 25" in txt, txt.strip()[-50:])
+
+    StatsStub.per_period = None
+
+
 def test_api_down(page, base):
     print("\n--- 后端全都不可用时降级 ---")
     # 两个地址都连不上，模拟 Worker 挂掉或整体被网络挡住
@@ -444,8 +540,16 @@ def main():
             test_adult_filter(page, base)
             ctx.close()
 
+            ctx = browser.new_context()
+            test_period_tabs(ctx.new_page(), base)
+            ctx.close()
+
             ctx = browser.new_context()  # 干净的 localStorage
             test_site_mode(ctx.new_page(), base, stub_port)
+            ctx.close()
+
+            ctx = browser.new_context()
+            test_visitors_follow_period(ctx.new_page(), base, stub_port)
             ctx.close()
 
             ctx = browser.new_context()

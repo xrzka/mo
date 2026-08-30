@@ -757,6 +757,9 @@
       btn.textContent = p.label;
       btn.addEventListener("click", () => {
         state.statsPeriod = p.id;
+        // 必须重画标签栏，否则高亮还留在原来那个周期上 ——
+        // 榜单数据其实换了，但看起来像是点了没反应。
+        renderStatsTabs();
         renderStats();
       });
       bar.appendChild(btn);
@@ -786,6 +789,11 @@
       .slice(0, RANK_LIMIT);
 
     $("[data-stats-empty]").hidden = ranked.length > 0;
+    if (!ranked.length) {
+      // 带上周期名，否则切到空周期时看不出是「这个周期没数据」还是「坏了」
+      const label = (PERIODS.find((p) => p.id === state.statsPeriod) || {}).label || "";
+      $("[data-stats-empty]").textContent = `${label}还没有点击记录。`;
+    }
 
     const top = ranked.length ? ranked[0].n : 0;
     ranked.forEach((r, i) => {
@@ -826,7 +834,13 @@
     if (vis) {
       if (stats.mode === "site" && stats.visitors) {
         const v = stats.visitors;
-        vis.textContent = `访问人数：今日 ${v.day ?? "—"} · 本周 ${v.week ?? "—"} · 本月 ${v.month ?? "—"} · 本年 ${v.year ?? "—"} · 累计 ${v.all ?? "—"}`;
+        // 当前周期的数字单独拎出来放前面，五个周期的全量跟在后面做对照
+        const cur = (PERIODS.find((p) => p.id === state.statsPeriod) || {}).label || "";
+        const curN = v[state.statsPeriod];
+        vis.textContent =
+          `${cur}访问人数 ${curN ?? "—"} 人　|　` +
+          `今日 ${v.day ?? "—"} · 本周 ${v.week ?? "—"} · 本月 ${v.month ?? "—"} · ` +
+          `本年 ${v.year ?? "—"} · 累计 ${v.all ?? "—"}`;
       } else {
         vis.textContent = "访问人数需要后端支持，当前未启用（见 worker/README.md）。";
       }
