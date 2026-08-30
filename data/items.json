@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-30T17:24:37Z",
+  "generated_at": "2026-08-30T18:10:02Z",
   "note": "示例数据。新增资源在 items 数组里加一项即可，section 取值：novel / manga / anime / game / ai",
   "items": [
     {
@@ -2132,6 +2132,21 @@
       "need_login": true,
       "update_info": "不定时开放",
       "note": "该站无法直连，需自备网络代理。 可用模型：image2（图片生成）、gpt-5.5-mini。"
+    },
+    {
+      "id": "relay-sharedchat",
+      "name": "SharedChat",
+      "section": "ai",
+      "description": "QQ 邮箱注册的公益站，每日 50 刀 GPT 额度，可在 Codex 中使用。务必只注册一个账号，且不要在付费站重复注册，否则可能触发多号封禁导致公益站无法使用。",
+      "url": "https://new.sharedchat.cc/list/#/register?i=nVbRQ",
+      "tags": [
+        "签到$50",
+        "严禁多号"
+      ],
+      "kind": "AI API 中转站",
+      "need_login": true,
+      "update_info": "每日可签到",
+      "note": "严禁注册多个账号，也不要在付费站重复注册。一旦被判定多号可能直接封禁，导致公益站无法使用。 可用模型：GPT 系列（可在 Codex 使用）。"
     }
   ]
 }

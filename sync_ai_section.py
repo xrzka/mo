@@ -30,8 +30,8 @@ def currency_symbol(code: str | None) -> str:
 
 def build_tags(relay: dict) -> list[str]:
     """把额度、签到、倍率、网络与账号要求压成短标签，卡片上最多显示 6 个。"""
-    quota: list[str] = []   # 额度类：注册送 / 签到 / 倍率
-    limits: list[str] = []  # 门槛类：需代理 / GitHub 年限
+    quota: list[str] = []   # 额度类：注册送 / 签到 / 倍率 / 免费站卖点
+    limits: list[str] = []  # 门槛类：需代理 / GitHub 年限 / 使用禁忌
     cur = currency_symbol(relay.get("bonus_currency"))
     benefits = relay.get("benefit_flags") or []
 
@@ -54,6 +54,10 @@ def build_tags(relay: dict) -> list[str]:
         limits.append("需代理")
     if relay.get("github_age_required"):
         limits.append("GitHub 满一年")
+    # 使用禁忌（如「严禁多号」）也属于门槛，必须出现在卡片上
+    caveat_tag = relay.get("caveat_tag")
+    if caveat_tag:
+        limits.append(str(caveat_tag))
 
     # 没有额度信息的站（纯免费站）拿榜单站自带的标签当主描述。
     # 注意不能只在 quota+limits 都空时才回退 —— 免费站往往也需要代理，
@@ -68,7 +72,7 @@ def build_tags(relay: dict) -> list[str]:
 
 
 def build_note(relay: dict) -> str:
-    """备注里放使用前必须知道的信息：账号门槛、网络限制、可用模型。"""
+    """备注里放使用前必须知道的信息：账号门槛、网络限制、使用禁忌、可用模型。"""
     parts: list[str] = []
 
     age = relay.get("github_age_required")
@@ -76,6 +80,10 @@ def build_note(relay: dict) -> str:
         parts.append(f"GitHub 账号需注册满{age}。")
     if relay.get("direct_connect") is False:
         parts.append("该站无法直连，需自备网络代理。")
+    # 禁忌放在模型清单之前 —— 违规的后果是封号，比能用什么模型更要紧
+    caveat = relay.get("caveat")
+    if caveat:
+        parts.append(str(caveat))
 
     models = [
         m.get("display_name") or m.get("model_id")
