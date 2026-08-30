@@ -179,37 +179,42 @@
     /** 拉取远端汇总。依次试各个候选地址，第一个通的就定为 this.api。 */
     async pull() {
       const list = this.candidates || [];
-      for (const base of list) {
-        try {
-          // 单个地址最多等 6 秒。被墙的地址会一直挂到 TCP 超时（十几秒），
-          // 不设上限的话首屏统计要等很久才退回本机模式。
-          const ctrl = new AbortController();
-          const timer = setTimeout(() => ctrl.abort(), 6000);
-          let res;
+      // 国内直连 pages.dev 的 TLS 握手偶发超时（实测约 20% 首次失败），
+      // 所以整轮候选跑完还失败时再重试一轮。两轮都不行才退回本机模式。
+      for (let round = 0; round < 2; round++) {
+        for (const base of list) {
           try {
-            res = await fetch(`${base}/api/stats`, {
-              cache: "no-store",
-              signal: ctrl.signal,
+            // 单个地址最多等 10 秒。被墙的地址会一直挂到 TCP 超时（十几秒），
+            // 不设上限的话首屏统计要等很久。
+            const ctrl = new AbortController();
+            const timer = setTimeout(() => ctrl.abort(), 10000);
+            let res;
+            try {
+              res = await fetch(`${base}/api/stats`, {
+                cache: "no-store",
+                signal: ctrl.signal,
+              });
+            } finally {
+              clearTimeout(timer);
+            }
+            if (!res.ok) throw new Error("HTTP " + res.status);
+            const data = await res.json();
+            const counts = emptyCounts();
+            PERIODS.forEach((p) => {
+              const t = (data.clicks || {})[p.id];
+              if (t && typeof t === "object") counts[p.id] = t;
             });
-          } finally {
-            clearTimeout(timer);
+            this.counts = counts;
+            this.visitors =
+              data.visitors && typeof data.visitors === "object" ? data.visitors : null;
+            this.api = base; // 后续上报都发这个地址
+            this.mode = "site";
+            return true;
+          } catch {
+            // 这个地址不通，试下一个
           }
-          if (!res.ok) throw new Error("HTTP " + res.status);
-          const data = await res.json();
-          const counts = emptyCounts();
-          PERIODS.forEach((p) => {
-            const t = (data.clicks || {})[p.id];
-            if (t && typeof t === "object") counts[p.id] = t;
-          });
-          this.counts = counts;
-          this.visitors =
-            data.visitors && typeof data.visitors === "object" ? data.visitors : null;
-          this.api = base; // 后续上报都发这个地址
-          this.mode = "site";
-          return true;
-        } catch {
-          // 这个地址不通，试下一个
         }
+        if (round === 0 && list.length) await new Promise((r) => setTimeout(r, 800));
       }
       this.mode = "local";
       return false;
@@ -225,6 +230,9 @@
         this.post("/api/hit", { id });
       } else {
         this.bumpLocal(id);
+        // 本机模式可能是首次拉取时网络抖动导致的降级。这里补一次上报，
+        // 通了就不会丢这次点击 —— 计数只增不减，多报一次也不会算错。
+        this.retryPost("/api/hit", { id });
       }
     },
 
@@ -248,6 +256,7 @@
     },
 
     post(path, body) {
+      if (!this.api) return;
       // keepalive 让请求在页面跳转后仍能发出；失败无所谓，不重试
       fetch(this.api + path, {
         method: "POST",
@@ -255,6 +264,24 @@
         body: JSON.stringify(body),
         keepalive: true,
       }).catch(() => {});
+    },
+
+    /** 降级状态下的补报：按顺序试候选地址，成功一个就停。
+     *  必须串行 —— 两个地址写的是同一个库，并行发会把一次点击算成两次。 */
+    async retryPost(path, body) {
+      for (const base of this.candidates || []) {
+        try {
+          const res = await fetch(base + path, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+            keepalive: true,
+          });
+          if (res.ok) return;
+        } catch {
+          // 这个地址不通，试下一个
+        }
+      }
     },
 
     table(period) {

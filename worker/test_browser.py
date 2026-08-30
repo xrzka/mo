@@ -355,6 +355,62 @@ def test_failover(page, base, stub_port):
     check("点击上报也走通的地址", StatsStub.hits.get(item_id) == 1, json.dumps(StatsStub.hits)[:120])
 
 
+def test_retry_round(page, base, stub_port):
+    """首轮拉取全失败、第二轮才通时，应最终切到全站模式。
+
+    模拟国内直连 pages.dev 的 TLS 握手偶发超时：前 N 个 /api/stats 请求
+    直接掐断，之后放行。app.js 的 pull() 会整轮候选跑完再重试一轮。
+    """
+    print("\n--- 首轮失败后重试 ---")
+    StatsStub.hits.clear()
+    StatsStub.visits = 0
+    stub_config(page, f"http://127.0.0.1:{stub_port}")
+
+    state = {"aborted": 0}
+
+    def flaky(route):
+        if "/api/stats" in route.request.url and state["aborted"] < 1:
+            state["aborted"] += 1
+            route.abort()
+        else:
+            route.continue_()
+
+    page.route("**/api/stats", flaky)
+    page.goto(base, wait_until="networkidle")
+    page.wait_for_timeout(3000)
+
+    open_stats(page)
+    scope = page.text_content("[data-stats-scope]")
+    check("首轮失败后重试成功", "全站统计" in scope, scope.strip())
+    check("确实掐断过一次请求", state["aborted"] == 1, str(state["aborted"]))
+
+
+def test_degraded_click_reported(page, base, stub_port):
+    """降级到本机模式后，点击仍应补报到后端，不丢数。"""
+    print("\n--- 降级后点击补报 ---")
+    StatsStub.hits.clear()
+    StatsStub.visits = 0
+    stub_config(page, f"http://127.0.0.1:{stub_port}")
+
+    # 只掐 /api/stats，让首屏拉取彻底失败进入本机模式；/api/hit 放行
+    page.route("**/api/stats", lambda r: r.abort())
+    page.goto(base, wait_until="networkidle")
+    page.wait_for_timeout(3500)
+
+    open_stats(page)
+    scope = page.text_content("[data-stats-scope]")
+    check("确实处于本机模式", "本机统计" in scope, scope.strip())
+
+    item_id, link = first_card_link(page)
+    block_external(page)
+    link.click()
+    page.wait_for_timeout(1200)
+    check("降级状态下点击仍上报到后端", StatsStub.hits.get(item_id) == 1,
+          json.dumps(StatsStub.hits)[:120])
+    check("同时也记了本机一份",
+          page.evaluate("() => localStorage.getItem('mo-hits-v1') !== null"))
+
+
 def test_api_down(page, base):
     print("\n--- 后端全都不可用时降级 ---")
     # 两个地址都连不上，模拟 Worker 挂掉或整体被网络挡住
@@ -394,6 +450,14 @@ def main():
 
             ctx = browser.new_context()
             test_failover(ctx.new_page(), base, stub_port)
+            ctx.close()
+
+            ctx = browser.new_context()
+            test_retry_round(ctx.new_page(), base, stub_port)
+            ctx.close()
+
+            ctx = browser.new_context()
+            test_degraded_click_reported(ctx.new_page(), base, stub_port)
             ctx.close()
 
             ctx = browser.new_context()
