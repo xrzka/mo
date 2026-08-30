@@ -44,6 +44,201 @@
   const PAGE_SIZES = [10, 20, 30, 50, 100];
   const DEFAULT_PAGE_SIZE = 20;
 
+  /* ---------- 点击统计 ---------- */
+
+  /** 统计周期。id 同时用作接口字段名和本地分桶前缀。 */
+  const PERIODS = [
+    { id: "day", label: "今日" },
+    { id: "week", label: "本周" },
+    { id: "month", label: "本月" },
+    { id: "year", label: "本年" },
+    { id: "all", label: "累计" },
+  ];
+
+  /** 本地各周期保留的历史桶数，防止 localStorage 无限增长。 */
+  const KEEP_BUCKETS = { day: 14, week: 8, month: 12, year: 3, all: 1 };
+
+  const STATS_KEY = "mo-hits-v1";
+  const VISIT_KEY = "mo-visit-day";
+  const RANK_LIMIT = 10;
+
+  const pad2 = (n) => String(n).padStart(2, "0");
+
+  /** ISO 8601 周编号。跨年那几天按 ISO 规则归属，12-31 可能算下一年第 1 周。 */
+  function isoWeek(d) {
+    const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    const dow = t.getUTCDay() || 7; // 周一=1 … 周日=7
+    t.setUTCDate(t.getUTCDate() + 4 - dow); // 移到本周周四，ISO 年份由它决定
+    const yearStart = new Date(Date.UTC(t.getUTCFullYear(), 0, 1));
+    const week = Math.ceil(((t - yearStart) / 86400000 + 1) / 7);
+    return `${t.getUTCFullYear()}-W${pad2(week)}`;
+  }
+
+  /** 当前时间对应的各周期桶名。用本地时区，"今日" 才符合用户直觉。 */
+  function bucketKeys(now = new Date()) {
+    return {
+      day: `${now.getFullYear()}-${pad2(now.getMonth() + 1)}-${pad2(now.getDate())}`,
+      week: isoWeek(now),
+      month: `${now.getFullYear()}-${pad2(now.getMonth() + 1)}`,
+      year: String(now.getFullYear()),
+      all: "all",
+    };
+  }
+
+  const emptyCounts = () => {
+    const o = {};
+    PERIODS.forEach((p) => (o[p.id] = {}));
+    return o;
+  };
+
+  /**
+   * 统计模块。两种模式：
+   * - local：数据只存本机 localStorage，排行榜只反映本设备的点击，访问人数无法统计
+   * - site：配置了 statsApi 时走远端汇总，所有访客共享一份数据
+   * 远端不可用时自动退回 local，页面功能不受影响。
+   */
+  const stats = {
+    mode: "local",
+    counts: emptyCounts(),
+    visitors: null,
+    api: "",
+
+    init() {
+      const cfg = (window.MO_CONFIG || {}).statsApi;
+      this.api = typeof cfg === "string" ? cfg.trim().replace(/\/+$/, "") : "";
+      this.loadLocal();
+    },
+
+    /* --- 本机模式 --- */
+
+    loadLocal() {
+      let raw = null;
+      try {
+        raw = JSON.parse(localStorage.getItem(STATS_KEY) || "null");
+      } catch {
+        raw = null; // 数据损坏就当空的重来，不影响页面
+      }
+      this.store = raw && typeof raw === "object" ? raw : {};
+      this.pruneLocal();
+      this.counts = this.collapseLocal();
+    },
+
+    saveLocal() {
+      try {
+        localStorage.setItem(STATS_KEY, JSON.stringify(this.store));
+      } catch {
+        /* 隐私模式或配额满时静默失败，统计不重要到需要打断用户 */
+      }
+    },
+
+    /** 只保留近若干个桶，老的丢掉。 */
+    pruneLocal() {
+      Object.keys(KEEP_BUCKETS).forEach((period) => {
+        const g = this.store[period];
+        if (!g) return;
+        const keys = Object.keys(g).sort();
+        const drop = keys.length - KEEP_BUCKETS[period];
+        if (drop > 0) keys.slice(0, drop).forEach((k) => delete g[k]);
+      });
+    },
+
+    /** 把「周期 → 桶 → 计数」压成当前生效的「周期 → 计数」。 */
+    collapseLocal() {
+      const now = bucketKeys();
+      const out = emptyCounts();
+      PERIODS.forEach((p) => {
+        out[p.id] = { ...((this.store[p.id] || {})[now[p.id]] || {}) };
+      });
+      return out;
+    },
+
+    bumpLocal(id) {
+      const now = bucketKeys();
+      PERIODS.forEach((p) => {
+        const g = (this.store[p.id] = this.store[p.id] || {});
+        const bucket = (g[now[p.id]] = g[now[p.id]] || {});
+        bucket[id] = (bucket[id] || 0) + 1;
+        this.counts[p.id][id] = bucket[id];
+      });
+      this.pruneLocal();
+      this.saveLocal();
+    },
+
+    /* --- 全站模式 --- */
+
+    /** 拉取远端汇总。失败就保持本机数据，返回是否成功。 */
+    async pull() {
+      if (!this.api) return false;
+      try {
+        const res = await fetch(`${this.api}/api/stats`, { cache: "no-store" });
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        const data = await res.json();
+        const counts = emptyCounts();
+        PERIODS.forEach((p) => {
+          const t = (data.clicks || {})[p.id];
+          if (t && typeof t === "object") counts[p.id] = t;
+        });
+        this.counts = counts;
+        this.visitors = data.visitors && typeof data.visitors === "object" ? data.visitors : null;
+        this.mode = "site";
+        return true;
+      } catch {
+        this.mode = "local";
+        return false;
+      }
+    },
+
+    /** 记录一次点击。本机先加，远端异步上报，不阻塞跳转。 */
+    record(id) {
+      if (!id) return;
+      if (this.mode === "site") {
+        PERIODS.forEach((p) => {
+          this.counts[p.id][id] = (this.counts[p.id][id] || 0) + 1;
+        });
+        this.post("/api/hit", { id });
+      } else {
+        this.bumpLocal(id);
+      }
+    },
+
+    /** 每天首次打开时上报一次访问，靠 localStorage 去重，避免刷新灌水。 */
+    reportVisit() {
+      if (this.mode !== "site") return;
+      const today = bucketKeys().day;
+      let last = null;
+      try {
+        last = localStorage.getItem(VISIT_KEY);
+      } catch {
+        last = null;
+      }
+      if (last === today) return;
+      this.post("/api/visit", {});
+      try {
+        localStorage.setItem(VISIT_KEY, today);
+      } catch {
+        /* 存不下就下次再报，最多重复计一次 */
+      }
+    },
+
+    post(path, body) {
+      // keepalive 让请求在页面跳转后仍能发出；失败无所谓，不重试
+      fetch(this.api + path, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+        keepalive: true,
+      }).catch(() => {});
+    },
+
+    table(period) {
+      return this.counts[period] || {};
+    },
+
+    hits(id, period = "all") {
+      return this.table(period)[id] || 0;
+    },
+  };
+
   const state = {
     items: [],
     generatedAt: null,
@@ -53,6 +248,9 @@
     adultMode: false, // 默认未成年模式，成人向内容不显示
     page: 1,
     pageSize: DEFAULT_PAGE_SIZE,
+    sort: "default", // default | hits-<period>
+    statsPeriod: "day", // 排行榜当前展示的周期
+    statsOpen: false,
   };
 
   const $ = (sel, root = document) => root.querySelector(sel);
@@ -125,10 +323,22 @@
   /** 未成年模式下过滤掉成人向条目。所有计数与列表都必须经过这一层。 */
   const allowedItems = () => state.items.filter((it) => state.adultMode || !it.adult);
 
-  const visibleItems = () =>
-    allowedItems().filter(
+  /** 按点击数排序时用的周期；非点击排序返回 null。 */
+  const sortPeriod = () =>
+    state.sort.startsWith("hits-") ? state.sort.slice("hits-".length) : null;
+
+  const visibleItems = () => {
+    const list = allowedItems().filter(
       (it) => inSection(it, state.section, state.sub) && matchesQuery(it, state.q)
     );
+    const period = sortPeriod();
+    if (!period) return list;
+    // 点击数相同时按名称排，否则每次渲染顺序会飘（数据里大量 0 次）
+    return list.slice().sort((a, b) => {
+      const d = stats.hits(b.id, period) - stats.hits(a.id, period);
+      return d !== 0 ? d : a.name.localeCompare(b.name, "zh-CN");
+    });
+  };
 
   const totalPages = (total) => Math.max(1, Math.ceil(total / state.pageSize));
 
@@ -214,6 +424,7 @@
   function buildCard(item) {
     const node = $("[data-card-template]").content.firstElementChild.cloneNode(true);
     const field = (name) => node.querySelector(`[data-field="${name}"]`);
+    node.dataset.itemId = item.id; // 排行榜定位时靠它找卡片
 
     field("icon").textContent = item.icon;
     field("name").textContent = item.name;
@@ -235,6 +446,21 @@
     field("login").textContent = item.needLogin ? "需要" : "不需要";
     field("updateInfo").textContent = item.updateInfo;
     field("note").textContent = item.note;
+
+    // 点击数角标：按当前排序周期显示，0 次不显示以免整页都是「0 次」
+    const paintHits = () => {
+      const hitsPill = field("hits");
+      const period = sortPeriod() || "all";
+      const n = stats.hits(item.id, period);
+      if (n > 0) {
+        const label = (PERIODS.find((p) => p.id === period) || {}).label || "";
+        hitsPill.hidden = false;
+        hitsPill.textContent = `${label} ${n} 次`;
+      } else {
+        hitsPill.hidden = true;
+      }
+    };
+    paintHits();
 
     // 提取码：多个网盘源可能各有各的码，所以放在每个源的按钮旁边
     const pwWrap = field("passwordWrap");
@@ -263,6 +489,14 @@
         a.target = "_blank";
         a.rel = "noreferrer noopener";
         a.textContent = (lk.label ? `${lk.name} · ${lk.label}` : lk.name) + " ↗";
+        // 计一次点击。不 preventDefault，跳转照常走浏览器默认行为。
+        // 只刷新这张卡的角标和排行榜，不整页重渲染 —— 重渲染会把用户
+        // 展开的卡片收回去，正在点的这一行会从脚下消失。
+        a.addEventListener("click", () => {
+          stats.record(item.id);
+          paintHits();
+          renderStats();
+        });
         row.appendChild(a);
 
         // 多源时每个源的提取码单独给一个复制按钮
@@ -453,10 +687,146 @@
   // 由 bindScrollDock() 赋值，用于内容变化后重算悬浮按钮显隐
   let refreshScrollDock = () => {};
 
+  /* ---------- 热门排行 ---------- */
+
+  /** 排行榜周期切换按钮。 */
+  function renderStatsTabs() {
+    const bar = $("[data-stats-tabs]");
+    if (!bar) return;
+    bar.textContent = "";
+    PERIODS.forEach((p) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "stats-tab";
+      btn.setAttribute("role", "tab");
+      btn.setAttribute("aria-selected", String(state.statsPeriod === p.id));
+      btn.textContent = p.label;
+      btn.addEventListener("click", () => {
+        state.statsPeriod = p.id;
+        renderStats();
+      });
+      bar.appendChild(btn);
+    });
+  }
+
+  /** 排行榜正文：Top 10 + 访问人数。点条目直接跳到对应卡片。 */
+  function renderStats() {
+    const scope = $("[data-stats-scope]");
+    if (scope) {
+      scope.textContent =
+        stats.mode === "site"
+          ? "全站统计 · 所有访客点击汇总"
+          : "本机统计 · 只记录你在这台设备上的点击";
+    }
+
+    const box = $("[data-stats-rank]");
+    if (!box) return;
+    box.textContent = "";
+
+    const table = stats.table(state.statsPeriod);
+    const pool = allowedItems(); // 未成年模式下不能从排行榜漏出成人向条目
+    const ranked = pool
+      .map((it) => ({ item: it, n: table[it.id] || 0 }))
+      .filter((r) => r.n > 0)
+      .sort((a, b) => b.n - a.n || a.item.name.localeCompare(b.item.name, "zh-CN"))
+      .slice(0, RANK_LIMIT);
+
+    $("[data-stats-empty]").hidden = ranked.length > 0;
+
+    const top = ranked.length ? ranked[0].n : 0;
+    ranked.forEach((r, i) => {
+      const li = document.createElement("li");
+      li.className = "rank-row";
+
+      const no = document.createElement("span");
+      no.className = "rank-no";
+      if (i < 3) no.classList.add("top" + (i + 1));
+      no.textContent = String(i + 1);
+      li.appendChild(no);
+
+      const name = document.createElement("button");
+      name.type = "button";
+      name.className = "rank-name";
+      name.textContent = r.item.name;
+      name.title = "在列表中定位这个资源";
+      name.addEventListener("click", () => jumpToItem(r.item));
+      li.appendChild(name);
+
+      const bar = document.createElement("span");
+      bar.className = "rank-bar";
+      const fill = document.createElement("span");
+      fill.className = "rank-fill";
+      fill.style.width = top ? Math.max(4, Math.round((r.n / top) * 100)) + "%" : "0";
+      bar.appendChild(fill);
+      li.appendChild(bar);
+
+      const cnt = document.createElement("span");
+      cnt.className = "rank-count";
+      cnt.textContent = r.n + " 次";
+      li.appendChild(cnt);
+
+      box.appendChild(li);
+    });
+
+    const vis = $("[data-stats-visitors]");
+    if (vis) {
+      if (stats.mode === "site" && stats.visitors) {
+        const v = stats.visitors;
+        vis.textContent = `访问人数：今日 ${v.day ?? "—"} · 本周 ${v.week ?? "—"} · 本月 ${v.month ?? "—"} · 本年 ${v.year ?? "—"} · 累计 ${v.all ?? "—"}`;
+      } else {
+        vis.textContent = "访问人数需要后端支持，当前未启用（见 worker/README.md）。";
+      }
+    }
+  }
+
+  /** 从排行榜定位到某个资源：切到它所在分区，清搜索，翻到它所在页并展开。 */
+  function jumpToItem(item) {
+    state.section = item.section;
+    state.sub = "all";
+    state.q = "";
+    const input = $('[data-filter="q"]');
+    if (input) input.value = "";
+    state.page = 1;
+
+    const list = visibleItems();
+    const idx = list.findIndex((it) => it.id === item.id);
+    if (idx >= 0) state.page = Math.floor(idx / state.pageSize) + 1;
+    render();
+
+    const card = $$("[data-feed] .feed-card").find(
+      (el) => el.dataset.itemId === item.id
+    );
+    if (card) {
+      card.scrollIntoView({ behavior: "smooth", block: "center" });
+      card.classList.add("flash");
+      setTimeout(() => card.classList.remove("flash"), 1200);
+      if (card.getAttribute("aria-expanded") !== "true") card.click();
+    } else {
+      $("#feed").scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }
+
+  /** 排行榜默认收起，避免首屏被一大块统计挤掉。 */
+  function bindStatsPanel() {
+    const btn = $("[data-stats-toggle]");
+    const body = $("[data-stats-body]");
+    if (!btn || !body) return;
+    btn.addEventListener("click", () => {
+      state.statsOpen = !state.statsOpen;
+      body.hidden = !state.statsOpen;
+      btn.setAttribute("aria-expanded", String(state.statsOpen));
+      btn.textContent = state.statsOpen ? "收起" : "展开";
+      if (state.statsOpen) renderStats();
+      refreshScrollDock();
+    });
+  }
+
   function render() {
     renderTabs();
     renderSubTabs();
     renderFeed();
+    renderStatsTabs();
+    renderStats();
     $('[data-stat="total"]').textContent = String(allowedItems().length).padStart(2, "0");
     refreshScrollDock();
   }
@@ -599,6 +969,15 @@
     }
     const form = $("[data-controls]");
     if (form) form.addEventListener("submit", (e) => e.preventDefault());
+
+    const sortSel = $('[data-filter="sort"]');
+    if (sortSel) {
+      sortSel.addEventListener("change", () => {
+        state.sort = sortSel.value || "default";
+        state.page = 1; // 换排序后原页码没有意义
+        render();
+      });
+    }
   }
 
   function bindTheme() {
@@ -624,6 +1003,8 @@
     bindControls();
     bindMode();
     bindNoticeJump();
+    bindStatsPanel();
+    stats.init();
     refreshScrollDock = bindScrollDock() || (() => {});
     try {
       const res = await fetch(DATA_URL, { cache: "no-cache" });
@@ -635,6 +1016,11 @@
       $("[data-footer-updated]").textContent = fmtDate(state.generatedAt);
       renderModeUI();
       render();
+      // 远端统计后到：拉到就重渲染，拉不到保持本机数据，不影响已渲染的页面
+      if (await stats.pull()) {
+        stats.reportVisit();
+        render();
+      }
     } catch (err) {
       const feed = $("[data-feed]");
       feed.textContent = "";

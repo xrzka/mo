@@ -1,0 +1,18 @@
+name = "mo-stats"
+main = "index.js"
+compatibility_date = "2026-08-01"
+
+# D1：点击与访问计数。database_id 用 wrangler d1 create 之后返回的值替换。
+[[d1_databases]]
+binding = "DB"
+database_name = "mo-stats"
+database_id = "在这里填 wrangler d1 create 返回的 database_id"
+
+# KV：只用于 IP 限流计数，可选。不绑定的话限流会自动跳过，其它功能正常。
+# [[kv_namespaces]]
+# binding = "RATE"
+# id = "在这里填 wrangler kv namespace create 返回的 id"
+
+# 每天清一次过期的访客指纹
+[triggers]
+crons = ["17 3 * * *"]

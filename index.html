@@ -9,8 +9,9 @@
       content="墨小说漫画 · 小说、漫画、动画、游戏、AI 资源导航，分区整理，点击直达。"
     />
     <title>墨小说漫画 · 资源导航</title>
-    <link rel="stylesheet" href="styles.css?v=20260830g" />
-    <script src="app.js?v=20260830g" defer></script>
+    <script src="config.js?v=20260830h"></script>
+    <link rel="stylesheet" href="styles.css?v=20260830h" />
+    <script src="app.js?v=20260830h" defer></script>
   </head>
   <body>
     <a class="skip-link" href="#feed">跳到资源列表</a>
@@ -76,6 +77,30 @@
         </div>
       </section>
 
+      <section class="stats-panel" aria-labelledby="stats-title" data-stats-panel>
+        <div class="stats-head">
+          <div class="stats-head-copy">
+            <h2 id="stats-title"><span aria-hidden="true">🔥</span> 热门排行</h2>
+            <p class="stats-scope" data-stats-scope>统计加载中…</p>
+          </div>
+          <button
+            type="button"
+            class="stats-toggle"
+            data-stats-toggle
+            aria-expanded="false"
+            aria-controls="stats-body"
+          >
+            展开
+          </button>
+        </div>
+        <div class="stats-body" id="stats-body" data-stats-body hidden>
+          <div class="stats-tabs" role="tablist" aria-label="统计周期" data-stats-tabs></div>
+          <p class="stats-visitors" data-stats-visitors aria-live="polite"></p>
+          <ol class="rank-list" data-stats-rank></ol>
+          <p class="stats-empty" data-stats-empty hidden>这个周期还没有点击记录。</p>
+        </div>
+      </section>
+
       <nav class="tab-bar" aria-label="资源分区" data-tabs></nav>
       <nav class="subtab-bar" aria-label="小分区" data-subtabs hidden></nav>
 
@@ -99,6 +124,17 @@
               autocomplete="off"
               data-filter="q"
             />
+          </div>
+          <div class="control sort-control">
+            <label for="sort">排序</label>
+            <select id="sort" data-filter="sort">
+              <option value="default">默认顺序</option>
+              <option value="hits-day">点击数 · 今日</option>
+              <option value="hits-week">点击数 · 本周</option>
+              <option value="hits-month">点击数 · 本月</option>
+              <option value="hits-year">点击数 · 本年</option>
+              <option value="hits-all">点击数 · 累计</option>
+            </select>
           </div>
         </form>
 
@@ -157,6 +193,7 @@
             <div class="card-title-row">
               <h3 class="card-title" data-field="name"></h3>
               <span class="section-pill" data-field="section"></span>
+              <span class="hits-pill" data-field="hits" hidden></span>
             </div>
             <p class="card-desc" data-field="description"></p>
             <ul class="tag-list" data-field="tags"></ul>
