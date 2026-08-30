@@ -107,6 +107,23 @@ def serve(handler):
     srv = S(("127.0.0.1", 0), handler)
     threading.Thread(target=srv.serve_forever, daemon=True).start()
     return srv, srv.server_address[1]
+def stub_config(page, api=""):
+    """改写 config.js。
+
+    必须显式桩掉：仓库里的 config.js 现在填的是真实 Worker 地址，
+    本机模式测试若不桩，结果会取决于当时能不能连上 workers.dev ——
+    连不上才「碰巧」通过，那是假通过。
+    """
+    page.route(
+        "**/config.js*",
+        lambda route: route.fulfill(
+            status=200,
+            content_type="application/javascript",
+            body=f'window.MO_CONFIG = {{ statsApi: "{api}" }};',
+        ),
+    )
+
+
 def open_stats(page):
     """展开排行榜面板。默认收起，不展开拿不到里面的节点。"""
     if page.get_attribute("[data-stats-toggle]", "aria-expanded") != "true":
@@ -130,6 +147,7 @@ def rank_rows(page):
 
 def test_local_mode(page, base):
     print("\n--- 本机模式 ---")
+    stub_config(page, "")
     page.goto(base, wait_until="networkidle")
 
     open_stats(page)
@@ -170,6 +188,7 @@ def test_local_mode(page, base):
 
 def test_sort(page, base, item_id):
     print("\n--- 点击数排序 ---")
+    stub_config(page, "")
     page.goto(base, wait_until="networkidle")
     page.select_option('[data-filter="sort"]', "hits-all")
     page.wait_for_timeout(200)
@@ -188,6 +207,7 @@ def test_sort(page, base, item_id):
 
 def test_bucket_rollover(page, base, item_id):
     print("\n--- 跨天 / 跨周分桶 ---")
+    stub_config(page, "")
     page.goto(base, wait_until="networkidle")
     # 直接改 localStorage 模拟历史数据：昨天 5 次，今天 0 次
     page.evaluate(
@@ -220,6 +240,7 @@ def test_bucket_rollover(page, base, item_id):
     check("累计榜含 5 次", rows and rows[0]["n"] == 5, json.dumps(rows, ensure_ascii=False)[:120])
 def test_jump(page, base, item_id):
     print("\n--- 排行榜定位 ---")
+    stub_config(page, "")
     page.goto(base, wait_until="networkidle")
     page.evaluate(
         """([id]) => {
@@ -241,6 +262,7 @@ def test_jump(page, base, item_id):
 
 def test_adult_filter(page, base):
     print("\n--- 未成年模式不漏成人向条目 ---")
+    stub_config(page, "")
     page.goto(base, wait_until="networkidle")
     adult_id = page.evaluate(
         """async () => {
@@ -278,15 +300,8 @@ def test_site_mode(page, base, stub_port):
     print("\n--- 全站模式（Worker 桩） ---")
     StatsStub.hits.clear()
     StatsStub.visits = 0
-    # 用路由改写 config.js，避免改动仓库里的真实配置
-    page.route(
-        "**/config.js*",
-        lambda route: route.fulfill(
-            status=200,
-            content_type="application/javascript",
-            body=f'window.MO_CONFIG = {{ statsApi: "http://127.0.0.1:{stub_port}" }};',
-        ),
-    )
+    # 用路由改写 config.js，指向本地桩，避免依赖真实 Worker
+    stub_config(page, f"http://127.0.0.1:{stub_port}")
     page.goto(base, wait_until="networkidle")
     page.wait_for_timeout(500)
 
@@ -316,14 +331,8 @@ def test_site_mode(page, base, stub_port):
 
 def test_api_down(page, base):
     print("\n--- 后端不可用时降级 ---")
-    page.route(
-        "**/config.js*",
-        lambda route: route.fulfill(
-            status=200,
-            content_type="application/javascript",
-            body='window.MO_CONFIG = { statsApi: "http://127.0.0.1:1" };',
-        ),
-    )
+    # 指向一个必然连不上的端口，模拟 Worker 挂掉或被网络挡住
+    stub_config(page, "http://127.0.0.1:1")
     errors = []
     page.on("pageerror", lambda e: errors.append(str(e)))
     page.goto(base, wait_until="networkidle")

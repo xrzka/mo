@@ -2,11 +2,11 @@ name = "mo-stats"
 main = "index.js"
 compatibility_date = "2026-08-01"
 
-# D1：点击与访问计数。database_id 用 wrangler d1 create 之后返回的值替换。
+# D1：点击与访问计数。binding 保持 DB，index.js 里用的是 env.DB。
 [[d1_databases]]
 binding = "DB"
 database_name = "mo-stats"
-database_id = "在这里填 wrangler d1 create 返回的 database_id"
+database_id = "784254ea-5aa2-415c-bfd3-945b9cc4bd67"
 
 # KV：只用于 IP 限流计数，可选。不绑定的话限流会自动跳过，其它功能正常。
 # [[kv_namespaces]]

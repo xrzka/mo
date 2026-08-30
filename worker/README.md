@@ -3,6 +3,25 @@
 站点是纯静态的，浏览器里没法跨用户共享数据。要做**全站**排行榜和访问人数，
 必须有个地方存计数 —— 这个目录就是那个地方，一个 Cloudflare Worker + D1。
 
+## 当前部署状态
+
+**已部署，站点跑在全站模式。**
+
+| 项目 | 值 |
+| --- | --- |
+| Worker 地址 | `https://mo-stats.werneruszcb71.workers.dev` |
+| Cloudflare 账号 | `werneruszcb71@gmail.com` |
+| Account ID | `2282ef506abf2f1af6d4ddc4a25988af` |
+| D1 数据库 | `mo-stats`（区域 WNAM） |
+| database_id | `784254ea-5aa2-415c-bfd3-945b9cc4bd67` |
+| 定时清理 | 每天 03:17 UTC |
+
+地址已填进上一级的 `config.js`。要退回本机模式，把 `statsApi` 改成空字符串即可。
+
+wrangler 的登录凭据和日志都在 `D:\local_translate_tool\wrangler_home`，不在 C 盘 ——
+用 `./wr.sh` 包装脚本跑所有 wrangler 命令来保证这一点（它设了 `XDG_CONFIG_HOME`
+和 `WRANGLER_LOG_PATH`）。直接敲 `wrangler` 会往 C 盘写。
+
 **不部署也能用。** 不配的话前端走本机模式：点击数记在你自己浏览器的
 localStorage 里，排行榜和排序都正常，但只反映你这台设备，访问人数显示为不可用。
 
@@ -21,53 +40,64 @@ localStorage 里，排行榜和排序都正常，但只反映你这台设备，�
 
 ## 部署
 
-需要 Node 和一个 Cloudflare 账号（免费版即可）。
+需要 Node 和一个 Cloudflare 账号（免费版即可）。已经部署过一次了，这节留作
+重建或换账号时的参考。
 
 ```bash
 cd worker
-npm install -g wrangler        # 装过就跳过
-wrangler login                 # 浏览器里授权
+npm install -g wrangler        # 装过就跳过（装在 D:\npm-global）
+./wr.sh login                 # 浏览器里授权，务必用 wr.sh 而不是裸 wrangler
 
-wrangler d1 create mo-stats    # 建库，记下输出的 database_id
+./wr.sh d1 create mo-stats    # 建库，记下输出的 database_id
 ```
 
 把 `database_id` 填进 `wrangler.toml`，然后建表并部署：
 
 ```bash
-wrangler d1 execute mo-stats --remote --file=schema.sql
-wrangler deploy
+./wr.sh d1 execute mo-stats --remote --file=schema.sql
+./wr.sh deploy
 ```
 
 部署完会打印形如 `https://mo-stats.你的子域.workers.dev` 的地址。把它填进
-上一级目录的 `config.js`：
+上一级目录的 `config.js`，提交推送，10 分钟内（CDN 缓存 `max-age=600`）线上
+就切到全站模式。改 `config.js` 时记得把 `index.html` 里三个 `?v=` 版本号一起提，
+否则缓存不更新。
 
-```js
-window.MO_CONFIG = {
-  statsApi: "https://mo-stats.你的子域.workers.dev",
-};
-```
+### 部署时踩到的两个坑
 
-提交推送，10 分钟内（CDN 缓存 `max-age=600`）线上就切到全站模式。改
-`config.js` 时记得把 `index.html` 里三个 `?v=` 版本号一起提，否则缓存不更新。
+**`wrangler login` 只等 120 秒。** 源码里 `12e4` 毫秒硬编码，超时就把回调端口
+8976 关掉。如果 dash.cloudflare.com 加载慢，等你点完 Allow，浏览器把 code 送
+回来时端口已经没了，表现为「localhost 拒绝连接」。这不是代理问题 —— 地址栏里
+`?code=cfoac_...` 说明 OAuth 那半是通的。重跑 `./wr.sh login` 抢时间即可，
+或者在原标签页按刷新重发同一个 code。
+
+**`d1 execute --file` 走的 import 接口不稳。** 它会先把 SQL 上传再执行，这一步
+在国内网络下常报 `fetch failed`（日志里能看到 POST `/d1/database/<id>/import`）。
+改用 `--command` 逐条建表就绕过了，`schema.sql` 里的语句一句句执行即可。
+`--command` 走的是另一个接口，稳定得多。
 
 ### 可选：开限流
 
 不绑 KV 也能跑，只是没有防刷。要开的话：
 
 ```bash
-wrangler kv namespace create RATE
+./wr.sh kv namespace create RATE
 ```
 
 把返回的 id 填进 `wrangler.toml` 里注释掉的 `[[kv_namespaces]]` 段，取消注释，
-再 `wrangler deploy`。默认限制单 IP 每分钟 60 次写入。
+再 `./wr.sh deploy`。默认限制单 IP 每分钟 60 次写入。
 
 ## 验证部署
 
 ```bash
-curl https://mo-stats.你的子域.workers.dev/api/stats
+curl https://mo-stats.werneruszcb71.workers.dev/api/stats
 ```
 
 应该返回 `{"clicks":{...},"visitors":{...},"buckets":{...}}`。刚部署时全是空的。
+
+注意 `*.workers.dev` 在国内可能需要代理才能访问 —— 我验证时直连超时，走本地
+代理正常。这只影响你用命令行测接口，不影响访客：浏览器里的请求是从访客自己的
+网络发出的，能打开站点就能上报。
 
 前端有兜底：接口挂了、域名写错了、超时了，都会自动退回本机模式，页面不会白屏。
 这条路径有测试覆盖（`test_browser.py` 的「后端不可用时降级」）。
@@ -119,13 +149,25 @@ node test_frontend_parity.mjs    # 前后端桶名一致性、本机模式分桶
 node test_selectors.mjs          # app.js 用的选择器在 index.html 里都存在
 node test_worker.mjs             # Worker 逻辑（真 SQL，node:sqlite 内存库当 D1）
 python test_browser.py           # 真 Chromium 端到端，含全站模式和降级
+python test_live.py --proxy http://127.0.0.1:7890   # 打已部署的真接口
 ```
 
 `test_worker.mjs` 用 `node:sqlite`（Node 22+ 内置）跑真实 SQL，覆盖并发计数、
 访客去重、CORS、限流、注入串拦截、定时清理、榜单截断。`test_browser.py`
 用 Playwright 起真浏览器，本地 HTTP 桩假装 Worker，覆盖点击写入、跨天分桶、
-排行榜定位、未成年模式过滤、后端挂掉时降级。
+排行榜定位、未成年模式过滤、后端挂掉时降级 —— 它会把 `config.js` 路由桩掉，
+所以结果不依赖真实 Worker 通不通。
 
-**一个已知局限：** `test_frontend_parity.mjs` 里前端那份桶名算法和本机计数
-逻辑是从 `app.js` 抄过去的（IIFE 没法 import）。改 `app.js` 里
-`isoWeek` / `bucketKeys` / `bumpLocal` 时必须同步改测试，否则它测的是旧逻辑。
+`test_live.py` 打的是线上真接口，会往 D1 写一条 `live-smoke-<时间戳>` 再删掉。
+它必须伪装浏览器 UA：Cloudflare 边缘的机器人防护会用 403 挡 `Python-urllib`
+这类默认 UA，那一层在 Worker 之前，跟我们的代码无关。
+
+**两个已知局限：**
+
+`test_frontend_parity.mjs` 里前端那份桶名算法和本机计数逻辑是从 `app.js` 抄
+过去的（IIFE 没法 import）。改 `app.js` 里 `isoWeek` / `bucketKeys` / `bumpLocal`
+时必须同步改测试，否则它测的是旧逻辑。
+
+Windows 上从 Python 调 wrangler 要用 `wrangler.cmd` 并显式指定
+`encoding="utf-8"` —— wrangler 输出带颜色转义和 emoji，默认 GBK 解码会抛
+`UnicodeDecodeError`，让 `stdout` 变成 `None`，症状是「命令成功了但读不到输出」。
