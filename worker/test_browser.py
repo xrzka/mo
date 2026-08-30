@@ -110,16 +110,18 @@ def serve(handler):
 def stub_config(page, api=""):
     """改写 config.js。
 
-    必须显式桩掉：仓库里的 config.js 现在填的是真实 Worker 地址，
-    本机模式测试若不桩，结果会取决于当时能不能连上 workers.dev ——
-    连不上才「碰巧」通过，那是假通过。
+    必须显式桩掉：仓库里的 config.js 现在填的是真实地址，本机模式测试若不桩，
+    结果会取决于当时能不能连上网 —— 连不上才「碰巧」通过，那是假通过。
+
+    api 可以是字符串或列表，对应 config.js 支持的两种写法。
     """
+    body = json.dumps(api if isinstance(api, list) else api)
     page.route(
         "**/config.js*",
         lambda route: route.fulfill(
             status=200,
             content_type="application/javascript",
-            body=f'window.MO_CONFIG = {{ statsApi: "{api}" }};',
+            body=f"window.MO_CONFIG = {{ statsApi: {body} }};",
         ),
     )
 
@@ -329,10 +331,34 @@ def test_site_mode(page, base, stub_port):
     check("同一天不重复计访问人数", StatsStub.visits == 1, f"visits={StatsStub.visits}")
 
 
+def test_failover(page, base, stub_port):
+    """多地址回退：第一个地址不通时，应自动切到第二个而不是退回本机模式。
+
+    这是线上真实配置的形状 —— workers.dev 被墙，pages.dev 兜底。
+    """
+    print("\n--- 多地址回退 ---")
+    StatsStub.hits.clear()
+    StatsStub.visits = 0
+    stub_config(page, ["http://127.0.0.1:1", f"http://127.0.0.1:{stub_port}"])
+    page.goto(base, wait_until="networkidle")
+    page.wait_for_timeout(1200)
+
+    open_stats(page)
+    scope = page.text_content("[data-stats-scope]")
+    check("第一个地址不通时切到第二个", "全站统计" in scope, scope.strip())
+    check("访问上报走的是通的那个地址", StatsStub.visits >= 1, f"visits={StatsStub.visits}")
+
+    item_id, link = first_card_link(page)
+    block_external(page)
+    link.click()
+    page.wait_for_timeout(600)
+    check("点击上报也走通的地址", StatsStub.hits.get(item_id) == 1, json.dumps(StatsStub.hits)[:120])
+
+
 def test_api_down(page, base):
-    print("\n--- 后端不可用时降级 ---")
-    # 指向一个必然连不上的端口，模拟 Worker 挂掉或被网络挡住
-    stub_config(page, "http://127.0.0.1:1")
+    print("\n--- 后端全都不可用时降级 ---")
+    # 两个地址都连不上，模拟 Worker 挂掉或整体被网络挡住
+    stub_config(page, ["http://127.0.0.1:1", "http://127.0.0.1:2"])
     errors = []
     page.on("pageerror", lambda e: errors.append(str(e)))
     page.goto(base, wait_until="networkidle")
@@ -364,6 +390,10 @@ def main():
 
             ctx = browser.new_context()  # 干净的 localStorage
             test_site_mode(ctx.new_page(), base, stub_port)
+            ctx.close()
+
+            ctx = browser.new_context()
+            test_failover(ctx.new_page(), base, stub_port)
             ctx.close()
 
             ctx = browser.new_context()

@@ -1,13 +1,17 @@
 #!/usr/bin/env python3
-"""线上冒烟测试：直接打已部署的 Worker，确认真实链路通。
+"""线上冒烟测试：直接打已部署的接口，确认真实链路通。
 
 和 test_browser.py 的区别：那个用本地桩，不碰网络；这个打真接口，
 验证 D1 表建对了、CORS 白名单生效、参数校验没被绕过。
 
-会往真实数据库写一条 id 为 live-smoke-<时间戳> 的记录，跑完自己删。
-删除需要 wrangler，没有的话会提示你手动清。
+默认测 pages.dev（访客实际走的那个）。--api 可指定别的地址，
+比如 workers.dev 那个备用入口（国内需要代理）。
 
-跑法：python test_live.py [--proxy http://127.0.0.1:7890]
+会往真实数据库写一条 id 为 live-smoke-<时间戳> 的记录，跑完自己删。
+
+跑法：
+    python test_live.py
+    python test_live.py --api https://mo-stats.werneruszcb71.workers.dev --proxy http://127.0.0.1:7890
 """
 import argparse
 import json
@@ -17,12 +21,13 @@ import time
 import urllib.error
 import urllib.request
 
-API = "https://mo-stats.werneruszcb71.workers.dev"
+# 访客实际走的地址。workers.dev 那个在国内被墙，只作备用。
+DEFAULT_API = "https://mo-stats.pages.dev"
 ORIGIN = "https://xrzka.github.io"
 ITEM = f"live-smoke-{int(time.time())}"
 
 # Cloudflare 边缘的机器人防护会用 403 挡掉 Python-urllib 这类默认 UA，
-# 挡的是 Worker 之前的一层，跟我们的代码无关（真实浏览器不受影响）。
+# 挡的是我们代码之前的一层（真实浏览器不受影响）。
 # 所以这里必须伪装成常规浏览器 UA，否则测的是防护层不是接口。
 UA = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
@@ -30,6 +35,7 @@ UA = (
 )
 
 FAIL = []
+API = DEFAULT_API
 
 
 def check(name, ok, extra=""):
@@ -43,30 +49,46 @@ def build_opener(proxy):
     return urllib.request.build_opener(*handlers)
 
 
-def call(opener, path, method="GET", body=None, origin=ORIGIN):
-    """返回 (状态码, 解析后的 JSON 或 None)。HTTP 错误码也正常返回，不抛。"""
+def call(opener, path, method="GET", body=None, origin=ORIGIN, retries=5):
+    """返回 (状态码, 解析后的 JSON 或 None)。HTTP 错误码也正常返回，不抛。
+
+    带重试：国内直连 pages.dev 偶发 TLS 握手超时（实测约 5~10% 概率），
+    退避重试基本就过。这是网络抖动，不是接口问题 —— 真实访客遇到时
+    前端会退回本机模式，下次打开再拉。
+    """
     data = json.dumps(body).encode() if body is not None else None
-    req = urllib.request.Request(API + path, data=data, method=method)
-    req.add_header("User-Agent", UA)
-    if origin:
-        req.add_header("Origin", origin)
-    if data:
-        req.add_header("Content-Type", "application/json")
-    try:
-        with opener.open(req, timeout=25) as r:
-            return r.status, json.loads(r.read().decode())
-    except urllib.error.HTTPError as e:
-        raw = e.read().decode(errors="replace")
+    last = None
+    for attempt in range(retries):
+        req = urllib.request.Request(API + path, data=data, method=method)
+        req.add_header("User-Agent", UA)
+        if origin:
+            req.add_header("Origin", origin)
+        if data:
+            req.add_header("Content-Type", "application/json")
         try:
-            return e.code, json.loads(raw)
-        except json.JSONDecodeError:
-            return e.code, None
+            with opener.open(req, timeout=25) as r:
+                return r.status, json.loads(r.read().decode())
+        except urllib.error.HTTPError as e:
+            # HTTP 层的错误码是预期结果之一（403/400/404），不重试
+            raw = e.read().decode(errors="replace")
+            try:
+                return e.code, json.loads(raw)
+            except json.JSONDecodeError:
+                return e.code, None
+        except Exception as e:
+            last = e
+            if attempt < retries - 1:
+                time.sleep(2 + attempt * 2)  # 2s, 4s, 6s, 8s
+    raise last
 
 
 def main():
+    global API
     ap = argparse.ArgumentParser()
-    ap.add_argument("--proxy", default="", help="workers.dev 在国内可能需要代理")
+    ap.add_argument("--api", default=DEFAULT_API, help="要测的接口地址")
+    ap.add_argument("--proxy", default="", help="workers.dev 在国内需要代理")
     args = ap.parse_args()
+    API = args.api.rstrip("/")
     opener = build_opener(args.proxy)
 
     print(f"目标 {API}")
@@ -76,8 +98,8 @@ def main():
     try:
         status, stats = call(opener, "/api/stats")
     except Exception as e:
-        print(f"\n连不上 Worker：{e}")
-        print("workers.dev 在部分网络下需要代理，试试 --proxy http://127.0.0.1:7890")
+        print(f"\n连不上：{e}")
+        print("workers.dev 在国内被墙，需要 --proxy；pages.dev 应该可以直连。")
         raise SystemExit(1)
 
     check("GET /api/stats 返回 200", status == 200, str(status))
@@ -114,9 +136,11 @@ def main():
         ("中文id", "非 ASCII"),
         ("y" * 65, "超长 id"),
     ]:
+        time.sleep(1)  # 连续快打会触发边缘限速，间隔一下
         status, _ = call(opener, "/api/hit", "POST", {"id": bad})
         check(f"{label} 被 400", status == 400, str(status))
 
+    time.sleep(1)
     status, _ = call(opener, "/api/nope")
     check("未知路径 404", status == 404, str(status))
 

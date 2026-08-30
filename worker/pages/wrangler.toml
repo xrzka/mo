@@ -1,0 +1,9 @@
+name = "mo-stats"
+pages_build_output_dir = "public"
+compatibility_date = "2026-08-01"
+
+# 复用 Worker 那边同一个 D1 库，两个入口读写同一份数据。
+[[d1_databases]]
+binding = "DB"
+database_name = "mo-stats"
+database_id = "784254ea-5aa2-415c-bfd3-945b9cc4bd67"

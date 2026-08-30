@@ -104,8 +104,18 @@
     api: "",
 
     init() {
-      const cfg = (window.MO_CONFIG || {}).statsApi;
-      this.api = typeof cfg === "string" ? cfg.trim().replace(/\/+$/, "") : "";
+      const cfg = window.MO_CONFIG || {};
+      // 支持配多个接口地址：按顺序试，第一个通的就用。
+      // 需要这个是因为 *.workers.dev 在国内被墙，得挂个 *.pages.dev 兜底。
+      const list = Array.isArray(cfg.statsApi)
+        ? cfg.statsApi
+        : cfg.statsApi
+          ? [cfg.statsApi]
+          : [];
+      this.candidates = list
+        .filter((s) => typeof s === "string" && s.trim())
+        .map((s) => s.trim().replace(/\/+$/, ""));
+      this.api = this.candidates[0] || "";
       this.loadLocal();
     },
 
@@ -166,26 +176,43 @@
 
     /* --- 全站模式 --- */
 
-    /** 拉取远端汇总。失败就保持本机数据，返回是否成功。 */
+    /** 拉取远端汇总。依次试各个候选地址，第一个通的就定为 this.api。 */
     async pull() {
-      if (!this.api) return false;
-      try {
-        const res = await fetch(`${this.api}/api/stats`, { cache: "no-store" });
-        if (!res.ok) throw new Error("HTTP " + res.status);
-        const data = await res.json();
-        const counts = emptyCounts();
-        PERIODS.forEach((p) => {
-          const t = (data.clicks || {})[p.id];
-          if (t && typeof t === "object") counts[p.id] = t;
-        });
-        this.counts = counts;
-        this.visitors = data.visitors && typeof data.visitors === "object" ? data.visitors : null;
-        this.mode = "site";
-        return true;
-      } catch {
-        this.mode = "local";
-        return false;
+      const list = this.candidates || [];
+      for (const base of list) {
+        try {
+          // 单个地址最多等 6 秒。被墙的地址会一直挂到 TCP 超时（十几秒），
+          // 不设上限的话首屏统计要等很久才退回本机模式。
+          const ctrl = new AbortController();
+          const timer = setTimeout(() => ctrl.abort(), 6000);
+          let res;
+          try {
+            res = await fetch(`${base}/api/stats`, {
+              cache: "no-store",
+              signal: ctrl.signal,
+            });
+          } finally {
+            clearTimeout(timer);
+          }
+          if (!res.ok) throw new Error("HTTP " + res.status);
+          const data = await res.json();
+          const counts = emptyCounts();
+          PERIODS.forEach((p) => {
+            const t = (data.clicks || {})[p.id];
+            if (t && typeof t === "object") counts[p.id] = t;
+          });
+          this.counts = counts;
+          this.visitors =
+            data.visitors && typeof data.visitors === "object" ? data.visitors : null;
+          this.api = base; // 后续上报都发这个地址
+          this.mode = "site";
+          return true;
+        } catch {
+          // 这个地址不通，试下一个
+        }
       }
+      this.mode = "local";
+      return false;
     },
 
     /** 记录一次点击。本机先加，远端异步上报，不阻塞跳转。 */
