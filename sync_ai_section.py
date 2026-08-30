@@ -100,10 +100,13 @@ def to_mo_item(relay: dict) -> dict:
     benefits = relay.get("benefit_flags") or []
     has_checkin = bool(relay.get("checkin_bonus")) or "checkin" in benefits
 
-    if relay.get("consumer_category") == "free":
-        update_info = "不定时开放"
-    elif has_checkin:
+    if has_checkin:
         update_info = "每日可签到"
+    elif relay.get("availability"):
+        update_info = str(relay["availability"])
+    elif relay.get("consumer_category") == "free":
+        # 免费站多数是「看官方免费活动不定时开放」，除非数据里另有说明
+        update_info = "不定时开放"
     else:
         update_info = "注册即用"
 
@@ -114,8 +117,10 @@ def to_mo_item(relay: dict) -> dict:
         "description": relay.get("description") or relay.get("resource_description") or "",
         "url": relay.get("site_url") or "",
         "tags": build_tags(relay),
-        "kind": "AI API 中转站",
-        "need_login": True,
+        # 免登录的在线工具不是中转站，写成中转站会误导
+        "kind": relay.get("site_kind") or "AI API 中转站",
+        # 默认要账号（中转站都要），数据里显式写 false 才当免登录
+        "need_login": relay.get("requires_account") is not False,
         "update_info": update_info,
         "note": build_note(relay),
     }

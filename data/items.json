@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-30T19:02:06Z",
+  "generated_at": "2026-08-30T23:53:12Z",
   "note": "示例数据。新增资源在 items 数组里加一项即可，section 取值：novel / manga / anime / game / ai",
   "items": [
     {
@@ -2151,6 +2151,24 @@
       "need_login": true,
       "update_info": "每日可签到",
       "note": "严禁注册多个账号，也不要在付费站重复注册。一旦被判定多号可能直接封禁，导致公益站无法使用。 可用模型：GPT 系列（可在 Codex 使用）。"
+    },
+    {
+      "id": "relay-imagefree",
+      "name": "ImageFree",
+      "section": "ai",
+      "description": "免费 AI 文生图工具，打开即用，无需注册也无需账号邮箱。不限生成次数、无积分额度，出图不带水印，站点声明可用于商业用途。底层是开源模型 Z-Image-Turbo。",
+      "url": "https://imagefree.net/zh",
+      "tags": [
+        "文生图",
+        "无需注册",
+        "不限次数",
+        "无水印",
+        "最长边 1024"
+      ],
+      "kind": "AI 文生图工具",
+      "need_login": false,
+      "update_info": "随时可用",
+      "note": "可用模型：Z-Image-Turbo（开源文生图模型）。"
     }
   ]
 }
