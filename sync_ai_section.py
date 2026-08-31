@@ -84,6 +84,10 @@ def build_note(relay: dict) -> str:
     age = relay.get("github_age_required")
     if age:
         parts.append(f"GitHub 账号需注册满{age}。")
+    # 非 GitHub 的身份源门槛（如 Linux DO），不写清楚会让人以为随便注册就能用
+    account = relay.get("account_requirement")
+    if account:
+        parts.append(f"需要{account}。")
     if relay.get("direct_connect") is False:
         parts.append("该站无法直连，需自备网络代理。")
     # 禁忌放在模型清单之前 —— 违规的后果是封号，比能用什么模型更要紧

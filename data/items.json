@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-31T02:52:15Z",
+  "generated_at": "2026-08-31T04:16:56Z",
   "note": "示例数据。新增资源在 items 数组里加一项即可，section 取值：novel / manga / anime / game / ai",
   "items": [
     {
@@ -2186,6 +2186,22 @@
       "need_login": true,
       "update_info": "每日可签到",
       "note": "可用模型：nai-diffusion-5-full、nai-diffusion-5-curated、nai-diffusion-4-5-full、nai-diffusion-4-5-curated、nai-diffusion-4-full、nai-diffusion-4-curated、nai-diffusion-3、nai-diffusion-3-furry、各版本 inpainting 变体（共 8 个）。 公益站点，不开放充值，额度全由站长免费发放，请珍惜使用。确需充值可去姊妹站 api.rinko.ai。反馈 QQ 群 709223435。"
+    },
+    {
+      "id": "relay-lupi-image",
+      "name": "噜皮生图",
+      "section": "ai",
+      "description": "image-2 生图公益站，支持文生图与图生图，可多并发，也提供 API 调用。用 Linux DO 账号登录（或账号密码 + 注册码），额度以站内积分计算，无现金价值。站点声明目前为免费服务，不承诺持续可用。",
+      "url": "https://image.mlgb7.com/",
+      "tags": [
+        "image-2 生图",
+        "文生图 / 图生图",
+        "内容规范严格"
+      ],
+      "kind": "AI 生图公益站",
+      "need_login": true,
+      "update_info": "免费开放",
+      "note": "需要Linux DO 账号。 站点有明确的内容规范：禁止色情露骨、政治敏感、伪造真人肖像等内容，也禁止批量滥用账户或 API。违规会被限流、暂停或关闭账户。账号不得出租、出售或共享登录状态。 可用模型：image-2。 登录方式为 Linux DO 授权，或账号密码配注册码。积分仅代表站内额度，不能兑换或提现。图片链接与历史记录受存储策略影响，重要图片请及时下载。"
     }
   ]
 }
