@@ -26,6 +26,8 @@
       label: "漫画",
       icon: "🎨",
       subs: [
+        { id: "site", label: "网站" },
+        { id: "app", label: "软件" },
         { id: "kr", label: "韩漫" },
         { id: "jp", label: "日漫" },
       ],

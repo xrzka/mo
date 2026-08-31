@@ -115,6 +115,24 @@
       "note": ""
     },
     {
+      "id": "manual-manga-1",
+      "name": "MangaRead（英译漫画在线看）",
+      "section": "manga",
+      "subsection": "site",
+      "description": "英文漫画在线阅读站，收录 manga / manhwa / manhua，每天更新。免登录直接看。",
+      "url": "https://www.mangaread.org",
+      "tags": [
+        "在线阅读",
+        "英译",
+        "免登录",
+        "每日更新"
+      ],
+      "kind": "在线漫画网站",
+      "need_login": false,
+      "update_info": "每日更新",
+      "note": "全站英文。本地工具的「漫画翻译」支持粘贴该站章节链接抓图后翻译成中文。"
+    },
+    {
       "id": "xlsx-collection-1",
       "name": "「不用魔法上小说站」来自UC网盘分享",
       "section": "collection",
