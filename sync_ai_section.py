@@ -29,11 +29,17 @@ def currency_symbol(code: str | None) -> str:
 
 
 def build_tags(relay: dict) -> list[str]:
-    """把额度、签到、倍率、网络与账号要求压成短标签，卡片上最多显示 6 个。"""
+    """把站点特性、额度、签到、倍率、网络与账号要求压成短标签，最多 6 个。"""
+    feats: list[str] = []   # 特性类：站点是做什么的（图片生成、绘图模型等）
     quota: list[str] = []   # 额度类：注册送 / 签到 / 倍率 / 免费站卖点
     limits: list[str] = []  # 门槛类：需代理 / GitHub 年限 / 使用禁忌
     cur = currency_symbol(relay.get("bonus_currency"))
     benefits = relay.get("benefit_flags") or []
+
+    # 有额度信息的站也可能需要说明「这站是干什么的」。这类标签必须保留，
+    # 不能像 site_tags 那样只在没额度时才回退 —— 否则「NovelAI 绘图」
+    # 这种关键信息会被「可签到」挤掉，看不出它和普通中转站的区别。
+    feats = [str(t) for t in (relay.get("feature_tags") or []) if t]
 
     register_bonus = relay.get("register_bonus")
     checkin_bonus = relay.get("checkin_bonus")
@@ -59,16 +65,16 @@ def build_tags(relay: dict) -> list[str]:
     if caveat_tag:
         limits.append(str(caveat_tag))
 
-    # 没有额度信息的站（纯免费站）拿榜单站自带的标签当主描述。
+    # 没有额度也没有特性标签的站（纯免费站）拿榜单站自带的 site_tags 当主描述。
     # 注意不能只在 quota+limits 都空时才回退 —— 免费站往往也需要代理，
     # 那样标签就只剩一个「需代理」，站点的实际卖点全丢了。
-    if not quota:
+    if not quota and not feats:
         site_tags = [str(t) for t in (relay.get("site_tags") or []) if t]
         # 榜单站的标签里可能已经写了「需代理」，去重避免重复显示
         site_tags = [t for t in site_tags if t not in limits]
         quota = site_tags or ["免费使用"]
 
-    return (quota + limits)[:6]
+    return (feats + quota + limits)[:6]
 
 
 def build_note(relay: dict) -> str:
@@ -93,6 +99,11 @@ def build_note(relay: dict) -> str:
     models = [m for m in models if m]
     if models:
         parts.append("可用模型：" + "、".join(models) + "。")
+
+    # 站点补充说明（充值政策、反馈群等）放最后，属于参考信息
+    extra = relay.get("extra_note")
+    if extra:
+        parts.append(str(extra))
 
     return " ".join(parts)
 def to_mo_item(relay: dict) -> dict:

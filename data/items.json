@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-30T23:53:12Z",
+  "generated_at": "2026-08-31T02:52:15Z",
   "note": "示例数据。新增资源在 items 数组里加一项即可，section 取值：novel / manga / anime / game / ai",
   "items": [
     {
@@ -2169,6 +2169,23 @@
       "need_login": false,
       "update_info": "随时可用",
       "note": "可用模型：Z-Image-Turbo（开源文生图模型）。"
+    },
+    {
+      "id": "relay-yesnovelai",
+      "name": "YesNovelAI",
+      "section": "ai",
+      "description": "NovelAI 绘图模型公益站，收录 nai-diffusion 3 / 4 / 4.5 / 5 全系共 16 个模型。额度单位是 Gems，只能通过签到和邀请获取。标准尺寸（512×512、832×1216、1216×832、1024×1024，28 步内出 1 张）不计费，超出部分按 NovelAI Anlas 公式折算 Gems。",
+      "url": "https://nai.rinko.ai/sign-up?aff=L1Dl",
+      "tags": [
+        "NovelAI 绘图",
+        "标准尺寸免费",
+        "可签到",
+        "倍率1"
+      ],
+      "kind": "NovelAI 绘图中转站",
+      "need_login": true,
+      "update_info": "每日可签到",
+      "note": "可用模型：nai-diffusion-5-full、nai-diffusion-5-curated、nai-diffusion-4-5-full、nai-diffusion-4-5-curated、nai-diffusion-4-full、nai-diffusion-4-curated、nai-diffusion-3、nai-diffusion-3-furry、各版本 inpainting 变体（共 8 个）。 公益站点，不开放充值，额度全由站长免费发放，请珍惜使用。确需充值可去姊妹站 api.rinko.ai。反馈 QQ 群 709223435。"
     }
   ]
 }
