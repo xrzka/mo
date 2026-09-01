@@ -64,6 +64,30 @@ const skip = new Set(["field", "filter", "stat", "card-template", "item-id"]);
   "stats-empty",
 ].forEach((a) => check(`排行榜节点 data-${a}`, htmlAttrs.has(a)));
 
+// 资源帮找的关键节点，同理
+[
+  "wanted-panel",
+  "wanted-toggle",
+  "wanted-body",
+  "wanted-sub",
+  "wanted-form",
+  "wanted-submit",
+  "wanted-msg",
+  "wanted-tabs",
+  "wanted-list",
+  "wanted-empty",
+  "goto-wanted",
+].forEach((a) => check(`帮找节点 data-${a}`, htmlAttrs.has(a)));
+
+// data-wanted-input 是带值的属性，单独核对
+const wantedInputs = new Set();
+for (const m of js.matchAll(/data-wanted-input="([^"]+)"/g)) wantedInputs.add(m[1]);
+const htmlWantedInputs = new Set();
+for (const m of html.matchAll(/data-wanted-input="([^"]+)"/g)) htmlWantedInputs.add(m[1]);
+[...wantedInputs].sort().forEach((f) => {
+  check(`data-wanted-input="${f}" 存在于 HTML`, htmlWantedInputs.has(f));
+});
+
 check("模板含 hits 角标", htmlFields.has("hits"));
 check("index.html 引了 config.js", /src="config\.js/.test(html));
 

@@ -307,6 +307,11 @@
     sort: "default", // default | hits-<period>
     statsPeriod: "day", // 排行榜当前展示的周期
     statsOpen: false,
+    wantedOpen: false,
+    wantedStatus: "open", // open | found | closed
+    wantedItems: [],
+    wantedSummary: { open: 0, found: 0, closed: 0 },
+    wantedLoaded: false,
   };
 
   const $ = (sel, root = document) => root.querySelector(sel);
@@ -876,6 +881,298 @@
     }
   }
 
+  /* ---------- 资源帮找 ---------- */
+
+  const WANTED_TABS = [
+    { id: "open", label: "待找" },
+    { id: "found", label: "已找到" },
+    { id: "closed", label: "已关闭" },
+  ];
+
+  const WANTED_STATUS_LABEL = { open: "待找", found: "已找到", closed: "已关闭" };
+
+  /** 帮找依赖后端。没有可用接口时整块隐藏 —— 显示一个提交后没反应的表单更糟。 */
+  const wantedApi = () => (stats.mode === "site" ? stats.api : "");
+
+  const fmtWantedDate = (iso) => {
+    if (!iso) return "";
+    const d = new Date(iso);
+    if (isNaN(d)) return "";
+    return d.toLocaleDateString("zh-CN", { month: "2-digit", day: "2-digit" });
+  };
+
+  /** 拉取求助列表。失败时不清空已有数据，避免网络抖动把列表闪成空。 */
+  async function loadWanted() {
+    const api = wantedApi();
+    if (!api) return false;
+    try {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 10000);
+      let res;
+      try {
+        res = await fetch(`${api}/api/requests`, { cache: "no-store", signal: ctrl.signal });
+      } finally {
+        clearTimeout(timer);
+      }
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      const data = await res.json();
+      state.wantedItems = Array.isArray(data.items) ? data.items : [];
+      state.wantedSummary = data.summary && typeof data.summary === "object"
+        ? data.summary
+        : { open: 0, found: 0, closed: 0 };
+      state.wantedLoaded = true;
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  function renderWantedTabs() {
+    const bar = $("[data-wanted-tabs]");
+    if (!bar) return;
+    bar.textContent = "";
+    WANTED_TABS.forEach((t) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "wanted-tab";
+      btn.setAttribute("role", "tab");
+      btn.setAttribute("aria-selected", String(state.wantedStatus === t.id));
+      btn.textContent = t.label;
+
+      const cnt = document.createElement("span");
+      cnt.className = "tab-count";
+      cnt.textContent = state.wantedSummary[t.id] ?? 0;
+      btn.appendChild(cnt);
+
+      btn.addEventListener("click", () => {
+        state.wantedStatus = t.id;
+        // 标签栏也要重画，否则高亮留在原处，看起来像点了没反应
+        renderWantedTabs();
+        renderWantedList();
+      });
+      bar.appendChild(btn);
+    });
+  }
+
+  /** 全部文本走 textContent —— 这是用户提交的内容，绝不能当 HTML 解析。 */
+  function renderWantedList() {
+    const box = $("[data-wanted-list]");
+    if (!box) return;
+    box.textContent = "";
+
+    const list = state.wantedItems.filter((x) => x.status === state.wantedStatus);
+    const empty = $("[data-wanted-empty]");
+    if (empty) {
+      empty.hidden = list.length > 0;
+      empty.textContent =
+        state.wantedStatus === "open"
+          ? "还没有人留言，你可以第一个提交。"
+          : `暂无${WANTED_STATUS_LABEL[state.wantedStatus]}的求助。`;
+    }
+
+    list.forEach((item) => {
+      const li = document.createElement("li");
+      li.className = "wanted-row";
+
+      const main = document.createElement("div");
+      main.className = "wanted-main";
+
+      const name = document.createElement("p");
+      name.className = "wanted-name";
+      name.textContent = item.title;
+      main.appendChild(name);
+
+      if (item.note) {
+        const note = document.createElement("p");
+        note.className = "wanted-note";
+        note.textContent = item.note;
+        main.appendChild(note);
+      }
+
+      // 站长的处理回复，只有已找到/已关闭的条目才会有
+      if (item.reply) {
+        const reply = document.createElement("p");
+        reply.className = "wanted-reply";
+        reply.textContent = "↳ " + item.reply;
+        main.appendChild(reply);
+      }
+
+      const meta = document.createElement("p");
+      meta.className = "wanted-meta";
+      const d = fmtWantedDate(item.created);
+      meta.textContent = d ? `${d} 提交` : "";
+      main.appendChild(meta);
+
+      li.appendChild(main);
+
+      const side = document.createElement("div");
+      side.className = "wanted-side";
+
+      const vote = document.createElement("button");
+      vote.type = "button";
+      vote.className = "wanted-vote";
+      vote.title = "我也想看";
+      const arrow = document.createElement("span");
+      arrow.setAttribute("aria-hidden", "true");
+      arrow.textContent = "▲";
+      const num = document.createElement("strong");
+      num.textContent = item.votes;
+      vote.appendChild(arrow);
+      vote.appendChild(num);
+      vote.addEventListener("click", () => voteWanted(item, vote, num));
+      side.appendChild(vote);
+
+      const pill = document.createElement("span");
+      pill.className = "wanted-status " + item.status;
+      pill.textContent = WANTED_STATUS_LABEL[item.status] || item.status;
+      side.appendChild(pill);
+
+      li.appendChild(side);
+      box.appendChild(li);
+    });
+  }
+
+  /** 更新面板标题下那行说明，同时决定整块是否显示。 */
+  function renderWanted() {
+    const panel = $("[data-wanted-panel]") || $(".wanted-section");
+    const api = wantedApi();
+    if (panel) {
+      // 后端不可用时整块隐藏：表单点了没反应比没有表单更让人困惑
+      panel.hidden = !api;
+      if (!api) return;
+    }
+    const sub = $("[data-wanted-sub]");
+    if (sub) {
+      const n = state.wantedSummary.open || 0;
+      sub.textContent = state.wantedLoaded
+        ? `匿名留言想看的作品，找到后会加进站里。当前 ${n} 条待找。`
+        : "匿名留言想看的作品，找到后会加进站里。";
+    }
+    renderWantedTabs();
+    renderWantedList();
+  }
+
+  /** +1 想看。乐观更新数字，失败则回滚 —— 别让用户点了没有任何反馈。 */
+  async function voteWanted(item, btn, numEl) {
+    const api = wantedApi();
+    if (!api || btn.disabled) return;
+    btn.disabled = true;
+    const before = item.votes;
+    item.votes = before + 1;
+    numEl.textContent = item.votes;
+    try {
+      const res = await fetch(`${api}/api/requests/vote`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: item.id }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || data.ok !== true) {
+        item.votes = before;
+        numEl.textContent = before;
+        btn.classList.add("voted");
+        btn.title = data.reason === "already voted" ? "你已经投过了" : "投票没成功";
+      } else {
+        btn.classList.add("voted");
+        btn.title = "已记下你这一票";
+      }
+    } catch {
+      item.votes = before;
+      numEl.textContent = before;
+      btn.title = "网络不通，稍后再试";
+      btn.disabled = false;
+    }
+  }
+
+  /** 提交求助。 */
+  function bindWantedForm() {
+    const form = $("[data-wanted-form]");
+    if (!form) return;
+    const titleEl = $('[data-wanted-input="title"]');
+    const noteEl = $('[data-wanted-input="note"]');
+    const submit = $("[data-wanted-submit]");
+    const msg = $("[data-wanted-msg]");
+
+    const say = (text, kind = "") => {
+      if (!msg) return;
+      msg.textContent = text;
+      msg.className = "wanted-msg" + (kind ? " " + kind : "");
+    };
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const api = wantedApi();
+      if (!api) return say("帮找功能暂时不可用", "bad");
+
+      const title = (titleEl.value || "").trim();
+      if (!title) return say("请先填作品名", "bad");
+
+      submit.disabled = true;
+      say("提交中…");
+      try {
+        const res = await fetch(`${api}/api/requests`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title, note: (noteEl.value || "").trim() }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          say(data.error || "提交失败，稍后再试", "bad");
+        } else if (data.merged) {
+          say("已有人提过这部作品，帮你加了一票", "ok");
+          titleEl.value = "";
+          noteEl.value = "";
+        } else {
+          say("提交成功，找到后会加进站里", "ok");
+          titleEl.value = "";
+          noteEl.value = "";
+        }
+        // 无论新建还是合并，列表都变了，重新拉一次
+        if (res.ok) {
+          state.wantedStatus = "open";
+          await loadWanted();
+          renderWanted();
+          refreshScrollDock();
+        }
+      } catch {
+        say("网络不通，稍后再试", "bad");
+      } finally {
+        submit.disabled = false;
+      }
+    });
+  }
+
+  /** 帮找区默认收起，首屏不被表单占掉。 */
+  function bindWantedPanel() {
+    const btn = $("[data-wanted-toggle]");
+    const body = $("[data-wanted-body]");
+    if (!btn || !body) return;
+    btn.addEventListener("click", async () => {
+      state.wantedOpen = !state.wantedOpen;
+      body.hidden = !state.wantedOpen;
+      btn.setAttribute("aria-expanded", String(state.wantedOpen));
+      btn.textContent = state.wantedOpen ? "收起" : "展开";
+      // 首次展开才拉数据，没人看的时候不占请求
+      if (state.wantedOpen && !state.wantedLoaded) {
+        await loadWanted();
+      }
+      if (state.wantedOpen) renderWanted();
+      refreshScrollDock();
+    });
+  }
+
+  /** 公告里的「资源帮找」跳转：滚过去并自动展开。 */
+  function bindWantedJump() {
+    const btn = $("[data-goto-wanted]");
+    if (!btn) return;
+    btn.addEventListener("click", async () => {
+      const toggle = $("[data-wanted-toggle]");
+      if (toggle && !state.wantedOpen) toggle.click();
+      const sec = $("#wanted");
+      if (sec) sec.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }
+
   /** 排行榜默认收起，避免首屏被一大块统计挤掉。 */
   function bindStatsPanel() {
     const btn = $("[data-stats-toggle]");
@@ -1074,6 +1371,9 @@
     bindMode();
     bindNoticeJump();
     bindStatsPanel();
+    bindWantedPanel();
+    bindWantedForm();
+    bindWantedJump();
     stats.init();
     refreshScrollDock = bindScrollDock() || (() => {});
     try {
@@ -1090,6 +1390,11 @@
       if (await stats.pull()) {
         stats.reportVisit();
         render();
+        // 帮找依赖同一个后端，接口通了才显示这一块。
+        // 只拉汇总不展开列表 —— 待找条数要显示在标题上。
+        await loadWanted();
+        renderWanted();
+        refreshScrollDock();
       }
     } catch (err) {
       const feed = $("[data-feed]");

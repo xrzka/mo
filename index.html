@@ -9,9 +9,9 @@
       content="墨小说漫画 · 小说、漫画、动画、游戏、AI 资源导航，分区整理，点击直达。"
     />
     <title>墨小说漫画 · 资源导航</title>
-    <script src="config.js?v=20260831a"></script>
-    <link rel="stylesheet" href="styles.css?v=20260831a" />
-    <script src="app.js?v=20260831a" defer></script>
+    <script src="config.js?v=20260901a"></script>
+    <link rel="stylesheet" href="styles.css?v=20260901a" />
+    <script src="app.js?v=20260901a" defer></script>
   </head>
   <body>
     <a class="skip-link" href="#feed">跳到资源列表</a>
@@ -72,7 +72,9 @@
             ，多数使用问题和解压报错那里都有答案。
           </p>
           <p class="notice-board-sub">
-            有问题或资源失效，可在页面底部的反馈群里反馈。
+            有问题或资源失效，可在页面底部的反馈群里反馈。找不到想看的作品，可以去
+            <button type="button" class="inline-link" data-goto-wanted>资源帮找</button>
+            留言。
           </p>
         </div>
       </section>
@@ -143,6 +145,64 @@
         <div class="feed-list" data-feed></div>
         <nav class="pager" data-pager aria-label="翻页" hidden></nav>
         <p class="empty-state" data-empty hidden>这个分区还没有收录资源，或没有匹配的搜索结果。</p>
+      </section>
+
+      <section class="wanted-section" id="wanted" data-wanted-panel hidden aria-labelledby="wanted-title">
+        <div class="wanted-head">
+          <div class="wanted-head-copy">
+            <h2 id="wanted-title"><span aria-hidden="true">🔎</span> 资源帮找</h2>
+            <p class="wanted-sub" data-wanted-sub>匿名留言想看的作品，找到后会加进站里。</p>
+          </div>
+          <button
+            type="button"
+            class="wanted-toggle"
+            data-wanted-toggle
+            aria-expanded="false"
+            aria-controls="wanted-body"
+          >
+            展开
+          </button>
+        </div>
+
+        <div class="wanted-body" id="wanted-body" data-wanted-body hidden>
+          <form class="wanted-form" data-wanted-form>
+            <div class="wanted-field">
+              <label for="wanted-title-input">作品名</label>
+              <input
+                type="text"
+                id="wanted-title-input"
+                name="title"
+                maxlength="60"
+                placeholder="例如：某部小说 / 漫画的名字"
+                autocomplete="off"
+                data-wanted-input="title"
+                aria-required="true"
+              />
+            </div>
+            <div class="wanted-field">
+              <label for="wanted-note-input">补充说明（可不填）</label>
+              <textarea
+                id="wanted-note-input"
+                name="note"
+                maxlength="300"
+                rows="2"
+                placeholder="作者、别名、想看第几卷之后、在哪见过等，越具体越好找"
+                data-wanted-input="note"
+              ></textarea>
+            </div>
+            <div class="wanted-actions">
+              <button type="submit" class="wanted-submit" data-wanted-submit>提交</button>
+              <span class="wanted-msg" data-wanted-msg aria-live="polite"></span>
+            </div>
+            <p class="wanted-privacy">
+              不需要注册，也不记录你的身份。同一部作品重复提交会自动合并并加一票。
+            </p>
+          </form>
+
+          <div class="wanted-tabs" role="tablist" aria-label="求助状态" data-wanted-tabs></div>
+          <ol class="wanted-list" data-wanted-list></ol>
+          <p class="wanted-empty" data-wanted-empty hidden>还没有人留言。</p>
+        </div>
       </section>
 
       <section class="notice-section" id="notice" aria-labelledby="notice-title">

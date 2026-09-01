@@ -137,15 +137,58 @@ curl --proxy http://127.0.0.1:7890 https://mo-stats.werneruszcb71.workers.dev/ap
 
 ## 接口
 
+统计：
+
 | 方法 | 路径 | 说明 |
 | --- | --- | --- |
 | GET | `/api/stats` | 各周期 Top 20 点击 + 访问人数 |
 | POST | `/api/hit` | `{"id":"资源id"}`，该资源计数 +1 |
 | POST | `/api/visit` | `{}`，当天访问人数 +1（去重后） |
 
+资源帮找：
+
+| 方法 | 路径 | 说明 |
+| --- | --- | --- |
+| GET | `/api/requests` | 列出求助，可带 `?status=open\|found\|closed`、`?limit=N` |
+| POST | `/api/requests` | `{"title":"作品名","note":"补充说明"}` 新建；同名会合并成投票 |
+| POST | `/api/requests/vote` | `{"id":123}`，+1 想看（按访客指纹去重） |
+
 写接口只接受 `ALLOWED_ORIGINS`（`index.js` 顶部）里的来源，默认只有
 `https://xrzka.github.io`。换域名要改这里，改完两个入口都要重新部署。
 读接口不限来源，方便你直接在浏览器里看数字。
+
+## 资源帮找怎么运维
+
+访客只能提交和投票，**改状态、写回复要你自己在 D1 里做**。常用几条：
+
+```bash
+# 看待处理的（按票数排）
+./wr.sh d1 execute mo-stats --remote --command \
+  "SELECT id, display, note, votes, created FROM requests WHERE status='open' ORDER BY votes DESC"
+
+# 找到了：标成 found 并写回复，回复会显示在卡片上
+./wr.sh d1 execute mo-stats --remote --command \
+  "UPDATE requests SET status='found', reply='已加到漫画区' WHERE id=3"
+
+# 找不到或不合适：标成 closed
+./wr.sh d1 execute mo-stats --remote --command \
+  "UPDATE requests SET status='closed', reply='暂时找不到资源' WHERE id=7"
+
+# 清垃圾留言（连带删掉它的投票去重键）
+./wr.sh d1 execute mo-stats --remote --command \
+  "DELETE FROM request_votes WHERE k LIKE '9|%'; DELETE FROM requests WHERE id=9"
+```
+
+**几个约束写在代码里，改的话看 `index.js` 顶部的 `REQ_*` 常量：**
+标题 60 字、说明 300 字、单访客每天最多 5 条、待处理上限 500 条。
+到 500 条会拒绝新增而不是无限膨胀 —— 处理掉一批（标 found/closed）就能继续收。
+
+**同名合并**靠 `normalizeTitle()`：小写化后只保留数字、拉丁字母与中日韩文字，
+所以「进击的巨人」和「进击的巨人！！」是同一条。`title` 列存这个归一化后的键
+（有唯一索引），`display` 列存用户输入的原文用于展示。
+
+**去重与隐私**和访问统计同一套：只存 `SHA-256(IP+UA+当天日期)` 的前 32 位，
+日期当盐，跨天无法关联同一个人，也反推不出 IP。列表接口不返回 `fp` 字段。
 
 ## 几个设计决定
 
@@ -180,9 +223,11 @@ day/week/month/year/all 各写一行。查排行榜就是一次带索引的
 node test_buckets.mjs            # 桶名算法、id 校验
 node test_frontend_parity.mjs    # 前后端桶名一致性、本机模式分桶、真实数据 id 合法性
 node test_selectors.mjs          # app.js 用的选择器在 index.html 里都存在
-node test_worker.mjs             # Worker 逻辑（真 SQL，node:sqlite 内存库当 D1）
-python test_browser.py           # 真 Chromium 端到端，含多地址回退、重试、降级
+node test_worker.mjs             # 统计逻辑（真 SQL，node:sqlite 内存库当 D1）
+node test_requests.mjs           # 资源帮找逻辑（去重、投票幂等、限流、注入拦截）
+python test_browser.py           # 真 Chromium 端到端，含多地址回退、重试、降级、帮找全流程
 python test_live.py              # 打线上真接口（默认 pages.dev，可直连）
+python test_live.py --requests    # 额外测帮找接口（会写真实库再清理）
 python test_live.py --api https://mo-stats.werneruszcb71.workers.dev --proxy http://127.0.0.1:7890
 ```
 
@@ -196,7 +241,7 @@ python test_live.py --api https://mo-stats.werneruszcb71.workers.dev --proxy htt
 它必须伪装浏览器 UA：Cloudflare 边缘的机器人防护会用 403 挡 `Python-urllib`
 这类默认 UA，那一层在我们的代码之前。
 
-**两个已知局限：**
+**三个已知局限：**
 
 `test_frontend_parity.mjs` 里前端那份桶名算法和本机计数逻辑是从 `app.js` 抄
 过去的（IIFE 没法 import）。改 `app.js` 里 `isoWeek` / `bucketKeys` / `bumpLocal`
@@ -205,3 +250,9 @@ python test_live.py --api https://mo-stats.werneruszcb71.workers.dev --proxy htt
 Windows 上从 Python 调 wrangler 要用 `wrangler.cmd` 并显式指定
 `encoding="utf-8"` —— wrangler 输出带颜色转义和 emoji，默认 GBK 解码会抛
 `UnicodeDecodeError`，让 `stdout` 变成 `None`，症状是「命令成功了但读不到输出」。
+
+**发中文测试数据不能用 bash + curl。** Git Bash 在这台机器上是 GBK 控制台，
+命令行里的中文在到达 curl 之前就被改坏了。我为此误判过一次：线上提交中文标题
+一直返回「作品名需要包含有效文字」，以为是部署破坏了正则里的汉字字符类，
+改成 `\u` 转义重新部署仍然失败；换成 Python 显式编码 UTF-8 发同一个请求立刻
+通过 —— 问题从头到尾在 shell，不在 Worker。要测中文走 `test_live.py --requests`。

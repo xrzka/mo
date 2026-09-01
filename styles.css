@@ -614,6 +614,197 @@ h1 {
 }
 .age-confirm:hover { filter: brightness(1.1); }
 
+/* ---------- 资源帮找 ---------- */
+.wanted-section {
+  margin: 0 0 18px;
+  padding: 14px 16px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.wanted-section[hidden] { display: none; }
+
+.wanted-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.wanted-head h2 { margin: 0; font-size: 16px; }
+.wanted-sub { margin: 3px 0 0; color: var(--text-muted); font-size: 12px; }
+
+.wanted-toggle {
+  flex-shrink: 0;
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.wanted-toggle:hover { border-color: var(--accent); color: var(--accent); }
+
+.wanted-body { margin-top: 14px; }
+.wanted-body[hidden] { display: none; }
+
+/* ---------- 提交表单 ---------- */
+.wanted-form {
+  padding: 12px 14px;
+  margin-bottom: 14px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.wanted-field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
+.wanted-field label { color: var(--text-muted); font-size: 12px; }
+.wanted-field input,
+.wanted-field textarea {
+  width: 100%;
+  padding: 8px 11px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-elevated);
+  color: var(--text);
+  font: inherit;
+  font-size: 13.5px;
+  resize: vertical;
+}
+.wanted-field input:focus,
+.wanted-field textarea:focus { outline: none; border-color: var(--accent); }
+
+.wanted-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.wanted-submit {
+  padding: 7px 18px;
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  background: var(--accent);
+  color: #fff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.wanted-submit:hover:not(:disabled) { filter: brightness(1.08); }
+.wanted-submit:disabled { opacity: 0.55; cursor: not-allowed; }
+
+.wanted-msg { color: var(--text-muted); font-size: 12.5px; }
+.wanted-msg.ok { color: var(--accent); }
+.wanted-msg.bad { color: #d97706; }
+
+.wanted-privacy { margin: 9px 0 0; color: var(--text-muted); font-size: 11.5px; line-height: 1.5; }
+
+/* ---------- 状态标签栏 ---------- */
+.wanted-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.wanted-tab {
+  padding: 5px 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.wanted-tab:hover { border-color: var(--accent); color: var(--accent); }
+.wanted-tab[aria-selected="true"] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
+
+/* ---------- 求助列表 ---------- */
+.wanted-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 9px; }
+
+.wanted-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: start;
+  padding: 11px 13px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.wanted-main { min-width: 0; }
+.wanted-name {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  /* 用户提交的作品名可能很长且没有空格，必须允许断行 */
+  overflow-wrap: anywhere;
+}
+.wanted-note {
+  margin: 4px 0 0;
+  color: var(--text-muted);
+  font-size: 12.5px;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+/* 站长回复：用主题色区分开，和用户自己的补充说明不混淆 */
+.wanted-reply {
+  margin: 6px 0 0;
+  padding: 6px 9px;
+  border-radius: 7px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 12.5px;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+.wanted-meta { margin: 5px 0 0; color: var(--text-muted); font-size: 11.5px; }
+
+.wanted-side {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.wanted-vote {
+  display: grid;
+  place-items: center;
+  gap: 1px;
+  min-width: 46px;
+  padding: 5px 8px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--bg-elevated);
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 11px;
+  line-height: 1.15;
+  cursor: pointer;
+}
+.wanted-vote strong { font-size: 14px; font-variant-numeric: tabular-nums; }
+.wanted-vote:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+.wanted-vote.voted { border-color: var(--accent); color: var(--accent); }
+.wanted-vote:disabled { cursor: default; }
+
+.wanted-status {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.wanted-status.open { background: var(--accent-soft); color: var(--accent); }
+.wanted-status.found { background: color-mix(in srgb, #16a34a 16%, transparent); color: #16a34a; }
+.wanted-status.closed { background: var(--border); color: var(--text-muted); }
+
+.wanted-empty { margin: 6px 0 0; color: var(--text-muted); font-size: 13px; }
+.wanted-empty[hidden] { display: none; }
+
+@media (max-width: 560px) {
+  /* 窄屏把投票按钮和状态标签排成一行，省纵向空间 */
+  .wanted-row { grid-template-columns: 1fr; }
+  .wanted-side { flex-direction: row; justify-content: flex-start; }
+}
+
 /* ---------- 热门排行 ---------- */
 .stats-panel {
   margin: 0 0 18px;

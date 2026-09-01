@@ -7,10 +7,19 @@
 默认测 pages.dev（访客实际走的那个）。--api 可指定别的地址，
 比如 workers.dev 那个备用入口（国内需要代理）。
 
+`--requests` 额外测资源帮找的三个接口。这部分默认不跑：它要往真实库
+写记录再删，而国内直连 pages.dev 的 TLS 握手失败率约 20%，一轮十几个
+请求很容易中途断掉，留下需要手工清理的脏数据。
+
+**中文内容必须用 Python 显式编码 UTF-8 发送，不能用 bash + curl** ——
+Git Bash 在这台机器上是 GBK 控制台，命令行里的中文在到达 curl 之前
+就被改坏了，表现是所有中文标题都被判成「无有效文字」，极易误判成后端 bug。
+
 会往真实数据库写一条 id 为 live-smoke-<时间戳> 的记录，跑完自己删。
 
 跑法：
     python test_live.py
+    python test_live.py --requests
     python test_live.py --api https://mo-stats.werneruszcb71.workers.dev --proxy http://127.0.0.1:7890
 """
 import argparse
@@ -82,11 +91,104 @@ def call(opener, path, method="GET", body=None, origin=ORIGIN, retries=5):
     raise last
 
 
+def run_request_checks(opener):
+    """资源帮找的三个接口。会往真实库写记录，调用方负责清理。
+
+    中文内容全部由 Python 编码成 UTF-8 发出 —— 用 bash + curl 发中文在
+    GBK 控制台下会被改坏，症状是标题被判成「无有效文字」，看着像后端 bug。
+    """
+    mark = f"帮找冒烟{int(time.time())}"
+    print(f"\n--- 资源帮找（标记 {mark}）---")
+
+    status, data = call(opener, "/api/requests")
+    check("GET /api/requests 返回 200", status == 200, str(status))
+    if status != 200 or not isinstance(data, dict):
+        check("帮找接口可读", False, "后续检查跳过")
+        return mark
+    check("响应含 items/summary", "items" in data and "summary" in data,
+          ",".join(data.keys()))
+
+    status, body = call(opener, "/api/requests", "POST",
+                        {"title": mark, "note": "线上验证，稍后删除"})
+    check("中文标题提交成功", status == 200 and (body or {}).get("ok") is True,
+          f"{status} {json.dumps(body, ensure_ascii=False)}")
+
+    time.sleep(1.5)
+    _, data = call(opener, "/api/requests")
+    mine = [x for x in data["items"] if x["title"] == mark]
+    check("列表里能查到", len(mine) == 1, f"共 {len(data['items'])} 条")
+    if mine:
+        check("标题原样保留（未乱码未截断）", mine[0]["title"] == mark, mine[0]["title"])
+        check("状态为 open", mine[0]["status"] == "open", mine[0]["status"])
+        check("初始票数 1", mine[0]["votes"] == 1, str(mine[0]["votes"]))
+        check("不泄露提交者指纹", "fp" not in mine[0], ",".join(mine[0].keys()))
+
+    # 带标点的同名标题应合并成投票，不新建条目
+    time.sleep(1)
+    _, body = call(opener, "/api/requests", "POST", {"title": mark + "！！"})
+    check("同名（含标点）合并为投票", (body or {}).get("merged") is True,
+          json.dumps(body, ensure_ascii=False))
+
+    time.sleep(1.5)
+    _, data = call(opener, "/api/requests")
+    check("条目数没有增加",
+          len([x for x in data["items"] if x["title"] == mark]) == 1)
+
+    for payload, label, want in [
+        ({"title": "   "}, "空标题", 400),
+        ({"title": "！！！"}, "纯标点标题", 400),
+    ]:
+        time.sleep(1)
+        check(f"{label}被 {want}",
+              call(opener, "/api/requests", "POST", payload)[0] == want)
+
+    for vid, label, want in [(99999999, "投不存在的 id", 404), ("abc", "坏 id", 400)]:
+        time.sleep(1)
+        check(f"{label}返回 {want}",
+              call(opener, "/api/requests/vote", "POST", {"id": vid})[0] == want)
+
+    time.sleep(1)
+    check("非白名单来源提交被 403",
+          call(opener, "/api/requests", "POST", {"title": "坏来源"},
+               origin="https://evil.example.com")[0] == 403)
+
+    time.sleep(1)
+    _, data = call(opener, "/api/requests")
+    check("被拒的请求没有落库",
+          not any(x["title"] == "坏来源" for x in data["items"]))
+    return mark
+
+
+def wrangler_sql(sql, label):
+    """跑一条 D1 语句做清理。
+
+    直接调 wrangler 而不是 wr.sh —— Windows 上 subprocess 跑 .sh 要绕 bash，
+    而 wr.sh 只是设两个环境变量，这里自己设更省事。
+    """
+    env = dict(os.environ)
+    env["XDG_CONFIG_HOME"] = r"D:\local_translate_tool\wrangler_home"
+    env["WRANGLER_LOG_PATH"] = r"D:\local_translate_tool\wrangler_home\logs"
+    try:
+        r = subprocess.run(
+            ["wrangler.cmd", "d1", "execute", "mo-stats", "--remote", "-y", "--command", sql],
+            capture_output=True, text=True, timeout=240, env=env,
+            # wrangler 输出带颜色转义和 emoji，Windows 默认的 GBK 解不了会抛
+            # UnicodeDecodeError，导致 stdout 变成 None
+            encoding="utf-8", errors="replace",
+        )
+        ok = '"changed_db": true' in (r.stdout or "")
+        check(label, ok, "" if ok else ((r.stderr or r.stdout or "")[-200:] or "无输出"))
+    except Exception as e:
+        check(label, False, f"{e}；请手动执行：{sql}")
+
+
 def main():
     global API
     ap = argparse.ArgumentParser()
     ap.add_argument("--api", default=DEFAULT_API, help="要测的接口地址")
     ap.add_argument("--proxy", default="", help="workers.dev 在国内需要代理")
+    ap.add_argument("--requests", action="store_true",
+                    help="额外测资源帮找接口（会写真实库再清理）")
     args = ap.parse_args()
     API = args.api.rstrip("/")
     opener = build_opener(args.proxy)
@@ -150,26 +252,23 @@ def main():
     check("被拒请求未污染数据", "evil-origin-probe" not in stats["clicks"]["all"])
     check("表结构完好（仍能正常读）", isinstance(stats["clicks"]["all"], dict))
 
-    # 5. 清理测试数据
+    # 5. 可选：资源帮找接口
+    mark = run_request_checks(opener) if args.requests else None
+
+    # 6. 清理测试数据
     print("\n清理测试数据…")
-    # 直接调 wrangler 而不是 wr.sh —— Windows 上 subprocess 跑 .sh 要绕 bash，
-    # 而 wr.sh 只是设两个环境变量，这里自己设更省事。
-    env = dict(os.environ)
-    env["XDG_CONFIG_HOME"] = r"D:\local_translate_tool\wrangler_home"
-    env["WRANGLER_LOG_PATH"] = r"D:\local_translate_tool\wrangler_home\logs"
-    try:
-        r = subprocess.run(
-            ["wrangler.cmd", "d1", "execute", "mo-stats", "--remote", "-y",
-             "--command", f"DELETE FROM clicks WHERE item = '{ITEM}'"],
-            capture_output=True, text=True, timeout=180, env=env,
-            # wrangler 输出带颜色转义和 emoji，Windows 默认的 GBK 解不了会抛
-            # UnicodeDecodeError，导致 stdout 变成 None
-            encoding="utf-8", errors="replace",
+    wrangler_sql(f"DELETE FROM clicks WHERE item = '{ITEM}'", "点击测试记录已删除")
+    if mark:
+        # 先删投票去重键再删主记录，否则 fp 关联查不到
+        wrangler_sql(
+            "DELETE FROM request_votes WHERE k IN "
+            f"(SELECT id || '|' || fp FROM requests WHERE display LIKE '{mark}%')",
+            "帮找投票记录已删除",
         )
-        ok = '"changed_db": true' in (r.stdout or "")
-        check("测试记录已删除", ok, "" if ok else ((r.stderr or r.stdout or "")[-200:] or "无输出"))
-    except Exception as e:
-        check("测试记录已删除", False, f"{e}；请手动执行 DELETE FROM clicks WHERE item = '{ITEM}'")
+        wrangler_sql(
+            f"DELETE FROM requests WHERE display LIKE '{mark}%'",
+            "帮找测试记录已删除",
+        )
 
     print(f"\n{len(FAIL)} 项失败：{', '.join(FAIL)}" if FAIL else "\n全部通过")
     raise SystemExit(1 if FAIL else 0)

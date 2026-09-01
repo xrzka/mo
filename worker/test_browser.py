@@ -48,17 +48,38 @@ class SiteHandler(http.server.SimpleHTTPRequestHandler):
 
 
 class StatsStub(http.server.BaseHTTPRequestHandler):
-    """Worker 桩：只实现 /api/stats、/api/hit、/api/visit 三个接口。"""
+    """Worker 桩：实现统计三个接口 + 资源帮找三个接口。"""
 
     hits = {}
     visits = 0
     # 需要各周期人数不同时设成 {"day":3,...}，默认所有周期都回 visits
     per_period = None
 
+    # 资源帮找：id -> 条目。next_id 单调递增，模拟 AUTOINCREMENT
+    requests = {}
+    next_id = 1
+    # 下一次写请求强制返回的 (状态码, 响应体)，用来测错误分支
+    force_error = None
+
+    @classmethod
+    def reset_requests(cls):
+        cls.requests = {}
+        cls.next_id = 1
+        cls.force_error = None
+
     def _cors(self):
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Methods", "GET,POST,OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "Content-Type")
+
+    def _send(self, obj, status=200):
+        body = json.dumps(obj).encode()
+        self.send_response(status)
+        self.send_header("Content-Type", "application/json")
+        self._cors()
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
 
     def do_OPTIONS(self):
         self.send_response(204)
@@ -66,41 +87,79 @@ class StatsStub(http.server.BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_GET(self):
+        if self.path.startswith("/api/requests"):
+            items = sorted(
+                StatsStub.requests.values(), key=lambda x: (-x["votes"], -x["id"])
+            )
+            summary = {"open": 0, "found": 0, "closed": 0}
+            for it in StatsStub.requests.values():
+                if it["status"] in summary:
+                    summary[it["status"]] += 1
+            return self._send({"items": items, "summary": summary})
+
         periods = ["day", "week", "month", "year", "all"]
         visitors = (
             dict(StatsStub.per_period)
             if StatsStub.per_period
             else {p: StatsStub.visits for p in periods}
         )
-        body = json.dumps(
-            {
-                "clicks": {p: dict(StatsStub.hits) for p in periods},
-                "visitors": visitors,
-            }
-        ).encode()
-        self.send_response(200)
-        self.send_header("Content-Type", "application/json")
-        self._cors()
-        self.send_header("Content-Length", str(len(body)))
-        self.end_headers()
-        self.wfile.write(body)
+        self._send({"clicks": {p: dict(StatsStub.hits) for p in periods}, "visitors": visitors})
 
     def do_POST(self):
         n = int(self.headers.get("Content-Length") or 0)
         raw = self.rfile.read(n) if n else b"{}"
+        try:
+            body = json.loads(raw or b"{}") or {}
+        except json.JSONDecodeError:
+            body = {}
+
+        if StatsStub.force_error and self.path.startswith("/api/requests"):
+            status, payload = StatsStub.force_error
+            StatsStub.force_error = None
+            return self._send(payload, status)
+
         if self.path == "/api/hit":
-            item = (json.loads(raw or b"{}") or {}).get("id")
+            item = body.get("id")
             if item:
                 StatsStub.hits[item] = StatsStub.hits.get(item, 0) + 1
         elif self.path == "/api/visit":
             StatsStub.visits += 1
-        body = b'{"ok":true}'
-        self.send_response(200)
-        self.send_header("Content-Type", "application/json")
-        self._cors()
-        self.send_header("Content-Length", str(len(body)))
-        self.end_headers()
-        self.wfile.write(body)
+        elif self.path == "/api/requests":
+            title = (body.get("title") or "").strip()
+            if not title:
+                return self._send({"error": "作品名不能为空"}, 400)
+            # 归一化去重：去掉非字母数字，和后端 normalizeTitle 同一思路
+            norm = "".join(c for c in title.lower() if c.isalnum())
+            for it in StatsStub.requests.values():
+                if it["_norm"] == norm:
+                    it["votes"] += 1
+                    return self._send({"ok": True, "id": it["id"], "merged": True})
+            rid = StatsStub.next_id
+            StatsStub.next_id += 1
+            StatsStub.requests[rid] = {
+                "id": rid,
+                "title": title,
+                "note": (body.get("note") or "").strip(),
+                "status": "open",
+                "votes": 1,
+                "reply": "",
+                "created": "2026-09-01T00:00:00.000Z",
+                "_norm": norm,
+            }
+            return self._send({"ok": True, "id": rid})
+        elif self.path == "/api/requests/vote":
+            rid = body.get("id")
+            it = StatsStub.requests.get(rid)
+            if not it:
+                return self._send({"error": "求助不存在"}, 404)
+            # 同一条只让投一次，模拟指纹去重
+            if it.get("_voted"):
+                return self._send({"ok": False, "reason": "already voted"})
+            it["_voted"] = True
+            it["votes"] += 1
+            return self._send({"ok": True})
+
+        self._send({"ok": True})
 
     def log_message(self, *a):
         pass
@@ -507,6 +566,226 @@ def test_visitors_follow_period(page, base, stub_port):
     StatsStub.per_period = None
 
 
+def open_wanted(page):
+    """展开资源帮找面板。默认收起，不展开拿不到里面的节点。"""
+    if page.get_attribute("[data-wanted-toggle]", "aria-expanded") != "true":
+        page.click("[data-wanted-toggle]")
+
+
+def wanted_rows(page):
+    return page.eval_on_selector_all(
+        "[data-wanted-list] .wanted-row",
+        "els => els.map(e => ({"
+        " title: e.querySelector('.wanted-name').textContent,"
+        " note: (e.querySelector('.wanted-note')||{}).textContent || '',"
+        " reply: (e.querySelector('.wanted-reply')||{}).textContent || '',"
+        " votes: parseInt(e.querySelector('.wanted-vote strong').textContent),"
+        " status: e.querySelector('.wanted-status').textContent }))",
+    )
+
+
+def test_wanted_hidden_without_backend(page, base):
+    """没有后端时整块必须隐藏 —— 表单点了没反应比没有表单更让人困惑。"""
+    print("\n--- 帮找：无后端时隐藏 ---")
+    stub_config(page, "")
+    page.goto(base, wait_until="networkidle")
+    page.wait_for_timeout(1200)
+    check("本机模式下帮找区隐藏", page.is_hidden("[data-wanted-panel]"))
+
+
+def test_wanted_submit(page, base, stub_port):
+    print("\n--- 帮找：提交与展示 ---")
+    StatsStub.reset_requests()
+    stub_config(page, f"http://127.0.0.1:{stub_port}")
+    page.goto(base, wait_until="networkidle")
+    page.wait_for_timeout(1200)
+
+    check("有后端时帮找区显示", page.is_visible("[data-wanted-panel]"))
+    open_wanted(page)
+
+    page.fill('[data-wanted-input="title"]', "某部很想看的漫画")
+    page.fill('[data-wanted-input="note"]', "作者不记得了，大概是韩漫")
+    page.click("[data-wanted-submit]")
+    page.wait_for_timeout(900)
+
+    msg = page.text_content("[data-wanted-msg]")
+    check("提交成功有反馈", "提交成功" in msg, msg.strip())
+    check("后端收到了记录", len(StatsStub.requests) == 1, json.dumps(list(StatsStub.requests)))
+
+    rows = wanted_rows(page)
+    check("列表出现该条", len(rows) == 1 and rows[0]["title"] == "某部很想看的漫画",
+          json.dumps(rows, ensure_ascii=False)[:150])
+    check("补充说明显示", "韩漫" in rows[0]["note"], rows[0]["note"])
+    check("初始票数 1", rows[0]["votes"] == 1, str(rows[0]["votes"]))
+    check("状态标为待找", rows[0]["status"] == "待找", rows[0]["status"])
+    check("提交后清空输入框",
+          page.input_value('[data-wanted-input="title"]') == "")
+
+    # 空标题不该发请求
+    before = len(StatsStub.requests)
+    page.click("[data-wanted-submit]")
+    page.wait_for_timeout(500)
+    check("空标题被前端挡住", len(StatsStub.requests) == before,
+          f"{before} -> {len(StatsStub.requests)}")
+    check("空标题有提示", "作品名" in page.text_content("[data-wanted-msg]"))
+
+
+def test_wanted_merge_and_vote(page, base, stub_port):
+    print("\n--- 帮找：合并与投票 ---")
+    StatsStub.reset_requests()
+    stub_config(page, f"http://127.0.0.1:{stub_port}")
+    page.goto(base, wait_until="networkidle")
+    page.wait_for_timeout(1200)
+    open_wanted(page)
+
+    page.fill('[data-wanted-input="title"]', "鬼灭之刃")
+    page.click("[data-wanted-submit]")
+    page.wait_for_timeout(800)
+
+    # 重复提交（带标点差异）应合并成投票，不新建条目
+    page.fill('[data-wanted-input="title"]', "鬼灭之刃！！")
+    page.click("[data-wanted-submit]")
+    page.wait_for_timeout(900)
+    msg = page.text_content("[data-wanted-msg]")
+    check("重复提交提示已合并", "加了一票" in msg, msg.strip())
+    check("后端仍只有 1 条", len(StatsStub.requests) == 1, str(len(StatsStub.requests)))
+
+    rows = wanted_rows(page)
+    check("票数涨到 2", rows and rows[0]["votes"] == 2, json.dumps(rows, ensure_ascii=False)[:120])
+
+    # 点 +1 想看
+    page.click("[data-wanted-list] .wanted-vote >> nth=0")
+    page.wait_for_timeout(700)
+    rows = wanted_rows(page)
+    check("投票后票数变 3", rows and rows[0]["votes"] == 3, str(rows[0]["votes"]) if rows else "-")
+    check("投票按钮标记已投",
+          page.eval_on_selector("[data-wanted-list] .wanted-vote",
+                                "e => e.classList.contains('voted')"))
+    # 投过之后按钮保持禁用 —— 这是防重复投票的正解，所以这里验证禁用状态
+    # 而不是再点一次（再点会一直等按钮可用直到超时）
+    check("投过后按钮禁用",
+          page.eval_on_selector("[data-wanted-list] .wanted-vote", "e => e.disabled"))
+    check("按钮提示已记下",
+          "已记下" in (page.get_attribute("[data-wanted-list] .wanted-vote", "title") or ""),
+          page.get_attribute("[data-wanted-list] .wanted-vote", "title") or "")
+
+    # 重新加载后由后端决定票数，前端不会凭空多算
+    page.reload(wait_until="networkidle")
+    page.wait_for_timeout(1300)
+    open_wanted(page)
+    rows = wanted_rows(page)
+    check("刷新后票数与后端一致", rows and rows[0]["votes"] == StatsStub.requests[1]["votes"],
+          f'{rows[0]["votes"] if rows else "-"} vs {StatsStub.requests[1]["votes"]}')
+
+
+def test_wanted_status_tabs(page, base, stub_port):
+    print("\n--- 帮找：状态标签 ---")
+    StatsStub.reset_requests()
+    StatsStub.requests = {
+        1: {"id": 1, "title": "待找的作品", "note": "", "status": "open", "votes": 5,
+            "reply": "", "created": "2026-09-01T00:00:00.000Z", "_norm": "a"},
+        2: {"id": 2, "title": "已找到的作品", "note": "", "status": "found", "votes": 3,
+            "reply": "已加到小说区", "created": "2026-08-30T00:00:00.000Z", "_norm": "b"},
+        3: {"id": 3, "title": "关掉的作品", "note": "", "status": "closed", "votes": 1,
+            "reply": "找不到资源", "created": "2026-08-29T00:00:00.000Z", "_norm": "c"},
+    }
+    StatsStub.next_id = 4
+    stub_config(page, f"http://127.0.0.1:{stub_port}")
+    page.goto(base, wait_until="networkidle")
+    page.wait_for_timeout(1300)
+    open_wanted(page)
+
+    sub = page.text_content("[data-wanted-sub]")
+    check("标题显示待找条数", "1 条待找" in sub, sub.strip())
+
+    tabs = page.eval_on_selector_all(
+        "[data-wanted-tabs] .wanted-tab",
+        "els => els.map(e => [e.textContent, e.getAttribute('aria-selected') === 'true'])",
+    )
+    check("默认选中待找", tabs[0][1] is True and not any(t[1] for t in tabs[1:]), str(tabs))
+
+    rows = wanted_rows(page)
+    check("待找页只显示 open", len(rows) == 1 and rows[0]["title"] == "待找的作品",
+          json.dumps(rows, ensure_ascii=False)[:120])
+
+    page.click('[data-wanted-tabs] button:has-text("已找到")')
+    page.wait_for_timeout(400)
+    sel = page.eval_on_selector_all(
+        "[data-wanted-tabs] .wanted-tab",
+        "els => els.filter(e => e.getAttribute('aria-selected')==='true').map(e=>e.textContent)",
+    )
+    check("高亮切到已找到", len(sel) == 1 and "已找到" in sel[0], str(sel))
+    rows = wanted_rows(page)
+    check("显示已找到的条目", len(rows) == 1 and rows[0]["title"] == "已找到的作品",
+          json.dumps(rows, ensure_ascii=False)[:120])
+    check("显示站长回复", "已加到小说区" in rows[0]["reply"], rows[0]["reply"])
+
+    page.click('[data-wanted-tabs] button:has-text("已关闭")')
+    page.wait_for_timeout(400)
+    rows = wanted_rows(page)
+    check("显示已关闭的条目", len(rows) == 1 and rows[0]["title"] == "关掉的作品",
+          json.dumps(rows, ensure_ascii=False)[:120])
+
+
+def test_wanted_xss(page, base, stub_port):
+    """用户提交的内容必须走 textContent，绝不能被当 HTML 执行。"""
+    print("\n--- 帮找：XSS 载荷 ---")
+    StatsStub.reset_requests()
+    payload = '<img src=x onerror="window.__xss=1">'
+    StatsStub.requests = {
+        1: {"id": 1, "title": payload, "note": "<script>window.__xss2=1</script>",
+            "status": "open", "votes": 1, "reply": "", "created": "2026-09-01T00:00:00.000Z",
+            "_norm": "x"},
+    }
+    StatsStub.next_id = 2
+    stub_config(page, f"http://127.0.0.1:{stub_port}")
+    page.goto(base, wait_until="networkidle")
+    page.wait_for_timeout(1300)
+    open_wanted(page)
+    page.wait_for_timeout(500)
+
+    rows = wanted_rows(page)
+    check("载荷按纯文本显示", rows and rows[0]["title"] == payload,
+          rows[0]["title"] if rows else "-")
+    check("没有注入 img 标签",
+          page.eval_on_selector_all("[data-wanted-list] img", "e => e.length") == 0)
+    check("onerror 没有执行", page.evaluate("() => window.__xss === undefined"))
+    check("script 没有执行", page.evaluate("() => window.__xss2 === undefined"))
+
+
+def test_wanted_error_handling(page, base, stub_port):
+    """后端报错时要把原因说出来，不能静默失败。"""
+    print("\n--- 帮找：错误处理 ---")
+    StatsStub.reset_requests()
+    stub_config(page, f"http://127.0.0.1:{stub_port}")
+    page.goto(base, wait_until="networkidle")
+    page.wait_for_timeout(1200)
+    open_wanted(page)
+
+    StatsStub.force_error = (429, {"error": "今天已提交 5 条，明天再来吧"})
+    page.fill('[data-wanted-input="title"]', "超额的提交")
+    page.click("[data-wanted-submit]")
+    page.wait_for_timeout(800)
+    msg = page.text_content("[data-wanted-msg]")
+    check("显示后端返回的原因", "明天再来" in msg, msg.strip())
+    check("失败时不清空输入", page.input_value('[data-wanted-input="title"]') == "超额的提交")
+    check("提交按钮恢复可用",
+          page.eval_on_selector("[data-wanted-submit]", "e => !e.disabled"))
+
+
+def test_wanted_notice_jump(page, base, stub_port):
+    print("\n--- 帮找：公告入口跳转 ---")
+    StatsStub.reset_requests()
+    stub_config(page, f"http://127.0.0.1:{stub_port}")
+    page.goto(base, wait_until="networkidle")
+    page.wait_for_timeout(1200)
+    check("公告里有帮找入口", page.is_visible("[data-goto-wanted]"))
+    page.click("[data-goto-wanted]")
+    page.wait_for_timeout(900)
+    check("点击后自动展开", page.get_attribute("[data-wanted-toggle]", "aria-expanded") == "true")
+    check("表单可见", page.is_visible("[data-wanted-form]"))
+
+
 def test_api_down(page, base):
     print("\n--- 后端全都不可用时降级 ---")
     # 两个地址都连不上，模拟 Worker 挂掉或整体被网络挡住
@@ -562,6 +841,35 @@ def main():
 
             ctx = browser.new_context()
             test_degraded_click_reported(ctx.new_page(), base, stub_port)
+            ctx.close()
+
+            # ---- 资源帮找 ----
+            ctx = browser.new_context()
+            test_wanted_hidden_without_backend(ctx.new_page(), base)
+            ctx.close()
+
+            ctx = browser.new_context()
+            test_wanted_submit(ctx.new_page(), base, stub_port)
+            ctx.close()
+
+            ctx = browser.new_context()
+            test_wanted_merge_and_vote(ctx.new_page(), base, stub_port)
+            ctx.close()
+
+            ctx = browser.new_context()
+            test_wanted_status_tabs(ctx.new_page(), base, stub_port)
+            ctx.close()
+
+            ctx = browser.new_context()
+            test_wanted_xss(ctx.new_page(), base, stub_port)
+            ctx.close()
+
+            ctx = browser.new_context()
+            test_wanted_error_handling(ctx.new_page(), base, stub_port)
+            ctx.close()
+
+            ctx = browser.new_context()
+            test_wanted_notice_jump(ctx.new_page(), base, stub_port)
             ctx.close()
 
             ctx = browser.new_context()
