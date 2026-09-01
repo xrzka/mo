@@ -17,6 +17,8 @@
       label: "小说",
       icon: "📖",
       subs: [
+        { id: "site", label: "网站" },
+        { id: "app", label: "软件" },
         { id: "kr", label: "韩轻" },
         { id: "jp", label: "日轻" },
       ],
@@ -32,8 +34,24 @@
         { id: "jp", label: "日漫" },
       ],
     },
-    { id: "anime", label: "动画", icon: "🎬" },
-    { id: "game", label: "游戏", icon: "🎮" },
+    {
+      id: "anime",
+      label: "动画",
+      icon: "🎬",
+      subs: [
+        { id: "site", label: "网站" },
+        { id: "app", label: "软件" },
+      ],
+    },
+    {
+      id: "game",
+      label: "游戏",
+      icon: "🎮",
+      subs: [
+        { id: "site", label: "网站" },
+        { id: "app", label: "软件" },
+      ],
+    },
     { id: "music", label: "音乐", icon: "🎵" },
     { id: "tool", label: "工具", icon: "🔧" },
     { id: "ai", label: "AI", icon: "✦" },
