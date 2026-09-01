@@ -50,6 +50,7 @@
       subs: [
         { id: "site", label: "网站" },
         { id: "app", label: "软件" },
+        { id: "gal", label: "Galgame" },
       ],
     },
     { id: "music", label: "音乐", icon: "🎵" },
