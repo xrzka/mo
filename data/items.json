@@ -1,6 +1,6 @@
 {
   "generated_at": "2026-08-31T04:16:56Z",
-  "note": "示例数据。新增资源在 items 数组里加一项即可，section 取值：novel / manga / anime / game / ai",
+  "note": "示例数据。新增资源在 items 数组里加一项即可，section 取值：novel / manga / anime / game / music / tool / ai / forum / guide / collection",
   "items": [
     {
       "id": "manual-guide-1",
@@ -2239,6 +2239,24 @@
       "need_login": false,
       "update_info": "每日更新",
       "note": "站内有「收藏发布页」入口，域名变动时可用它找到新地址。部分章节标注为机翻。"
+    },
+    {
+      "id": "manual-forum-1",
+      "name": "LINUX SB（烧饼社区）",
+      "section": "forum",
+      "description": "AI 技术交流论坛，版块分技术交流、资源分享、福利放送、求助问答等。免费白嫖的 API 中转站额度、签到脚本、教程多从这里流出。不登录可以看帖，评论区要登录才显示。",
+      "url": "https://linux.sb/",
+      "tags": [
+        "AI 交流",
+        "资源分享",
+        "福利放送",
+        "求助问答",
+        "免注册看帖"
+      ],
+      "kind": "论坛 / 社区",
+      "need_login": false,
+      "update_info": "每日活跃",
+      "note": "看帖不用注册；发帖、回帖、看评论区需要登录。注册要邮箱验证码 + 一道算术人机验证，没有邀请码门槛。站内用积分体系，攒积分才能解锁上传等权限。热门版块：技术交流 / 资源分享 / 福利放送 / 求助问答。"
     }
   ]
 }

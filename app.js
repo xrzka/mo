@@ -37,6 +37,7 @@
     { id: "music", label: "音乐", icon: "🎵" },
     { id: "tool", label: "工具", icon: "🔧" },
     { id: "ai", label: "AI", icon: "✦" },
+    { id: "forum", label: "论坛", icon: "💬" },
     { id: "guide", label: "教程 / 问题", icon: "💡" },
     { id: "collection", label: "收录", icon: "🗂" },
   ];
