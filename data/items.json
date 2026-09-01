@@ -575,6 +575,56 @@
       "password": "9xma"
     },
     {
+      "id": "manual-novel-1",
+      "name": "书兔导航（뉴토끼 地址发布页）",
+      "section": "novel",
+      "subsection": "kr",
+      "description": "韩国站 뉴토끼 的地址发布页，域名被封时来这里找当前可用地址。站内有韩国网络小说、漫画、动画，小说区约 1.3 万部，来源标了문피아 / 카카오페이지 / 네이버 시리즈。",
+      "url": "https://telegra.ph/%EB%89%B4%ED%86%A0%EB%81%BC-%EC%A0%91%EC%86%8D-%EC%98%A4%EB%A5%98--%EC%97%B0%EA%B2%B0-%EC%9E%AC%EC%84%A4%EC%A0%95-%EC%98%A4%EB%A5%98-%ED%95%B4%EA%B2%B0%EB%B0%A9%EB%B2%95-07-17",
+      "links": [
+        {
+          "name": "书兔导航",
+          "url": "https://telegra.ph/%EB%89%B4%ED%86%A0%EB%81%BC-%EC%A0%91%EC%86%8D-%EC%98%A4%EB%A5%98--%EC%97%B0%EA%B2%B0-%EC%9E%AC%EC%84%A4%EC%A0%95-%EC%98%A4%EB%A5%98-%ED%95%B4%EA%B2%B0%EB%B0%A9%EB%B2%95-07-17",
+          "password": "",
+          "label": "地址页 · 国内打不开"
+        },
+        {
+          "name": "新版固定地址",
+          "url": "https://sbxh9.com/",
+          "password": "",
+          "label": "推荐"
+        },
+        {
+          "name": "小说区直达",
+          "url": "https://sbxh9.com/novel",
+          "password": ""
+        },
+        {
+          "name": "旧版地址",
+          "url": "https://newtoki1.org/",
+          "password": ""
+        },
+        {
+          "name": "新版地址",
+          "url": "https://toki31.com/",
+          "password": "",
+          "label": "需绕过"
+        }
+      ],
+      "tags": [
+        "韩国网络小说",
+        "地址发布页",
+        "在线看",
+        "限韩国 IP",
+        "需 DNS 绕过",
+        "免注册看列表"
+      ],
+      "kind": "地址发布页 / 在线站",
+      "need_login": false,
+      "update_info": "每日更新",
+      "note": "实测：导航页本身在国内直连打不通（多次超时），挂代理也握手失败，所以下面直接给了页面里列出的几个站点地址。这些站点做了韩国 IP 限制，国内访问会间歇性返回 403（Cloudflare 提示 KR_ONLY），首页和小说列表多数能开，作品详情页时通时不通；toki31.com 一直被拦。导航页给的办法是装 DNS 绕过 App：安卓/iOS 用 1.1.1.1 或 Unicorn HTTPS，Windows 用 Unicorn HTTPS，开启后重连。看列表不用登录，部分小说标了「일부 포인트」需要站内积分。站内另有 🔞 成人分区和赌博性质的积分小游戏，介意的话别深逛。"
+    },
+    {
       "id": "xlsx-manga-29",
       "name": "「漫画动漫小说APP合集」来自UC网盘分享",
       "section": "collection",
