@@ -622,7 +622,65 @@
       "kind": "地址发布页 / 在线站",
       "need_login": false,
       "update_info": "每日更新",
-      "note": "实测：导航页本身在国内直连打不通（多次超时），挂代理也握手失败，所以下面直接给了页面里列出的几个站点地址。这些站点做了韩国 IP 限制，国内访问会间歇性返回 403（Cloudflare 提示 KR_ONLY），首页和小说列表多数能开，作品详情页时通时不通；toki31.com 一直被拦。导航页给的办法是装 DNS 绕过 App：安卓/iOS 用 1.1.1.1 或 Unicorn HTTPS，Windows 用 Unicorn HTTPS，开启后重连。看列表不用登录，部分小说标了「일부 포인트」需要站内积分。站内另有 🔞 成人分区和赌博性质的积分小游戏，介意的话别深逛。"
+      "note": "实测：导航页本身在国内直连打不通（多次超时），挂代理也握手失败，所以下面直接给了页面里列出的几个站点地址。这些站点做了韩国 IP 限制，国内访问会间歇性返回 403（Cloudflare 提示 KR_ONLY），首页和小说列表多数能开，作品详情页时通时不通；toki31.com 一直被拦（新旧域名各自也单独收录了一条，见「新书兔」「旧书兔」）。导航页给的办法是装 DNS 绕过 App：安卓/iOS 用 1.1.1.1 或 Unicorn HTTPS，Windows 用 Unicorn HTTPS，开启后重连。看列表不用登录，部分小说标了「일부 포인트」需要站内积分。站内另有 🔞 成人分区和赌博性质的积分小游戏，介意的话别深逛。"
+    },
+    {
+      "id": "manual-novel-2",
+      "name": "新书兔 toki31（뉴토끼 新版）",
+      "section": "novel",
+      "subsection": "site",
+      "description": "뉴토끼 新版域名。韩国网络小说 + 漫画 + 动画在线站，小说来源标了문피아 / 카카오페이지 / 네이버 시리즈。国内直连被挡，需要 DNS 绕过才能打开。",
+      "url": "https://toki31.com/",
+      "tags": [
+        "韩国网络小说",
+        "在线看",
+        "限韩国 IP",
+        "需 DNS 绕过",
+        "新版域名"
+      ],
+      "kind": "在线小说 / 漫画站",
+      "need_login": false,
+      "update_info": "每日更新",
+      "note": "实测这个域名国内一直打不开：连试三次首页全部 403，不像旧版那样时通时不通。想直连的话用「旧书兔」那条，或走书兔导航里的固定地址 sbxh9.com。站点做了韩国 IP 限制，国内访问会被 Cloudflare 挡（403，提示 KR_ONLY / only KR is allowed, detected country is CN）。绕过办法：装 DNS 绕过 App —— 安卓/iOS 用 1.1.1.1 或 Unicorn HTTPS，Windows 用 Unicorn HTTPS，开启后重连。看列表不用登录，发帖和部分标「일부 포인트」的作品需要站内积分。站内另有 🔞 成人分区和赌博性质的积分小游戏，介意的话别深逛。"
+    },
+    {
+      "id": "manual-novel-3",
+      "name": "旧书兔 newtoki1（뉴토끼 旧版）",
+      "section": "novel",
+      "subsection": "site",
+      "description": "뉴토끼 旧版域名，三个地址里国内最好用的一个。有 웹소설（网络小说）、웹툰、일본만화、애니 各区，另有小说 / 动漫 / 역식자 等讨论版。",
+      "url": "https://newtoki1.org/",
+      "links": [
+        {
+          "name": "首页",
+          "url": "https://newtoki1.org/",
+          "password": "",
+          "label": "国内可开"
+        },
+        {
+          "name": "小说区",
+          "url": "https://newtoki1.org/novel",
+          "password": "",
+          "label": "需绕过"
+        },
+        {
+          "name": "漫画区",
+          "url": "https://newtoki1.org/manhwa",
+          "password": "",
+          "label": "需绕过"
+        }
+      ],
+      "tags": [
+        "韩国网络小说",
+        "在线看",
+        "限韩国 IP",
+        "需 DNS 绕过",
+        "旧版域名"
+      ],
+      "kind": "在线小说 / 漫画站",
+      "need_login": false,
+      "update_info": "每日更新",
+      "note": "实测首页国内能直连打开（连试三次都是 200），是三个地址里最稳的；但点进 /novel、/webtoon 等内页会 403，所以真要看内容仍然需要绕过。站点做了韩国 IP 限制，国内访问会被 Cloudflare 挡（403，提示 KR_ONLY / only KR is allowed, detected country is CN）。绕过办法：装 DNS 绕过 App —— 安卓/iOS 用 1.1.1.1 或 Unicorn HTTPS，Windows 用 Unicorn HTTPS，开启后重连。看列表不用登录，发帖和部分标「일부 포인트」的作品需要站内积分。站内另有 🔞 成人分区和赌博性质的积分小游戏，介意的话别深逛。"
     },
     {
       "id": "xlsx-manga-29",
