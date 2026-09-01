@@ -58,7 +58,14 @@
     { id: "ai", label: "AI", icon: "✦" },
     { id: "forum", label: "论坛", icon: "💬" },
     { id: "guide", label: "教程 / 问题", icon: "💡" },
-    { id: "collection", label: "收录 / 杂类", icon: "🗂" },
+    { id: "collection", label: "收录 / 杂类", icon: "🗂",
+      subs: [
+        { id: "site", label: "网站" },
+        { id: "app", label: "软件" },
+        { id: "doc", label: "文档" },
+        { id: "guide", label: "教程" },
+      ],
+    },
   ];
 
   const SECTION_MAP = new Map(SECTIONS.map((s) => [s.id, s]));

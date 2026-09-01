@@ -12471,6 +12471,42 @@
       "update_info": "网盘分享",
       "note": "",
       "adult": true
+    },
+    {
+      "id": "manual-collection-2",
+      "name": "LINUX DO 邀请码",
+      "section": "collection",
+      "subsection": "site",
+      "description": "L 站（linux.do）邀请码获取站。用 GitHub 账号登录即可领取，免费。收录的公益站里有几个要求 L 站账号，没号的先从这里拿邀请码。",
+      "url": "https://invite.linuxdo.org/",
+      "tags": [
+        "L站邀请码",
+        "GitHub 登录",
+        "免费",
+        "账号门槛"
+      ],
+      "kind": "账号工具站",
+      "need_login": true,
+      "update_info": "随时可用",
+      "note": "需要 GitHub 账号授权登录。站内公益资源如「噜皮生图」要求 L 站账号，可先来这里领邀请码。"
+    },
+    {
+      "id": "manual-collection-3",
+      "name": "查 GitHub 注册时间（官方 API）",
+      "section": "collection",
+      "subsection": "doc",
+      "description": "把网址里的用户名换成自己的，返回的 created_at 就是 GitHub 注册时间。多个公益站要求账号满一年，注册前先用这个自查是否达标。",
+      "url": "https://api.github.com/users/octocat",
+      "tags": [
+        "查注册时间",
+        "GitHub API",
+        "免登录",
+        "看 created_at"
+      ],
+      "kind": "在线查询接口",
+      "need_login": false,
+      "update_info": "随时可用",
+      "note": "把地址末尾的 octocat 换成你的 GitHub 用户名，浏览器直接打开即可。返回的 JSON 里 created_at 是注册时间（UTC）。本表中 AgentRouter、KKToken、JustWoker、SharedChat 都要求账号满一年。"
     }
   ]
 }
