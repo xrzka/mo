@@ -57,10 +57,14 @@
     { id: "ai", label: "AI", icon: "✦" },
     { id: "forum", label: "论坛", icon: "💬" },
     { id: "guide", label: "教程 / 问题", icon: "💡" },
-    { id: "collection", label: "收录", icon: "🗂" },
+    { id: "collection", label: "收录 / 杂类", icon: "🗂" },
   ];
 
   const SECTION_MAP = new Map(SECTIONS.map((s) => [s.id, s]));
+
+  /** 分区填错或留空时的归属。放「收录 / 杂类」而不是小说 ——
+   *  分不清归哪儿的资源本来就该落在杂类里，塞进小说会污染那个分区。 */
+  const FALLBACK_SECTION = "collection";
 
   const PAGE_SIZES = [10, 20, 30, 50, 100];
   const DEFAULT_PAGE_SIZE = 20;
@@ -354,9 +358,10 @@
     setTimeout(() => (btn.textContent = original), 1500);
   }
 
-  /** 收敛原始数据，缺字段给安全默认值；未知分区归到 novel 以免丢卡片。 */
+  /** 收敛原始数据，缺字段给安全默认值；未知分区归到「收录 / 杂类」以免丢卡片。 */
   function normalize(raw, index) {
-    const section = SECTION_MAP.has(raw.section) && raw.section !== "all" ? raw.section : "novel";
+    const section =
+      SECTION_MAP.has(raw.section) && raw.section !== "all" ? raw.section : FALLBACK_SECTION;
     const subs = SECTION_MAP.get(section).subs || [];
     const sub = subs.some((s) => s.id === raw.subsection) ? raw.subsection : null;
     return {

@@ -1,6 +1,6 @@
 {
   "generated_at": "2026-08-31T04:16:56Z",
-  "note": "示例数据。新增资源在 items 数组里加一项即可，section 取值：novel / manga / anime / game / music / tool / ai / forum / guide / collection",
+  "note": "新增资源在 items 数组里加一项即可。section 取值：novel / manga / anime / game / music / tool / ai / forum / guide / collection。不确定归哪个分区就填 collection（收录 / 杂类），填错或留空也会落到那里。",
   "items": [
     {
       "id": "manual-guide-1",

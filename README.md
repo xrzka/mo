@@ -190,7 +190,13 @@ r'<c r="([A-Z]+)(\d+)"([^>]*?)(?:/>|>(.*?)</c>)'
 }
 ```
 
-`section` 取值：`novel` 小说、`manga` 漫画、`anime` 动画、`game` 游戏、`music` 音乐、`tool` 工具、`ai` AI、`forum` 论坛、`guide` 教程/问题、`collection` 收录。填错或留空会自动归到小说分区，不会丢卡片。
+`section` 取值：`novel` 小说、`manga` 漫画、`anime` 动画、`game` 游戏、`music` 音乐、`tool` 工具、`ai` AI、`forum` 论坛、`guide` 教程/问题、`collection` 收录/杂类。
+
+**不确定归哪个分区就填 `collection`。** 那个分区叫「收录 / 杂类」，就是收这类东西的：
+网盘合集入口、说明文档，以及一时分不清类别的资源。想清楚了再改 `section` 挪走即可。
+
+`section` 填错或留空也会落到 `collection`（见 `app.js` 的 `FALLBACK_SECTION`），
+卡片不会丢。以前的兜底是小说区 —— 那会把杂七杂八的东西混进小说里，所以改了。
 
 **手工添加的条目 id 请用 `manual-` 前缀**，这样 xlsx 重跑导入时不会被清掉（已验证）。
 
