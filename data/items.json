@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-01T13:58:34Z",
+  "generated_at": "2026-09-02T10:55:51Z",
   "note": "新增资源在 items 数组里加一项即可。section 取值：novel / manga / anime / game / music / tool / ai / forum / guide / collection。不确定归哪个分区就填 collection（收录 / 杂类），填错或留空也会落到那里。",
   "items": [
     {
@@ -2130,204 +2130,6 @@
           "label": ""
         }
       ]
-    },
-    {
-      "id": "relay-agentrouter",
-      "name": "AgentRouter",
-      "section": "ai",
-      "description": "注册赠送额度最高的一档，每日重新登录即可领取签到额度。支持 gpt-5.6-sol 与 Claude Opus 4.8 / 5。",
-      "url": "https://agentrouter.org/register?aff=kW2C",
-      "tags": [
-        "注册送$175",
-        "签到$25",
-        "GitHub 满一年"
-      ],
-      "kind": "AI API 中转站",
-      "need_login": true,
-      "update_info": "每日可签到",
-      "note": "GitHub 账号需注册满1年以上。 可用模型：gpt-5.6-sol、claude-opus-4.8、claude-opus-5。"
-    },
-    {
-      "id": "relay-tabitoken",
-      "name": "TabiToken",
-      "section": "ai",
-      "description": "GitHub 注册即赠 120 刀，支持签到。可用 Claude Opus 4.8 与 Opus 5。",
-      "url": "https://tabitoken.com/sign-up?aff=Wm9B",
-      "tags": [
-        "注册送$120",
-        "可签到",
-        "勿只签到"
-      ],
-      "kind": "AI API 中转站",
-      "need_login": true,
-      "update_info": "每日可签到",
-      "note": "官方未公布闲置封号规则。同类公益站有过「只签到不使用」被封的先例，建议签到之余保持实际调用。 可用模型：claude-opus-4.8、claude-opus-5。"
-    },
-    {
-      "id": "relay-kktoken",
-      "name": "KKToken",
-      "section": "ai",
-      "description": "tab / go / just 系列的新站，注册送 100，签到 20。注意：该站无法直连，需自备网络代理。",
-      "url": "https://kktoken.cc/sign-up?aff=8dui",
-      "tags": [
-        "注册送$100",
-        "签到$20",
-        "需代理",
-        "GitHub 满一年",
-        "勿只签到"
-      ],
-      "kind": "AI API 中转站",
-      "need_login": true,
-      "update_info": "每日可签到",
-      "note": "GitHub 账号需注册满1年以上。 该站无法直连，需自备网络代理。 官方未公布闲置封号规则。同类公益站有过「只签到不使用」被封的先例，建议签到之余保持实际调用。 可用模型：claude-opus-4.8、claude-opus-5。"
-    },
-    {
-      "id": "relay-justwoker",
-      "name": "JustWoker",
-      "section": "ai",
-      "description": "GitHub 账号需满一年，注册赠送 90 刀，每日可签到 20 刀。可用 Claude Opus 4.8 与 Opus 5。",
-      "url": "https://api.justwoker.icu/sign-up?aff=TAQH",
-      "tags": [
-        "注册送$90",
-        "签到$20",
-        "GitHub 满一年",
-        "勿只签到"
-      ],
-      "kind": "AI API 中转站",
-      "need_login": true,
-      "update_info": "每日可签到",
-      "note": "GitHub 账号需注册满1年以上。 官方未公布闲置封号规则。同类公益站有过「只签到不使用」被封的先例，建议签到之余保持实际调用。 可用模型：claude-opus-4.8、claude-opus-5。"
-    },
-    {
-      "id": "relay-gorouter",
-      "name": "GoRouter",
-      "section": "ai",
-      "description": "GitHub 注册，赠送 70 刀，支持签到。可用 Claude Opus 5。",
-      "url": "https://gorouter.app/sign-up?aff=qhON",
-      "tags": [
-        "注册送$70",
-        "可签到",
-        "闲置封号"
-      ],
-      "kind": "AI API 中转站",
-      "need_login": true,
-      "update_info": "每日可签到",
-      "note": "曾因长期只签到、不实际调用被封号。改为每日签到 + 多号轮流实际使用后至今正常。 可用模型：claude-opus-5。"
-    },
-    {
-      "id": "relay-true-sota",
-      "name": "True-SOTA",
-      "section": "ai",
-      "description": "注册赠送 20 刀，Claude (kiro) 分组倍率 0.35，是本表中已知倍率最低的一档。",
-      "url": "https://true-sota.com/register?aff=8TVU5WM7YRC7",
-      "tags": [
-        "注册送$20",
-        "倍率0.35"
-      ],
-      "kind": "AI API 中转站",
-      "need_login": true,
-      "update_info": "注册即用",
-      "note": "可用模型：claude (kiro)。"
-    },
-    {
-      "id": "relay-yjs",
-      "name": "YJS API",
-      "section": "ai",
-      "description": "长期免费供应 DeepSeek-V4-Flash；其余模型依各家官方免费资源活动弹性开放、不定时提供。注册无赠送额度，无签到。",
-      "url": "https://api.yjs.im/sign-up?aff=Qpsx",
-      "tags": [
-        "长期免费",
-        "DeepSeek",
-        "不定时开放"
-      ],
-      "kind": "AI API 中转站",
-      "need_login": true,
-      "update_info": "不定时开放",
-      "note": "可用模型：DeepSeek-V4-Flash。"
-    },
-    {
-      "id": "relay-closeai-jasperio",
-      "name": "CloseAI",
-      "section": "ai",
-      "description": "无限量 image2 图片生成与无限量 gpt-5.5-mini 聊天。生成的图片请尽快下载，站点会不定时删除。邮箱注册，无需 GitHub。",
-      "url": "https://jasperio.xyz:8848/",
-      "tags": [
-        "无限量 image2",
-        "无限量 gpt-5.5-mini",
-        "图片不定时删除",
-        "邮箱注册",
-        "需代理"
-      ],
-      "kind": "AI API 中转站",
-      "need_login": true,
-      "update_info": "不定时开放",
-      "note": "该站无法直连，需自备网络代理。 可用模型：image2（图片生成）、gpt-5.5-mini。"
-    },
-    {
-      "id": "relay-sharedchat",
-      "name": "SharedChat",
-      "section": "ai",
-      "description": "QQ 邮箱注册的公益站，每日 50 刀 GPT 额度，可在 Codex 中使用。务必只注册一个账号，且不要在付费站重复注册，否则可能触发多号封禁导致公益站无法使用。",
-      "url": "https://new.sharedchat.cc/list/#/register?i=nVbRQ",
-      "tags": [
-        "签到$50",
-        "严禁多号"
-      ],
-      "kind": "AI API 中转站",
-      "need_login": true,
-      "update_info": "每日可签到",
-      "note": "严禁注册多个账号，也不要在付费站重复注册。一旦被判定多号可能直接封禁，导致公益站无法使用。 可用模型：GPT 系列（可在 Codex 使用）。"
-    },
-    {
-      "id": "relay-imagefree",
-      "name": "ImageFree",
-      "section": "ai",
-      "description": "免费 AI 文生图工具，打开即用，无需注册也无需账号邮箱。不限生成次数、无积分额度，出图不带水印，站点声明可用于商业用途。底层是开源模型 Z-Image-Turbo。",
-      "url": "https://imagefree.net/zh",
-      "tags": [
-        "文生图",
-        "无需注册",
-        "不限次数",
-        "无水印",
-        "最长边 1024"
-      ],
-      "kind": "AI 文生图工具",
-      "need_login": false,
-      "update_info": "随时可用",
-      "note": "可用模型：Z-Image-Turbo（开源文生图模型）。"
-    },
-    {
-      "id": "relay-yesnovelai",
-      "name": "YesNovelAI",
-      "section": "ai",
-      "description": "NovelAI 绘图模型公益站，收录 nai-diffusion 3 / 4 / 4.5 / 5 全系共 16 个模型。额度单位是 Gems，只能通过签到和邀请获取。标准尺寸（512×512、832×1216、1216×832、1024×1024，28 步内出 1 张）不计费，超出部分按 NovelAI Anlas 公式折算 Gems。",
-      "url": "https://nai.rinko.ai/sign-up?aff=L1Dl",
-      "tags": [
-        "NovelAI 绘图",
-        "标准尺寸免费",
-        "可签到",
-        "倍率1"
-      ],
-      "kind": "NovelAI 绘图中转站",
-      "need_login": true,
-      "update_info": "每日可签到",
-      "note": "可用模型：nai-diffusion-5-full、nai-diffusion-5-curated、nai-diffusion-4-5-full、nai-diffusion-4-5-curated、nai-diffusion-4-full、nai-diffusion-4-curated、nai-diffusion-3、nai-diffusion-3-furry、各版本 inpainting 变体（共 8 个）。 公益站点，不开放充值，额度全由站长免费发放，请珍惜使用。确需充值可去姊妹站 api.rinko.ai。反馈 QQ 群 709223435。"
-    },
-    {
-      "id": "relay-lupi-image",
-      "name": "噜皮生图",
-      "section": "ai",
-      "description": "image-2 生图公益站，支持文生图与图生图，可多并发，也提供 API 调用。用 Linux DO 账号登录（或账号密码 + 注册码），额度以站内积分计算，无现金价值。站点声明目前为免费服务，不承诺持续可用。",
-      "url": "https://image.mlgb7.com/",
-      "tags": [
-        "image-2 生图",
-        "文生图 / 图生图",
-        "内容规范严格"
-      ],
-      "kind": "AI 生图公益站",
-      "need_login": true,
-      "update_info": "免费开放",
-      "note": "需要Linux DO 账号。 站点有明确的内容规范：禁止色情露骨、政治敏感、伪造真人肖像等内容，也禁止批量滥用账户或 API。违规会被限流、暂停或关闭账户。账号不得出租、出售或共享登录状态。 可用模型：image-2。 登录方式为 Linux DO 授权，或账号密码配注册码。积分仅代表站内额度，不能兑换或提现。图片链接与历史记录受存储策略影响，重要图片请及时下载。"
     },
     {
       "id": "manual-manga-2",
@@ -12507,6 +12309,254 @@
       "need_login": false,
       "update_info": "随时可用",
       "note": "把地址末尾的 octocat 换成你的 GitHub 用户名，浏览器直接打开即可。返回的 JSON 里 created_at 是注册时间（UTC）。本表中 AgentRouter、KKToken、JustWoker、SharedChat 都要求账号满一年。"
+    },
+    {
+      "id": "relay-agentrouter",
+      "name": "AgentRouter",
+      "section": "ai",
+      "subsection": "relay",
+      "description": "注册赠送额度最高的一档，每日重新登录即可领取签到额度。支持 gpt-5.6-sol 与 Claude Opus 4.8 / 5。",
+      "url": "https://agentrouter.org/register?aff=kW2C",
+      "tags": [
+        "注册送$175",
+        "签到$25",
+        "GitHub 满一年"
+      ],
+      "kind": "AI API 中转站",
+      "need_login": true,
+      "update_info": "每日可签到",
+      "note": "GitHub 账号需注册满1年以上。 可用模型：gpt-5.6-sol、claude-opus-4.8、claude-opus-5。"
+    },
+    {
+      "id": "relay-tabitoken",
+      "name": "TabiToken",
+      "section": "ai",
+      "subsection": "relay",
+      "description": "GitHub 注册即赠 120 刀，支持签到。可用 Claude Opus 4.8 与 Opus 5。",
+      "url": "https://tabitoken.com/sign-up?aff=Wm9B",
+      "tags": [
+        "注册送$120",
+        "可签到",
+        "勿只签到"
+      ],
+      "kind": "AI API 中转站",
+      "need_login": true,
+      "update_info": "每日可签到",
+      "note": "官方未公布闲置封号规则。同类公益站有过「只签到不使用」被封的先例，建议签到之余保持实际调用。 可用模型：claude-opus-4.8、claude-opus-5。"
+    },
+    {
+      "id": "relay-kktoken",
+      "name": "KKToken",
+      "section": "ai",
+      "subsection": "relay",
+      "description": "tab / go / just 系列的新站，注册送 100，签到 20。注意：该站无法直连，需自备网络代理。",
+      "url": "https://kktoken.cc/sign-up?aff=8dui",
+      "tags": [
+        "注册送$100",
+        "签到$20",
+        "需代理",
+        "GitHub 满一年",
+        "勿只签到"
+      ],
+      "kind": "AI API 中转站",
+      "need_login": true,
+      "update_info": "每日可签到",
+      "note": "GitHub 账号需注册满1年以上。 该站无法直连，需自备网络代理。 官方未公布闲置封号规则。同类公益站有过「只签到不使用」被封的先例，建议签到之余保持实际调用。 可用模型：claude-opus-4.8、claude-opus-5。"
+    },
+    {
+      "id": "relay-justwoker",
+      "name": "JustWoker",
+      "section": "ai",
+      "subsection": "relay",
+      "description": "GitHub 账号需满一年，注册赠送 90 刀，每日可签到 20 刀。可用 Claude Opus 4.8 与 Opus 5。",
+      "url": "https://api.justwoker.icu/sign-up?aff=TAQH",
+      "tags": [
+        "注册送$90",
+        "签到$20",
+        "GitHub 满一年",
+        "勿只签到"
+      ],
+      "kind": "AI API 中转站",
+      "need_login": true,
+      "update_info": "每日可签到",
+      "note": "GitHub 账号需注册满1年以上。 官方未公布闲置封号规则。同类公益站有过「只签到不使用」被封的先例，建议签到之余保持实际调用。 可用模型：claude-opus-4.8、claude-opus-5。"
+    },
+    {
+      "id": "relay-gorouter",
+      "name": "GoRouter",
+      "section": "ai",
+      "subsection": "relay",
+      "description": "GitHub 注册，赠送 70 刀，支持签到。可用 Claude Opus 5。",
+      "url": "https://gorouter.app/sign-up?aff=qhON",
+      "tags": [
+        "注册送$70",
+        "可签到",
+        "闲置封号"
+      ],
+      "kind": "AI API 中转站",
+      "need_login": true,
+      "update_info": "每日可签到",
+      "note": "曾因长期只签到、不实际调用被封号。改为每日签到 + 多号轮流实际使用后至今正常。 可用模型：claude-opus-5。"
+    },
+    {
+      "id": "relay-true-sota",
+      "name": "True-SOTA",
+      "section": "ai",
+      "subsection": "relay",
+      "description": "注册赠送 20 刀，Claude (kiro) 分组倍率 0.35，是本表中已知倍率最低的一档。",
+      "url": "https://true-sota.com/register?aff=8TVU5WM7YRC7",
+      "tags": [
+        "注册送$20",
+        "倍率0.35"
+      ],
+      "kind": "AI API 中转站",
+      "need_login": true,
+      "update_info": "注册即用",
+      "note": "可用模型：claude (kiro)。"
+    },
+    {
+      "id": "relay-yjs",
+      "name": "YJS API",
+      "section": "ai",
+      "subsection": "relay",
+      "description": "长期免费供应 DeepSeek-V4-Flash；其余模型依各家官方免费资源活动弹性开放、不定时提供。注册无赠送额度，无签到。",
+      "url": "https://api.yjs.im/sign-up?aff=Qpsx",
+      "tags": [
+        "长期免费",
+        "DeepSeek",
+        "不定时开放"
+      ],
+      "kind": "AI API 中转站",
+      "need_login": true,
+      "update_info": "不定时开放",
+      "note": "可用模型：DeepSeek-V4-Flash。"
+    },
+    {
+      "id": "relay-closeai-jasperio",
+      "name": "CloseAI",
+      "section": "ai",
+      "subsection": "image",
+      "description": "无限量 image2 图片生成与无限量 gpt-5.5-mini 聊天。生成的图片请尽快下载，站点会不定时删除。邮箱注册，无需 GitHub。",
+      "url": "https://jasperio.xyz:8848/",
+      "tags": [
+        "无限量 image2",
+        "无限量 gpt-5.5-mini",
+        "图片不定时删除",
+        "邮箱注册",
+        "需代理"
+      ],
+      "kind": "AI API 中转站",
+      "need_login": true,
+      "update_info": "不定时开放",
+      "note": "该站无法直连，需自备网络代理。 可用模型：image2（图片生成）、gpt-5.5-mini。"
+    },
+    {
+      "id": "relay-sharedchat",
+      "name": "SharedChat",
+      "section": "ai",
+      "subsection": "relay",
+      "description": "QQ 邮箱注册的公益站，每日 50 刀 GPT 额度，可在 Codex 中使用。务必只注册一个账号，且不要在付费站重复注册，否则可能触发多号封禁导致公益站无法使用。",
+      "url": "https://new.sharedchat.cc/list/#/register?i=nVbRQ",
+      "tags": [
+        "签到$50",
+        "严禁多号"
+      ],
+      "kind": "AI API 中转站",
+      "need_login": true,
+      "update_info": "每日可签到",
+      "note": "严禁注册多个账号，也不要在付费站重复注册。一旦被判定多号可能直接封禁，导致公益站无法使用。 可用模型：GPT 系列（可在 Codex 使用）。"
+    },
+    {
+      "id": "relay-imagefree",
+      "name": "ImageFree",
+      "section": "ai",
+      "subsection": "image",
+      "description": "免费 AI 文生图工具，打开即用，无需注册也无需账号邮箱。不限生成次数、无积分额度，出图不带水印，站点声明可用于商业用途。底层是开源模型 Z-Image-Turbo。",
+      "url": "https://imagefree.net/zh",
+      "tags": [
+        "文生图",
+        "无需注册",
+        "不限次数",
+        "无水印",
+        "最长边 1024"
+      ],
+      "kind": "AI 文生图工具",
+      "need_login": false,
+      "update_info": "随时可用",
+      "note": "可用模型：Z-Image-Turbo（开源文生图模型）。"
+    },
+    {
+      "id": "relay-yesnovelai",
+      "name": "YesNovelAI",
+      "section": "ai",
+      "subsection": "image",
+      "description": "NovelAI 绘图模型公益站，收录 nai-diffusion 3 / 4 / 4.5 / 5 全系共 16 个模型。额度单位是 Gems，只能通过签到和邀请获取。标准尺寸（512×512、832×1216、1216×832、1024×1024，28 步内出 1 张）不计费，超出部分按 NovelAI Anlas 公式折算 Gems。",
+      "url": "https://nai.rinko.ai/sign-up?aff=L1Dl",
+      "tags": [
+        "NovelAI 绘图",
+        "标准尺寸免费",
+        "可签到",
+        "倍率1"
+      ],
+      "kind": "NovelAI 绘图中转站",
+      "need_login": true,
+      "update_info": "每日可签到",
+      "note": "可用模型：nai-diffusion-5-full、nai-diffusion-5-curated、nai-diffusion-4-5-full、nai-diffusion-4-5-curated、nai-diffusion-4-full、nai-diffusion-4-curated、nai-diffusion-3、nai-diffusion-3-furry、各版本 inpainting 变体（共 8 个）。 公益站点，不开放充值，额度全由站长免费发放，请珍惜使用。确需充值可去姊妹站 api.rinko.ai。反馈 QQ 群 709223435。"
+    },
+    {
+      "id": "relay-lupi-image",
+      "name": "噜皮生图",
+      "section": "ai",
+      "subsection": "image",
+      "description": "image-2 生图公益站，支持文生图与图生图，可多并发，也提供 API 调用。用 Linux DO 账号登录（或账号密码 + 注册码），额度以站内积分计算，无现金价值。站点声明目前为免费服务，不承诺持续可用。",
+      "url": "https://image.mlgb7.com/",
+      "tags": [
+        "image-2 生图",
+        "文生图 / 图生图",
+        "内容规范严格"
+      ],
+      "kind": "AI 生图公益站",
+      "need_login": true,
+      "update_info": "免费开放",
+      "note": "需要Linux DO 账号。 站点有明确的内容规范：禁止色情露骨、政治敏感、伪造真人肖像等内容，也禁止批量滥用账户或 API。违规会被限流、暂停或关闭账户。账号不得出租、出售或共享登录状态。 可用模型：image-2。 登录方式为 Linux DO 授权，或账号密码配注册码。积分仅代表站内额度，不能兑换或提现。图片链接与历史记录受存储策略影响，重要图片请及时下载。"
+    },
+    {
+      "id": "manual-ai-canvas-web",
+      "name": "无限画布（Infinite Canvas 在线版）",
+      "section": "ai",
+      "subsection": "image",
+      "description": "面向 AI 创作的无限画布工作台，网页直接用、不需要注册。生图工作台可选张数与质量档位，默认渠道 gpt-image-2，另有视频创作台、提示词库、素材管理。想用自己的额度就在本机跑一个 Agent 再连上来。",
+      "url": "https://canvas.best/image",
+      "tags": [
+        "无限画布",
+        "AI 生图",
+        "免注册",
+        "视频创作台",
+        "提示词库"
+      ],
+      "kind": "AI 生图在线工具",
+      "need_login": false,
+      "update_info": "随时可用",
+      "note": "开源项目 basketikun/infinite-canvas 的官方在线版。要接自己的 API 额度，可在终端跑 npx -y @basketikun/canvas-agent 起本地 Agent，再在网页里连接；Codex 用户也可装它的插件。兼容 OpenAI 接口生态，能接 newapi 这类中转（本站 AI 区那些中转站都可以）。"
+    },
+    {
+      "id": "manual-ai-canvas-repo",
+      "name": "Infinite Canvas（开源仓库）",
+      "section": "ai",
+      "subsection": "image",
+      "description": "上面那个无限画布的源码，TypeScript + MIT 协议，可自部署。集成 AI 生图、参考图编辑、视频生成、Agent 助手、画布编排与素材管理，兼容 OpenAI 接口生态。",
+      "url": "https://github.com/basketikun/infinite-canvas",
+      "tags": [
+        "开源",
+        "MIT 协议",
+        "TypeScript",
+        "可自部署",
+        "兼容 OpenAI 接口"
+      ],
+      "kind": "开源项目仓库",
+      "need_login": false,
+      "update_info": "持续更新",
+      "note": "MIT 协议，可自部署自用。README 写明支持 chatgpt2api、grok2api、flow2api、newapi 等渠道接入 —— 也就是本站 AI 区收录的中转站可以直接配进去。不想折腾就用在线版。"
     }
   ]
 }

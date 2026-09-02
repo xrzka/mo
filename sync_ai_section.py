@@ -129,6 +129,9 @@ def to_mo_item(relay: dict) -> dict:
         "id": SYNC_PREFIX + str(relay.get("resource_id", "")),
         "name": relay.get("resource_name") or "未命名站点",
         "section": "ai",
+        # AI 区分了中转站 / 生图 / 工具三个小分区。榜单站的条目默认归中转站，
+        # 数据里写了 ai_subsection 的（如生图站）按它归位。
+        "subsection": relay.get("ai_subsection") or "relay",
         "description": relay.get("description") or relay.get("resource_description") or "",
         "url": relay.get("site_url") or "",
         "tags": build_tags(relay),
