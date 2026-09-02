@@ -12594,6 +12594,42 @@
       "need_login": true,
       "update_info": "长期运营",
       "note": "官网首页有四个入口：电脑端下载 / 安卓端下载 / iOS端下载 / 体验网页版，按需选。主打手游挂机与托管，站内自称适合刷金、代练场景。备案主体在国内（京ICP备2024075778号-6），联系邮箱是 01.ai 的域名。具体套餐与价格官网上没直接列，需要注册后查看。"
+    },
+    {
+      "id": "manual-novel-4",
+      "name": "ESJ Zone（韩轻、日轻论坛）",
+      "section": "novel",
+      "subsection": "site",
+      "description": "轻小说论坛，收韩轻与日轻，有一周更新、原创小说、论坛讨论、问与答几个板块，支持简繁原文切换。国内直连不通，需要代理。",
+      "url": "https://www.esjzone.one/",
+      "tags": [
+        "韩轻 / 日轻",
+        "论坛",
+        "一周更新",
+        "简繁切换",
+        "需代理"
+      ],
+      "kind": "轻小说论坛",
+      "need_login": true,
+      "update_info": "每周更新",
+      "note": "实测直连连接被重置（三次均失败），走代理正常。看小说需要注册登录，站内有经验值机制。用法见同分区的「ESJ 看小说教程」。"
+    },
+    {
+      "id": "manual-novel-5",
+      "name": "ESJ 看小说教程",
+      "section": "novel",
+      "subsection": "site",
+      "description": "ESJ Zone 的使用教程，放在 UC 网盘里。配合上面那个论坛看，解决注册、找书、阅读之类的上手问题。",
+      "url": "https://drive.uc.cn/s/483af383376a4?public=1",
+      "tags": [
+        "ESJ 教程",
+        "UC 网盘",
+        "上手指引"
+      ],
+      "kind": "教程文档",
+      "need_login": false,
+      "update_info": "按需查看",
+      "note": "UC 网盘公开分享，不需要提取码。对应的站点是同分区的「ESJ Zone」，那个站国内要代理才能打开。"
     }
   ]
 }
