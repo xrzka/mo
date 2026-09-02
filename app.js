@@ -68,6 +68,7 @@
       subs: [
         { id: "site", label: "网站" },
         { id: "app", label: "软件" },
+        { id: "cloud", label: "云手机" },
         { id: "doc", label: "文档" },
         { id: "guide", label: "教程" },
       ],
