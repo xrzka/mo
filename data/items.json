@@ -12686,6 +12686,285 @@
       "need_login": true,
       "update_info": "未标注",
       "note": "实测直连与走代理都停在 Cloudflare「正在进行安全验证」页，用真实浏览器手动打开、等验证过了才进得去 —— 程序化访问一律 403，属正常现象。站内结构需登录后才能看到，这里未做核实。"
+    },
+    {
+      "id": "manual-novel-dl-1",
+      "name": "破坏爱情喜剧的方法（如何毁掉爱情喜剧的主人公）",
+      "section": "novel",
+      "subsection": "download",
+      "description": "韩轻小说下载。韩轻 / R18。提供 3 个网盘源。",
+      "url": "https://drive.uc.cn/s/f96488ad66154?public=1",
+      "links": [
+        {
+          "name": "UC 网盘",
+          "url": "https://drive.uc.cn/s/f96488ad66154?public=1",
+          "password": ""
+        },
+        {
+          "name": "百度网盘",
+          "url": "https://pan.baidu.com/s/1IK5pifToPUPKCEHw60k5CA?pwd=hmrd",
+          "password": "hmrd"
+        },
+        {
+          "name": "夸克网盘",
+          "url": "https://pan.quark.cn/s/840dbeed38de",
+          "password": ""
+        }
+      ],
+      "tags": [
+        "韩轻",
+        "R18"
+      ],
+      "kind": "网盘资源",
+      "need_login": false,
+      "update_info": "网盘分享",
+      "adult": true,
+      "note": "多个网盘源任选其一；各源提取码不同，已分别标在对应按钮旁。"
+    },
+    {
+      "id": "manual-novel-dl-2",
+      "name": "异世界人妻猎人",
+      "section": "novel",
+      "subsection": "download",
+      "description": "韩轻小说下载。韩轻 / R18 / NTL / FC。提供 2 个网盘源。",
+      "url": "https://drive.uc.cn/s/e99cbea6709b4?public=1",
+      "links": [
+        {
+          "name": "UC 网盘",
+          "url": "https://drive.uc.cn/s/e99cbea6709b4?public=1",
+          "password": ""
+        },
+        {
+          "name": "夸克网盘",
+          "url": "https://pan.quark.cn/s/09ad9e301fbd",
+          "password": ""
+        }
+      ],
+      "tags": [
+        "韩轻",
+        "R18",
+        "NTL",
+        "FC"
+      ],
+      "kind": "网盘资源",
+      "need_login": false,
+      "update_info": "网盘分享",
+      "adult": true,
+      "note": "多个网盘源任选其一；各源提取码不同，已分别标在对应按钮旁。"
+    },
+    {
+      "id": "manual-novel-dl-3",
+      "name": "魔法学院的女王殿下",
+      "section": "novel",
+      "subsection": "download",
+      "description": "韩轻小说下载。韩轻 / R18 / 后宫 / 学院。提供 3 个网盘源。",
+      "url": "https://drive.uc.cn/s/aed4adb452ee4?public=1",
+      "links": [
+        {
+          "name": "UC 网盘",
+          "url": "https://drive.uc.cn/s/aed4adb452ee4?public=1",
+          "password": ""
+        },
+        {
+          "name": "百度网盘",
+          "url": "https://pan.baidu.com/s/1RaXnghXMj5C9WYmpFKzcQA?pwd=pnmc",
+          "password": "pnmc"
+        },
+        {
+          "name": "夸克网盘",
+          "url": "https://pan.quark.cn/s/172dc6dbf349",
+          "password": ""
+        }
+      ],
+      "tags": [
+        "韩轻",
+        "R18",
+        "后宫",
+        "学院"
+      ],
+      "kind": "网盘资源",
+      "need_login": false,
+      "update_info": "网盘分享",
+      "adult": true,
+      "note": "多个网盘源任选其一；各源提取码不同，已分别标在对应按钮旁。"
+    },
+    {
+      "id": "manual-novel-dl-4",
+      "name": "小说世界的女主角们，现在全属于我（进入小说世界）1-2750",
+      "section": "novel",
+      "subsection": "download",
+      "description": "韩轻小说下载。韩轻 / R18 / 1-2750 话。提供 3 个网盘源。",
+      "url": "https://drive.uc.cn/s/ac3020a81d034?public=1",
+      "links": [
+        {
+          "name": "UC 网盘",
+          "url": "https://drive.uc.cn/s/ac3020a81d034?public=1",
+          "password": ""
+        },
+        {
+          "name": "百度网盘",
+          "url": "https://pan.baidu.com/s/1hAG20VX0A6iEeNl_AWyLNQ?pwd=qssr",
+          "password": "qssr"
+        },
+        {
+          "name": "夸克网盘",
+          "url": "https://pan.quark.cn/s/8b8c684d3f6e",
+          "password": ""
+        }
+      ],
+      "tags": [
+        "韩轻",
+        "R18",
+        "1-2750 话"
+      ],
+      "kind": "网盘资源",
+      "need_login": false,
+      "update_info": "网盘分享",
+      "adult": true,
+      "note": "多个网盘源任选其一；各源提取码不同，已分别标在对应按钮旁。"
+    },
+    {
+      "id": "manual-novel-dl-5",
+      "name": "我来教你防身术",
+      "section": "novel",
+      "subsection": "download",
+      "description": "韩轻小说下载。韩轻 / R18 / 后宫 / NTL / 催眠。提供 3 个网盘源。",
+      "url": "https://drive.uc.cn/s/8c323f2ebf014?public=1",
+      "links": [
+        {
+          "name": "UC 网盘",
+          "url": "https://drive.uc.cn/s/8c323f2ebf014?public=1",
+          "password": ""
+        },
+        {
+          "name": "百度网盘",
+          "url": "https://pan.baidu.com/s/1SVnWDYnJK10mDvnyfJaocQ?pwd=hfnx",
+          "password": "hfnx"
+        },
+        {
+          "name": "夸克网盘",
+          "url": "https://pan.quark.cn/s/23cc1aadf339",
+          "password": ""
+        }
+      ],
+      "tags": [
+        "韩轻",
+        "R18",
+        "后宫",
+        "NTL",
+        "催眠"
+      ],
+      "kind": "网盘资源",
+      "need_login": false,
+      "update_info": "网盘分享",
+      "adult": true,
+      "note": "多个网盘源任选其一；各源提取码不同，已分别标在对应按钮旁。"
+    },
+    {
+      "id": "manual-novel-dl-6",
+      "name": "配角在学院中生存",
+      "section": "novel",
+      "subsection": "download",
+      "description": "韩轻小说下载。韩轻 / 学院。提供 3 个网盘源。",
+      "url": "https://drive.uc.cn/s/b1c8e7288f544?public=1",
+      "links": [
+        {
+          "name": "UC 网盘",
+          "url": "https://drive.uc.cn/s/b1c8e7288f544?public=1",
+          "password": ""
+        },
+        {
+          "name": "百度网盘",
+          "url": "https://pan.baidu.com/s/1EoCI9foDjbxetYWQacX2rQ?pwd=mkt8",
+          "password": "mkt8"
+        },
+        {
+          "name": "夸克网盘",
+          "url": "https://pan.quark.cn/s/241bb07518d9",
+          "password": ""
+        }
+      ],
+      "tags": [
+        "韩轻",
+        "学院"
+      ],
+      "kind": "网盘资源",
+      "need_login": false,
+      "update_info": "网盘分享",
+      "adult": false,
+      "note": "多个网盘源任选其一；各源提取码不同，已分别标在对应按钮旁。"
+    },
+    {
+      "id": "manual-novel-dl-7",
+      "name": "成为学院人权角色",
+      "section": "novel",
+      "subsection": "download",
+      "description": "韩轻小说下载。韩轻 / 异世界 / 后宫 / 学院。提供 3 个网盘源。",
+      "url": "https://drive.uc.cn/s/a3674d22668a4?public=1",
+      "links": [
+        {
+          "name": "UC 网盘",
+          "url": "https://drive.uc.cn/s/a3674d22668a4?public=1",
+          "password": ""
+        },
+        {
+          "name": "百度网盘",
+          "url": "https://pan.baidu.com/s/1vuT667begdYQ-ahclUrWiQ?pwd=8qqx",
+          "password": "8qqx"
+        },
+        {
+          "name": "夸克网盘",
+          "url": "https://pan.quark.cn/s/4c1c03c65740",
+          "password": ""
+        }
+      ],
+      "tags": [
+        "韩轻",
+        "异世界",
+        "后宫",
+        "学院"
+      ],
+      "kind": "网盘资源",
+      "need_login": false,
+      "update_info": "网盘分享",
+      "adult": false,
+      "note": "多个网盘源任选其一；各源提取码不同，已分别标在对应按钮旁。"
+    },
+    {
+      "id": "manual-novel-dl-8",
+      "name": "天下第一的青梅竹马 0-1394（천하제일인의 소꿉친구 / Childhood Friend of the Zenith）",
+      "section": "novel",
+      "subsection": "download",
+      "description": "韩轻小说下载。韩轻 / 武侠 / 后宫 / 0-1394 话。提供 3 个网盘源。",
+      "url": "https://drive.uc.cn/s/cf5454d467f24?public=1",
+      "links": [
+        {
+          "name": "UC 网盘",
+          "url": "https://drive.uc.cn/s/cf5454d467f24?public=1",
+          "password": ""
+        },
+        {
+          "name": "百度网盘",
+          "url": "https://pan.baidu.com/s/1zB1j_QSb2FOPq2UI71zQMw?pwd=dqm1",
+          "password": "dqm1"
+        },
+        {
+          "name": "夸克网盘",
+          "url": "https://pan.quark.cn/s/e4cf728669b",
+          "password": ""
+        }
+      ],
+      "tags": [
+        "韩轻",
+        "武侠",
+        "后宫",
+        "0-1394 话"
+      ],
+      "kind": "网盘资源",
+      "need_login": false,
+      "update_info": "网盘分享",
+      "adult": false,
+      "note": "多个网盘源任选其一；各源提取码不同，已分别标在对应按钮旁。"
     }
   ]
 }
