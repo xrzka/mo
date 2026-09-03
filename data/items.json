@@ -13297,6 +13297,74 @@
       "need_login": false,
       "update_info": "网盘分享",
       "note": "提取码 5b3j。合集内具体收录哪些作品未逐一核实，打开后自行查看目录。"
+    },
+    {
+      "id": "manual-manga-3",
+      "name": "栗子漫画（看漫画 App）",
+      "section": "manga",
+      "subsection": "app",
+      "description": "安卓看漫画软件，安装包放在网盘，提供 UC / 百度 / 夸克三个源。",
+      "url": "https://drive.uc.cn/s/47ee0d8040c34?public=1",
+      "links": [
+        {
+          "name": "UC 网盘",
+          "url": "https://drive.uc.cn/s/47ee0d8040c34?public=1",
+          "password": ""
+        },
+        {
+          "name": "百度网盘",
+          "url": "https://pan.baidu.com/s/1OHzusfq7jfjhUTIsmw_rvw?pwd=qi5x",
+          "password": "qi5x"
+        },
+        {
+          "name": "夸克网盘",
+          "url": "https://pan.quark.cn/s/2097170bd0af",
+          "password": ""
+        }
+      ],
+      "tags": [
+        "看漫画 App",
+        "安卓",
+        "三网盘源"
+      ],
+      "kind": "漫画软件",
+      "need_login": false,
+      "update_info": "网盘分享",
+      "note": "百度源提取码 qi5x，UC 与夸克为公开分享无需提取码。第三方软件，安装前自行判断来源可靠性。"
+    },
+    {
+      "id": "manual-manga-4",
+      "name": "喵趣漫画（看漫画 App）",
+      "section": "manga",
+      "subsection": "app",
+      "description": "安卓看漫画软件，安装包放在网盘，提供 UC / 百度 / 夸克三个源。",
+      "url": "https://drive.uc.cn/s/af9aacb12f144?public=1",
+      "links": [
+        {
+          "name": "UC 网盘",
+          "url": "https://drive.uc.cn/s/af9aacb12f144?public=1",
+          "password": ""
+        },
+        {
+          "name": "百度网盘",
+          "url": "https://pan.baidu.com/s/1-nqbO_Lxs9sgR3CRkYeuWw?pwd=ierb",
+          "password": "ierb"
+        },
+        {
+          "name": "夸克网盘",
+          "url": "https://pan.quark.cn/s/3f0e040939dc",
+          "password": ""
+        }
+      ],
+      "tags": [
+        "看漫画 App",
+        "安卓",
+        "三网盘源"
+      ],
+      "kind": "漫画软件",
+      "need_login": false,
+      "update_info": "网盘分享",
+      "note": "百度源提取码 ierb，UC 与夸克为公开分享无需提取码。第三方软件，安装前自行判断来源可靠性。"
     }
   ]
 }
