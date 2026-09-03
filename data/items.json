@@ -13272,6 +13272,31 @@
       "need_login": false,
       "update_info": "网盘分享",
       "note": "机构总部的内部整合包，含 LOGO、Python/C++ 与 Scratch 学习视频、课程介绍、销售工具。内容和上面几条有重叠，想一次拿全可以下这个。"
+    },
+    {
+      "id": "manual-novel-dl-9",
+      "name": "小说帮找总合集",
+      "section": "novel",
+      "subsection": "download",
+      "description": "帮找来的小说合集，汇总在一个百度网盘分享里。",
+      "url": "https://pan.baidu.com/s/1Gmy3z4eND-SSqDzh-L_Y9g?pwd=5b3j",
+      "password": "5b3j",
+      "links": [
+        {
+          "name": "百度网盘",
+          "url": "https://pan.baidu.com/s/1Gmy3z4eND-SSqDzh-L_Y9g?pwd=5b3j",
+          "password": "5b3j"
+        }
+      ],
+      "tags": [
+        "小说合集",
+        "帮找汇总",
+        "百度网盘"
+      ],
+      "kind": "网盘资源",
+      "need_login": false,
+      "update_info": "网盘分享",
+      "note": "提取码 5b3j。合集内具体收录哪些作品未逐一核实，打开后自行查看目录。"
     }
   ]
 }
