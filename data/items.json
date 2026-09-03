@@ -13365,6 +13365,150 @@
       "need_login": false,
       "update_info": "网盘分享",
       "note": "百度源提取码 ierb，UC 与夸克为公开分享无需提取码。第三方软件，安装前自行判断来源可靠性。"
+    },
+    {
+      "id": "manual-game-x065",
+      "name": "堕落的圣痕：夜行传令 / 堕ちた聖痕：夜行伝令 Ver1.23 官方中文步兵版",
+      "section": "game",
+      "subsection": "gal",
+      "description": "Galgame 资源，PC / 安卓 平台。解压密码 mg。",
+      "url": "https://pan.quark.cn/s/60b0aaaeb90b",
+      "links": [
+        {
+          "name": "夸克网盘",
+          "url": "https://pan.quark.cn/s/60b0aaaeb90b",
+          "password": ""
+        }
+      ],
+      "tags": [
+        "PC",
+        "安卓",
+        "官方中文",
+        "Galgame"
+      ],
+      "kind": "Galgame 资源",
+      "need_login": false,
+      "update_info": "网盘分享",
+      "adult": true,
+      "note": "下载后把视频文件的 mp4 后缀改成 zip，再用 WinRAR 解压。解压密码 mg。"
+    },
+    {
+      "id": "manual-game-x066",
+      "name": "重生酒馆 / 転生酒場 Rebirth Pub v1.1.0 官方中文版 + 全 CG 存档",
+      "section": "game",
+      "subsection": "gal",
+      "description": "Galgame 资源，PC 平台。",
+      "url": "https://drive.uc.cn/s/7f6b6ae4ce7f4?public=1",
+      "links": [
+        {
+          "name": "UC 网盘",
+          "url": "https://drive.uc.cn/s/7f6b6ae4ce7f4?public=1",
+          "password": ""
+        }
+      ],
+      "tags": [
+        "PC",
+        "官方中文",
+        "Galgame"
+      ],
+      "kind": "Galgame 资源",
+      "need_login": false,
+      "update_info": "网盘分享",
+      "adult": true,
+      "note": "mp4 后缀改 zip 后解压；同名分卷（7z.001、7z.002 等）要放在同一目录再解压。提示文件损坏或密码错误时，建议先转存到自己网盘再下载，可减少炸档。原始分享里的解压密码那段是乱码，未能确认，需要的话在分享页里再找一次。"
+    },
+    {
+      "id": "manual-game-x067",
+      "name": "鸢尾花骑士 / アヤメルキシエ 体验 α 版 Ver0.068",
+      "section": "game",
+      "subsection": "gal",
+      "description": "Galgame 资源，PC 平台。解压密码 qfafa.com。",
+      "url": "https://pan.quark.cn/s/30fad9b608e2",
+      "links": [
+        {
+          "name": "夸克网盘",
+          "url": "https://pan.quark.cn/s/30fad9b608e2",
+          "password": ""
+        }
+      ],
+      "tags": [
+        "PC",
+        "官方中文",
+        "Galgame"
+      ],
+      "kind": "Galgame 资源",
+      "need_login": false,
+      "update_info": "网盘分享",
+      "adult": true,
+      "note": "解压密码 qfafa.com。体验版，非完整版。"
+    },
+    {
+      "id": "manual-tool-unzip-winrar",
+      "name": "WinRAR（电脑解压）",
+      "section": "tool",
+      "description": "电脑端解压软件。网盘资源常用分卷压缩或改后缀的 mp4，需要它来解。",
+      "url": "https://drive.uc.cn/s/7dde4c68c1754?public=1",
+      "links": [
+        {
+          "name": "UC 网盘",
+          "url": "https://drive.uc.cn/s/7dde4c68c1754?public=1",
+          "password": ""
+        }
+      ],
+      "tags": [
+        "解压软件",
+        "PC",
+        "分卷压缩"
+      ],
+      "kind": "实用工具",
+      "need_login": false,
+      "update_info": "网盘分享",
+      "note": "网盘公开分享，无需提取码。"
+    },
+    {
+      "id": "manual-tool-unzip-rar-mobile",
+      "name": "RAR（手机解压）",
+      "section": "tool",
+      "description": "安卓端解压软件，手机上解分卷压缩包用。",
+      "url": "https://drive.uc.cn/s/606772ca69ec4?public=1",
+      "links": [
+        {
+          "name": "UC 网盘",
+          "url": "https://drive.uc.cn/s/606772ca69ec4?public=1",
+          "password": ""
+        }
+      ],
+      "tags": [
+        "解压软件",
+        "安卓"
+      ],
+      "kind": "实用工具",
+      "need_login": false,
+      "update_info": "网盘分享",
+      "note": "网盘公开分享，无需提取码。"
+    },
+    {
+      "id": "manual-tool-unzip-mp4-to-zip",
+      "name": "mp4 一键改 zip 工具",
+      "section": "tool",
+      "description": "批量把 mp4 后缀改成 zip 的小工具。很多网盘资源为了过审把压缩包伪装成视频，下载后要先改回后缀才能解压。",
+      "url": "https://drive.uc.cn/s/30153c7100034?public=1",
+      "links": [
+        {
+          "name": "UC 网盘",
+          "url": "https://drive.uc.cn/s/30153c7100034?public=1",
+          "password": ""
+        }
+      ],
+      "tags": [
+        "改后缀",
+        "批量工具",
+        "配合解压"
+      ],
+      "kind": "实用工具",
+      "need_login": false,
+      "update_info": "网盘分享",
+      "note": "网盘公开分享，无需提取码。"
     }
   ]
 }
