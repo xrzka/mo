@@ -100,19 +100,23 @@
     },
     {
       "id": "manual-music-1",
-      "name": "听音乐资源",
+      "name": "薄荷音乐（免费无广听 VIP 歌曲）",
       "section": "music",
-      "description": "音乐资源合集。",
+      "subsection": "app",
+      "description": "听歌软件，免费无广告，可听平台 VIP 曲目。安装包放在百度网盘。",
       "url": "https://pan.baidu.com/s/1MZZNcOmcNKakMzahbiI1RQ?pwd=qbz2",
       "password": "qbz2",
       "tags": [
-        "音乐",
+        "听歌软件",
+        "免费",
+        "无广告",
+        "VIP 音乐",
         "百度网盘"
       ],
-      "kind": "网盘资源",
+      "kind": "音乐软件",
       "need_login": false,
       "update_info": "网盘分享",
-      "note": ""
+      "note": "提取码 qbz2。第三方软件，安装前自行判断来源可靠性。"
     },
     {
       "id": "manual-manga-1",
@@ -12965,6 +12969,309 @@
       "update_info": "网盘分享",
       "adult": false,
       "note": "多个网盘源任选其一；各源提取码不同，已分别标在对应按钮旁。"
+    },
+    {
+      "id": "manual-study-1",
+      "name": "课程介绍",
+      "section": "study",
+      "subsection": "course",
+      "description": "各门课程的介绍资料，先看这个了解课程体系。",
+      "url": "https://drive.uc.cn/s/54e7905356f94?public=1",
+      "links": [
+        {
+          "name": "UC 网盘",
+          "url": "https://drive.uc.cn/s/54e7905356f94?public=1",
+          "password": ""
+        }
+      ],
+      "tags": [
+        "课程介绍",
+        "总览"
+      ],
+      "kind": "网盘资源",
+      "need_login": false,
+      "update_info": "网盘分享",
+      "note": "各门课程的介绍资料，先看这个了解课程体系。"
+    },
+    {
+      "id": "manual-study-2",
+      "name": "C++ 课程",
+      "section": "study",
+      "subsection": "course",
+      "description": "C++ 课程。网盘分享，共 1 个源。",
+      "url": "https://drive.uc.cn/s/2d61eabe305e4?public=1",
+      "links": [
+        {
+          "name": "UC 网盘",
+          "url": "https://drive.uc.cn/s/2d61eabe305e4?public=1",
+          "password": ""
+        }
+      ],
+      "tags": [
+        "C++",
+        "编程课"
+      ],
+      "kind": "网盘资源",
+      "need_login": false,
+      "update_info": "网盘分享",
+      "note": ""
+    },
+    {
+      "id": "manual-study-3",
+      "name": "Python 课程",
+      "section": "study",
+      "subsection": "course",
+      "description": "Python 课程。网盘分享，共 1 个源。",
+      "url": "https://drive.uc.cn/s/9ccc10912a7e4?public=1",
+      "links": [
+        {
+          "name": "UC 网盘",
+          "url": "https://drive.uc.cn/s/9ccc10912a7e4?public=1",
+          "password": ""
+        }
+      ],
+      "tags": [
+        "Python",
+        "编程课"
+      ],
+      "kind": "网盘资源",
+      "need_login": false,
+      "update_info": "网盘分享",
+      "note": ""
+    },
+    {
+      "id": "manual-study-4",
+      "name": "Scratch 课程",
+      "section": "study",
+      "subsection": "course",
+      "description": "Scratch 课程。网盘分享，共 1 个源。",
+      "url": "https://drive.uc.cn/s/6611c13d1b884?public=1",
+      "links": [
+        {
+          "name": "UC 网盘",
+          "url": "https://drive.uc.cn/s/6611c13d1b884?public=1",
+          "password": ""
+        }
+      ],
+      "tags": [
+        "Scratch",
+        "图形化编程",
+        "少儿编程"
+      ],
+      "kind": "网盘资源",
+      "need_login": false,
+      "update_info": "网盘分享",
+      "note": ""
+    },
+    {
+      "id": "manual-study-5",
+      "name": "机器人编程课程",
+      "section": "study",
+      "subsection": "course",
+      "description": "机器人编程课程。网盘分享，共 1 个源。",
+      "url": "https://drive.uc.cn/s/919e6bcdb9294?public=1",
+      "links": [
+        {
+          "name": "UC 网盘",
+          "url": "https://drive.uc.cn/s/919e6bcdb9294?public=1",
+          "password": ""
+        }
+      ],
+      "tags": [
+        "机器人编程",
+        "编程课"
+      ],
+      "kind": "网盘资源",
+      "need_login": false,
+      "update_info": "网盘分享",
+      "note": ""
+    },
+    {
+      "id": "manual-study-6",
+      "name": "拓展课程",
+      "section": "study",
+      "subsection": "course",
+      "description": "拓展课程。网盘分享，共 1 个源。",
+      "url": "https://drive.uc.cn/s/3bfb068553584?public=1",
+      "links": [
+        {
+          "name": "UC 网盘",
+          "url": "https://drive.uc.cn/s/3bfb068553584?public=1",
+          "password": ""
+        }
+      ],
+      "tags": [
+        "拓展",
+        "进阶"
+      ],
+      "kind": "网盘资源",
+      "need_login": false,
+      "update_info": "网盘分享",
+      "note": ""
+    },
+    {
+      "id": "manual-study-7",
+      "name": "公立校课程",
+      "section": "study",
+      "subsection": "course",
+      "description": "公立校课程。网盘分享，共 1 个源。",
+      "url": "https://drive.uc.cn/s/af22fae6489f4?public=1",
+      "links": [
+        {
+          "name": "UC 网盘",
+          "url": "https://drive.uc.cn/s/af22fae6489f4?public=1",
+          "password": ""
+        }
+      ],
+      "tags": [
+        "公立校",
+        "校内课程"
+      ],
+      "kind": "网盘资源",
+      "need_login": false,
+      "update_info": "网盘分享",
+      "note": ""
+    },
+    {
+      "id": "manual-study-8",
+      "name": "Scratch 学习视频",
+      "section": "study",
+      "subsection": "video",
+      "description": "Scratch 学习视频。网盘分享，共 1 个源。",
+      "url": "https://drive.uc.cn/s/aa2d08921d284?public=1",
+      "links": [
+        {
+          "name": "UC 网盘",
+          "url": "https://drive.uc.cn/s/aa2d08921d284?public=1",
+          "password": ""
+        }
+      ],
+      "tags": [
+        "Scratch",
+        "视频课",
+        "少儿编程"
+      ],
+      "kind": "网盘资源",
+      "need_login": false,
+      "update_info": "网盘分享",
+      "note": ""
+    },
+    {
+      "id": "manual-study-9",
+      "name": "Python / C++ 学习视频",
+      "section": "study",
+      "subsection": "video",
+      "description": "Python / C++ 学习视频。网盘分享，共 1 个源。",
+      "url": "https://drive.uc.cn/s/01309fa75b074?public=1",
+      "links": [
+        {
+          "name": "UC 网盘",
+          "url": "https://drive.uc.cn/s/01309fa75b074?public=1",
+          "password": ""
+        }
+      ],
+      "tags": [
+        "Python",
+        "C++",
+        "视频课"
+      ],
+      "kind": "网盘资源",
+      "need_login": false,
+      "update_info": "网盘分享",
+      "note": ""
+    },
+    {
+      "id": "manual-study-10",
+      "name": "课程资料整理",
+      "section": "study",
+      "subsection": "doc",
+      "description": "课程资料整理。网盘分享，共 1 个源。",
+      "url": "https://pan.quark.cn/s/091752fa125d",
+      "links": [
+        {
+          "name": "夸克网盘",
+          "url": "https://pan.quark.cn/s/091752fa125d",
+          "password": ""
+        }
+      ],
+      "tags": [
+        "资料整理",
+        "夸克网盘"
+      ],
+      "kind": "网盘资源",
+      "need_login": false,
+      "update_info": "网盘分享",
+      "note": ""
+    },
+    {
+      "id": "manual-study-11",
+      "name": "学习区简介",
+      "section": "study",
+      "subsection": "doc",
+      "description": "这批学习资源的说明文档。",
+      "url": "https://pan.quark.cn/s/37866cd97e25",
+      "links": [
+        {
+          "name": "夸克网盘",
+          "url": "https://pan.quark.cn/s/37866cd97e25",
+          "password": ""
+        }
+      ],
+      "tags": [
+        "简介",
+        "夸克网盘"
+      ],
+      "kind": "网盘资源",
+      "need_login": false,
+      "update_info": "网盘分享",
+      "note": "这批学习资源的说明文档。"
+    },
+    {
+      "id": "manual-study-12",
+      "name": "销售工具",
+      "section": "study",
+      "subsection": "doc",
+      "description": "培训机构的销售物料，不是学习内容本身。",
+      "url": "https://drive.uc.cn/s/89134178d4c44?public=1",
+      "links": [
+        {
+          "name": "UC 网盘",
+          "url": "https://drive.uc.cn/s/89134178d4c44?public=1",
+          "password": ""
+        }
+      ],
+      "tags": [
+        "销售工具",
+        "机构资料"
+      ],
+      "kind": "网盘资源",
+      "need_login": false,
+      "update_info": "网盘分享",
+      "note": "培训机构的销售物料，不是学习内容本身。"
+    },
+    {
+      "id": "manual-study-13",
+      "name": "总部内部文件（LOGO / 学习视频 / 课程介绍 / 销售工具）",
+      "section": "study",
+      "subsection": "doc",
+      "description": "机构总部的内部整合包，含 LOGO、Python/C++ 与 Scratch 学习视频、课程介绍、销售工具。内容和上面几条有重叠，想一次拿全可以下这个。",
+      "url": "https://pan.baidu.com/s/1JPdiZiOfE4OuLn6peX103w?pwd=8h55",
+      "links": [
+        {
+          "name": "百度网盘",
+          "url": "https://pan.baidu.com/s/1JPdiZiOfE4OuLn6peX103w?pwd=8h55",
+          "password": "8h55"
+        }
+      ],
+      "tags": [
+        "内部文件",
+        "整合包",
+        "机构资料"
+      ],
+      "kind": "网盘资源",
+      "need_login": false,
+      "update_info": "网盘分享",
+      "note": "机构总部的内部整合包，含 LOGO、Python/C++ 与 Scratch 学习视频、课程介绍、销售工具。内容和上面几条有重叠，想一次拿全可以下这个。"
     }
   ]
 }

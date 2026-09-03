@@ -54,7 +54,20 @@
         { id: "gal", label: "Galgame" },
       ],
     },
-    { id: "music", label: "音乐", icon: "🎵" },
+    { id: "music", label: "音乐", icon: "🎵",
+      subs: [
+        { id: "site", label: "网站" },
+        { id: "app", label: "软件" },
+        { id: "download", label: "下载" },
+      ],
+    },
+    { id: "study", label: "学习", icon: "📚",
+      subs: [
+        { id: "course", label: "课程" },
+        { id: "video", label: "视频" },
+        { id: "doc", label: "资料" },
+      ],
+    },
     { id: "tool", label: "工具", icon: "🔧" },
     { id: "ai", label: "AI", icon: "✦",
       subs: [
