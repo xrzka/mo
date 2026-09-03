@@ -31,6 +31,7 @@
       subs: [
         { id: "site", label: "网站" },
         { id: "app", label: "软件" },
+        { id: "wechat", label: "公众号" },
         { id: "kr", label: "韩漫" },
         { id: "jp", label: "日漫" },
       ],
