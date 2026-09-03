@@ -12649,6 +12649,43 @@
       "need_login": false,
       "update_info": "每日更新",
       "note": "收这个发布页而不是直接收主站 —— 这类站换域名频繁，发布页能一直找到新地址。当前列出的主站是 www.lmm85.com，备用 m.lm6.net，两个实测都可直连。仅提供安卓 APP，iOS 用它的网页版；站方提示 APP 安装若报毒可断网安装。"
+    },
+    {
+      "id": "manual-novel-6",
+      "name": "轻小说文库 wenku8（日轻）",
+      "section": "novel",
+      "subsection": "site",
+      "description": "日本轻小说在线阅读与下载站，导航有轻小说列表、热门、动画化作品、今日更新、新书一览、完结全本、热度排名、书评等，支持简繁切换。全站内容需要注册登录后才能看。",
+      "url": "https://www.wenku8.net/index.php",
+      "tags": [
+        "日轻",
+        "在线阅读",
+        "可下载",
+        "动画化作品",
+        "需注册登录"
+      ],
+      "kind": "轻小说站",
+      "need_login": true,
+      "update_info": "每日更新",
+      "note": "实测未登录时首页与内页都会跳到 login.php，所以必须先注册。国内可直连，不需要代理。"
+    },
+    {
+      "id": "manual-novel-7",
+      "name": "真白萌 masiro（日轻）",
+      "section": "novel",
+      "subsection": "site",
+      "description": "日轻翻译站，入口就是后台登录页，注册登录后才能浏览。站点挂了 Cloudflare 人机验证。",
+      "url": "https://masiro.me/admin/",
+      "tags": [
+        "日轻",
+        "翻译站",
+        "需注册登录",
+        "Cloudflare 验证"
+      ],
+      "kind": "轻小说站",
+      "need_login": true,
+      "update_info": "未标注",
+      "note": "实测直连与走代理都停在 Cloudflare「正在进行安全验证」页，用真实浏览器手动打开、等验证过了才进得去 —— 程序化访问一律 403，属正常现象。站内结构需登录后才能看到，这里未做核实。"
     }
   ]
 }
