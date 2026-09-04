@@ -158,6 +158,9 @@
     counts: emptyCounts(),
     visitors: null,
     api: "",
+    // 后端返回的桶名（UTC）。访问去重必须用它，不能用本地时区算的日期，
+    // 否则 UTC+8 的凌晨时段前后端对不上，见 reportVisit()。
+    buckets: null,
 
     init() {
       const cfg = window.MO_CONFIG || {};
@@ -263,6 +266,8 @@
             this.counts = counts;
             this.visitors =
               data.visitors && typeof data.visitors === "object" ? data.visitors : null;
+            // 后端的桶名是 UTC 的，记下来给 reportVisit 去重用
+            this.buckets = data.buckets && typeof data.buckets === "object" ? data.buckets : null;
             this.api = base; // 后续上报都发这个地址
             this.mode = "site";
             return true;
@@ -292,10 +297,18 @@
       }
     },
 
-    /** 每天首次打开时上报一次访问，靠 localStorage 去重，避免刷新灌水。 */
+    /** 每天首次打开时上报一次访问，靠 localStorage 去重，避免刷新灌水。
+     *
+     *  去重键必须用**后端返回的 UTC 日期**，不能用 bucketKeys().day（本地时区）。
+     *  这台机器是 UTC+8：本地 09-04 00:00~08:00 时，后端还在 09-03 桶里。
+     *  用本地日期的话，那 8 小时内来的访客会把 mo-visit-day 写成 09-04，
+     *  等后端跨到 09-04 桶时，他们已经「今天报过了」，于是当天访问人数一直是 0
+     *  —— 正是排行榜显示「今日 0 人」而本周/本月有数的原因。
+     */
     reportVisit() {
       if (this.mode !== "site") return;
-      const today = bucketKeys().day;
+      // 拿不到后端桶名时退回本地日期，总比不报好
+      const today = (this.buckets && this.buckets.day) || bucketKeys().day;
       let last = null;
       try {
         last = localStorage.getItem(VISIT_KEY);

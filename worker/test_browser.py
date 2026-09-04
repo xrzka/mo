@@ -57,6 +57,17 @@ class StatsStub(http.server.BaseHTTPRequestHandler):
     # 需要各周期人数不同时设成 {"day":3,...}，默认所有周期都回 visits
     per_period = None
 
+    # 后端返回的桶名。真 Worker 按 UTC 算，前端按本地时区算 —— UTC+8 的凌晨
+    # 8 小时里两边的 day 不一样，访问去重必须认后端这份。默认给一个和本地
+    # 时区不同的日期，好让测试真正走到那条分支。
+    buckets = {
+        "day": "2026-09-03",
+        "week": "2026-W36",
+        "month": "2026-09",
+        "year": "2026",
+        "all": "all",
+    }
+
     # 资源帮找：id -> 条目。next_id 单调递增，模拟 AUTOINCREMENT
     requests = {}
     next_id = 1
@@ -131,7 +142,13 @@ class StatsStub(http.server.BaseHTTPRequestHandler):
             if StatsStub.per_period
             else {p: StatsStub.visits for p in periods}
         )
-        self._send({"clicks": {p: dict(StatsStub.hits) for p in periods}, "visitors": visitors})
+        # 真 Worker 会回 buckets（UTC 桶名），前端用 buckets.day 做访问去重。
+        # 桩必须一起回，否则测不到时区那条路径。
+        self._send({
+            "clicks": {p: dict(StatsStub.hits) for p in periods},
+            "visitors": visitors,
+            "buckets": dict(StatsStub.buckets),
+        })
 
     def do_POST(self):
         n = int(self.headers.get("Content-Length") or 0)
@@ -493,6 +510,45 @@ def test_site_mode(page, base, stub_port):
     rows = rank_rows(page)
     check("重载后从后端读到计数", rows and rows[0]["n"] == 1, json.dumps(rows, ensure_ascii=False)[:120])
     check("同一天不重复计访问人数", StatsStub.visits == 1, f"visits={StatsStub.visits}")
+
+    # 去重键必须是后端给的 UTC 日期，不是浏览器本地时区算的日期。
+    # 桩故意回 2026-09-03，若前端用了本地日期，这里存的就是「今天」。
+    stored = page.evaluate("() => localStorage.getItem('mo-visit-day')")
+    check("访问去重键用后端 UTC 桶名", stored == StatsStub.buckets["day"],
+          f"{stored} vs {StatsStub.buckets['day']}")
+
+
+def test_visit_bucket_rollover(page, base, stub_port):
+    """后端跨到新的 UTC 日时，必须重新计一次访问人数。
+
+    这条盯的是一个真实 bug：前端原本用本地时区的日期做去重键。
+    这台机器是 UTC+8，本地 00:00~08:00 时后端还在前一天的桶里 ——
+    那 8 小时来的访客把去重键写成了「今天」，等后端跨到今天的桶，
+    他们已经算「报过了」，于是当天访问人数永远是 0，而本周/本月有数。
+    """
+    print("\n--- 访问人数：后端跨天要重新计 ---")
+    StatsStub.hits.clear()
+    StatsStub.visits = 0
+    StatsStub.buckets = dict(StatsStub.buckets, day="2026-09-03")
+    stub_config(page, f"http://127.0.0.1:{stub_port}")
+    page.goto(base, wait_until="networkidle")
+    page.wait_for_timeout(1200)
+    check("首次访问已上报", StatsStub.visits == 1, f"visits={StatsStub.visits}")
+
+    # 同一个 UTC 日内刷新不重复计
+    page.reload(wait_until="networkidle")
+    page.wait_for_timeout(1000)
+    check("同一 UTC 日刷新不重复计", StatsStub.visits == 1, f"visits={StatsStub.visits}")
+
+    # 后端跨到下一个 UTC 日：同一个浏览器该被重新计一次
+    StatsStub.buckets = dict(StatsStub.buckets, day="2026-09-04")
+    page.reload(wait_until="networkidle")
+    page.wait_for_timeout(1000)
+    check("后端跨天后重新计一次", StatsStub.visits == 2, f"visits={StatsStub.visits}")
+    stored = page.evaluate("() => localStorage.getItem('mo-visit-day')")
+    check("去重键跟着后端更新", stored == "2026-09-04", str(stored))
+
+    StatsStub.buckets = dict(StatsStub.buckets, day="2026-09-03")
 
 
 def test_failover(page, base, stub_port):
@@ -1242,6 +1298,10 @@ def main():
 
             ctx = browser.new_context()  # 干净的 localStorage
             test_site_mode(ctx.new_page(), base, stub_port)
+            ctx.close()
+
+            ctx = browser.new_context()
+            test_visit_bucket_rollover(ctx.new_page(), base, stub_port)
             ctx.close()
 
             ctx = browser.new_context()
