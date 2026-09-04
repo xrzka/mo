@@ -513,7 +513,7 @@ def test_site_mode(page, base, stub_port):
 
     # 去重键必须是后端给的 UTC 日期，不是浏览器本地时区算的日期。
     # 桩故意回 2026-09-03，若前端用了本地日期，这里存的就是「今天」。
-    stored = page.evaluate("() => localStorage.getItem('mo-visit-day')")
+    stored = page.evaluate("() => localStorage.getItem('mo-visit-utc-day')")
     check("访问去重键用后端 UTC 桶名", stored == StatsStub.buckets["day"],
           f"{stored} vs {StatsStub.buckets['day']}")
 
@@ -545,8 +545,48 @@ def test_visit_bucket_rollover(page, base, stub_port):
     page.reload(wait_until="networkidle")
     page.wait_for_timeout(1000)
     check("后端跨天后重新计一次", StatsStub.visits == 2, f"visits={StatsStub.visits}")
-    stored = page.evaluate("() => localStorage.getItem('mo-visit-day')")
+    stored = page.evaluate("() => localStorage.getItem('mo-visit-utc-day')")
     check("去重键跟着后端更新", stored == "2026-09-04", str(stored))
+
+    StatsStub.buckets = dict(StatsStub.buckets, day="2026-09-03")
+
+
+def test_visit_legacy_key_migration(page, base, stub_port):
+    """老访客带着旧键 mo-visit-day 回来时，必须重新计一次访问。
+
+    这条盯的是修完时区 bug 后残留的第二个问题：旧键存的是**本地日期**，
+    新逻辑存 UTC 日期，两者格式一样、值还常常相同。本地凌晨那批访客的旧值
+    恰好等于新值，于是整个 UTC 日都被判成「今天已报过」，人数卡在 0 ——
+    修了代码线上却毫无变化，就是这个原因。换新键名一次性作废旧值。
+    """
+    print("\n--- 访问人数：旧去重键要作废 ---")
+    StatsStub.hits.clear()
+    StatsStub.visits = 0
+    StatsStub.buckets = dict(StatsStub.buckets, day="2026-09-04")
+    stub_config(page, f"http://127.0.0.1:{stub_port}")
+
+    # 先造出「老访客」：只有旧键，且值等于后端当前的 UTC 日期（最坏情况）
+    page.goto(base, wait_until="networkidle")
+    page.evaluate(
+        """() => {
+            localStorage.setItem('mo-visit-day', '2026-09-04');
+            localStorage.removeItem('mo-visit-utc-day');
+        }"""
+    )
+    StatsStub.visits = 0
+
+    page.reload(wait_until="networkidle")
+    page.wait_for_timeout(1200)
+    check("旧键不再挡住上报", StatsStub.visits == 1, f"visits={StatsStub.visits}")
+    check("新键已写入",
+          page.evaluate("() => localStorage.getItem('mo-visit-utc-day')") == "2026-09-04")
+    check("旧键被清掉",
+          page.evaluate("() => localStorage.getItem('mo-visit-day')") is None)
+
+    # 迁移后照常去重，不能变成每次刷新都计
+    page.reload(wait_until="networkidle")
+    page.wait_for_timeout(1000)
+    check("迁移后仍然去重", StatsStub.visits == 1, f"visits={StatsStub.visits}")
 
     StatsStub.buckets = dict(StatsStub.buckets, day="2026-09-03")
 
@@ -1302,6 +1342,10 @@ def main():
 
             ctx = browser.new_context()
             test_visit_bucket_rollover(ctx.new_page(), base, stub_port)
+            ctx.close()
+
+            ctx = browser.new_context()
+            test_visit_legacy_key_migration(ctx.new_page(), base, stub_port)
             ctx.close()
 
             ctx = browser.new_context()

@@ -115,7 +115,15 @@
   const KEEP_BUCKETS = { day: 14, week: 8, month: 12, year: 3, all: 1 };
 
   const STATS_KEY = "mo-hits-v1";
-  const VISIT_KEY = "mo-visit-day";
+  // 键名带 utc 是有意的：旧键 mo-visit-day 存的是**本地日期**，新逻辑存的是
+  // 后端的 UTC 日期。两者格式一样、值还常常相同，没法区分谁是谁 ——
+  // 复用旧键的话，本地凌晨那批访客的旧值恰好等于新值，会让整个 UTC 日
+  // 都判定成「今天已报过」，人数卡在 0。换个键名等于一次性作废旧值。
+  //
+  // 换键不会让人数虚高：后端 seen 表按 IP+UA+当天 的指纹去重才是真去重，
+  // 这个键只是省掉重复请求。多报一次后端也只算一个人。
+  const VISIT_KEY = "mo-visit-utc-day";
+  const VISIT_KEY_LEGACY = "mo-visit-day";
   const RANK_LIMIT = 10;
 
   const pad2 = (n) => String(n).padStart(2, "0");
@@ -312,6 +320,10 @@
       let last = null;
       try {
         last = localStorage.getItem(VISIT_KEY);
+        // 顺手清掉旧键，免得一直占着 localStorage
+        if (localStorage.getItem(VISIT_KEY_LEGACY) !== null) {
+          localStorage.removeItem(VISIT_KEY_LEGACY);
+        }
       } catch {
         last = null;
       }
@@ -1000,8 +1012,15 @@
           `${cur}访问人数 ${curN ?? "—"} 人　|　` +
           `今日 ${v.day ?? "—"} · 本周 ${v.week ?? "—"} · 本月 ${v.month ?? "—"} · ` +
           `本年 ${v.year ?? "—"} · 累计 ${v.all ?? "—"}`;
+        // 桶名由后端按 UTC 算，UTC+8 这边的「今日」实际从早上 8 点开始。
+        // 不写清楚的话，早上看到「今日 0 人」会以为统计坏了。
+        const b = stats.buckets;
+        vis.title = b && b.day
+          ? `按 UTC 日期统计，当前统计日为 ${b.day}（UTC+8 地区相当于每天早上 8 点换日）`
+          : "按 UTC 日期统计（UTC+8 地区相当于每天早上 8 点换日）";
       } else {
         vis.textContent = "访问人数需要后端支持，当前未启用（见 worker/README.md）。";
+        vis.removeAttribute("title");
       }
     }
   }
