@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-04T16:10:38+08:00",
+  "generated_at": "2026-09-04T17:00:07+08:00",
   "note": "新增资源在 items 数组里加一项即可。section 取值：novel / manga / anime / game / music / tool / ai / forum / guide / collection。不确定归哪个分区就填 collection（收录 / 杂类），填错或留空也会落到那里。",
   "items": [
     {
@@ -13473,6 +13473,33 @@
       "need_login": false,
       "update_info": "网盘分享",
       "note": "提取码 3934。包里小说和漫画都有，具体章节数未逐一核实，打开后看目录。"
+    },
+    {
+      "id": "manual-novel-dl-11",
+      "name": "已经演尽反派角色了（极恶贵族杰诺斯）",
+      "section": "novel",
+      "subsection": "download",
+      "description": "轻小说下载。异世界 / 转生 / 后宫 / 反派主角。百度网盘一个源。",
+      "url": "https://pan.baidu.com/s/1ZrZinoO9Qy4u-GisczMwog?pwd=tbhs",
+      "password": "tbhs",
+      "links": [
+        {
+          "name": "百度网盘",
+          "url": "https://pan.baidu.com/s/1ZrZinoO9Qy4u-GisczMwog?pwd=tbhs",
+          "password": "tbhs"
+        }
+      ],
+      "tags": [
+        "轻小说",
+        "异世界转生",
+        "后宫",
+        "反派主角",
+        "百度网盘"
+      ],
+      "kind": "网盘资源",
+      "need_login": false,
+      "update_info": "网盘分享",
+      "note": "提取码 tbhs。剧情梗概：主角转生成史上最强的极恶贵族杰诺斯 —— 原作里败给主人公的那个反派。他想尽快把剧本推回正轨、之后过平稳日子，于是刻意扮演暴虐无道的反派去引导主角觉醒，结果本该敌对的贵族千金们反倒一个个倾心，越演反派越受欢迎。章节数与是否完结未核实，打开后看目录。"
     },
     {
       "id": "manual-manga-3",
