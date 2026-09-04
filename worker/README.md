@@ -44,6 +44,17 @@ cd worker/pages
 
 Worker 入口那边是 `cd worker && ./wr.sh deploy`。改了 `index.js` 要两边都发。
 
+`wr.sh` 只是设 `XDG_CONFIG_HOME` 和 `WRANGLER_LOG_PATH` 两个环境变量。
+在不方便执行 `.sh` 的环境里（比如某些沙箱只放行 `wrangler` 而不放行脚本），
+直接手动带上这两个变量效果完全一样，凭据照样落在 D 盘：
+
+```bash
+cd worker/pages
+XDG_CONFIG_HOME=/d/local_translate_tool/wrangler_home \
+WRANGLER_LOG_PATH=/d/local_translate_tool/wrangler_home/logs \
+wrangler pages deploy
+```
+
 ## 两种模式的差别
 
 | | 本机模式（默认） | 全站模式（部署后） |
@@ -306,6 +317,12 @@ python test_live.py --api https://mo-stats.werneruszcb71.workers.dev --proxy htt
 `test_live.py` 打的是线上真接口，会往 D1 写一条 `live-smoke-<时间戳>` 再删掉。
 它必须伪装浏览器 UA：Cloudflare 边缘的机器人防护会用 403 挡 `Python-urllib`
 这类默认 UA，那一层在我们的代码之前。
+
+**「点击已入库」那条断言不能要求五个周期都读回。** `/api/stats` 只返回各周期
+Top 20，真实库跑久了 week/month/year/all 都会满且垫底也是 `n=1` ——
+新写的 `live-smoke` 只有 1 次点击，排在榜外，读回来是 `null`。那不是写失败。
+所以现在按周期是否已满分别断言：未满榜的必须读回 `before+1`（day 桶每天清零，
+一般都未满），满榜的只要求没读出错误计数。曾经在这里误判成「部署把写入弄坏了」。
 
 **三个已知局限：**
 

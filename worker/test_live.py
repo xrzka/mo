@@ -224,9 +224,26 @@ def main():
 
     time.sleep(1.5)  # D1 写入到读出有短暂延迟
     _, stats = call(opener, "/api/stats")
-    check("点击已入库且五个周期都加了",
-          all(stats["clicks"][p].get(ITEM, 0) == before + 1 for p in periods),
-          json.dumps({p: stats["clicks"][p].get(ITEM) for p in periods}))
+
+    # /api/stats 只回各周期 Top RANK_LIMIT(20) 条。真实库跑久了，
+    # 榜单会被塞满且垫底也是 n=1 —— 新写的 live-smoke 只有 1 次点击，
+    # 排在榜外，读回来是 None。那不是写失败，所以按周期是否已满分别断言：
+    #   榜未满  -> 必须能读到，且正好 before+1
+    #   榜已满  -> 只要求它没挤掉别人（读不到是正常的）
+    saturated = {p: len(stats["clicks"][p]) >= 20 for p in periods}
+    got = {p: stats["clicks"][p].get(ITEM) for p in periods}
+    visible = [p for p in periods if not saturated[p]]
+    check(
+        "点击已入库（未满榜的周期能读回 before+1）",
+        bool(visible) and all(got[p] == before + 1 for p in visible),
+        json.dumps({"读到": got, "已满榜": saturated}, ensure_ascii=False),
+    )
+    # 满榜的周期至少不能出现「读到了但数字不对」这种真错误
+    check(
+        "满榜周期没有读出错误计数",
+        all(got[p] in (None, before + 1) for p in periods if saturated[p]),
+        json.dumps({p: got[p] for p in periods if saturated[p]}),
+    )
 
     # 3. 安全：Origin 白名单与参数校验
     status, _ = call(opener, "/api/hit", "POST", {"id": "evil-origin-probe"}, origin="https://evil.example.com")
