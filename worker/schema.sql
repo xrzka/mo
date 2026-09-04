@@ -73,3 +73,49 @@ CREATE TABLE IF NOT EXISTS request_votes (
 );
 
 CREATE INDEX IF NOT EXISTS idx_request_votes_day ON request_votes (day);
+
+-- ---------------------------------------------------------------
+-- 管理员编辑：条目字段覆盖层
+-- ---------------------------------------------------------------
+
+-- 站点是纯静态的，浏览器改不了 data/items.json。所以后台编辑不写文件，
+-- 而是把「改成什么」存在这里，前端加载时用它盖住 items.json 里的原值。
+--
+-- 这样做还有个必要理由：import_from_xlsx.py 会重新生成 xlsx-* / gal-*
+-- 那五百多条，直接改 items.json 的话下次重跑导入就全被冲掉了，覆盖层不会。
+--
+-- item_id 对应 items.json 里的条目 id，也是主键 —— 一条资源只有一份覆盖。
+-- 只允许覆盖展示类字段：id / section 不在其中，因为点击数与失效反馈都以
+-- id 为键，改了会把已有统计和反馈丢掉。
+-- 值为 NULL 表示该字段不覆盖，用原值；空字符串是有意义的覆盖（清空该字段）。
+CREATE TABLE IF NOT EXISTS overrides (
+  item_id  TEXT PRIMARY KEY,
+  name     TEXT,
+  description TEXT,
+  url      TEXT,
+  password TEXT,
+  note     TEXT,
+  updated  TEXT NOT NULL,
+  by_who   TEXT NOT NULL DEFAULT ''
+);
+
+CREATE INDEX IF NOT EXISTS idx_overrides_updated ON overrides (updated);
+
+-- 管理员会话。密码只以 PBKDF2 哈希形式存在 Cloudflare secret 里，不进这张表。
+-- token 是随机 32 字节的 hex，expires 是 ISO 时间串，过期由 cron 清理。
+CREATE TABLE IF NOT EXISTS admin_sessions (
+  token   TEXT PRIMARY KEY,
+  created TEXT NOT NULL,
+  expires TEXT NOT NULL,
+  ip      TEXT NOT NULL DEFAULT ''
+);
+
+CREATE INDEX IF NOT EXISTS idx_admin_sessions_expires ON admin_sessions (expires);
+
+-- 登录失败计数，用于挡暴力破解。k = ip，window 是分钟级时间窗。
+CREATE TABLE IF NOT EXISTS admin_throttle (
+  k       TEXT PRIMARY KEY,
+  n       INTEGER NOT NULL DEFAULT 0,
+  window  TEXT NOT NULL
+);
+

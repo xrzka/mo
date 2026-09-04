@@ -883,6 +883,110 @@ h1 {
 /* 说清楚这个按钮能报什么 —— 不只是链接 404 */
 .card-report-hint { color: var(--text-muted); font-size: 11.5px; opacity: 0.8; }
 
+/* ---------- 站长后台 ---------- */
+.admin-panel {
+  margin: 0 0 18px;
+  padding: 14px 16px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 12px;
+}
+.admin-panel[hidden] { display: none; }
+.admin-panel h2 { margin: 0 0 4px; font-size: 16px; }
+.admin-sub { margin: 0 0 12px; color: var(--text-muted); font-size: 12.5px; line-height: 1.6; }
+
+.admin-login { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.admin-login label { color: var(--text-muted); font-size: 12.5px; }
+.admin-login input {
+  padding: 7px 10px;
+  min-width: 200px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+}
+.admin-submit, .admin-logout {
+  padding: 7px 16px;
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  background: var(--accent);
+  color: #fff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.admin-logout { background: transparent; color: var(--text-muted); border-color: var(--border); }
+.admin-submit:disabled { opacity: 0.6; cursor: default; }
+.admin-msg { color: var(--text-muted); font-size: 12.5px; }
+.admin-msg.ok { color: var(--accent); }
+.admin-msg.bad { color: #d97706; }
+
+/* ---------- 卡片内的编辑表单 ---------- */
+.card-admin {
+  margin-top: 10px;
+  padding-top: 11px;
+  border-top: 1px dashed var(--border);
+}
+.card-admin[hidden] { display: none; }
+
+.card-admin-btn {
+  padding: 5px 12px;
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--accent);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.card-admin-msg { margin-left: 10px; color: var(--text-muted); font-size: 12px; }
+.card-admin-msg.ok { color: var(--accent); }
+.card-admin-msg.bad { color: #d97706; }
+
+.card-admin-form { margin-top: 12px; display: grid; gap: 10px; }
+.card-admin-form[hidden] { display: none; }
+
+.admin-field { display: grid; gap: 4px; }
+.admin-field > span { color: var(--text-muted); font-size: 12px; }
+/* 「已改」小标记：说明这一项当前显示的是覆盖值而不是 items.json 里的原值 */
+.admin-field > span em {
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 10.5px;
+  font-style: normal;
+}
+.admin-field input, .admin-field textarea {
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  resize: vertical;
+}
+
+.admin-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.admin-save, .admin-reset {
+  padding: 6px 14px;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.admin-save { border: 1px solid var(--accent); background: var(--accent); color: #fff; }
+.admin-reset { border: 1px solid var(--border); background: transparent; color: var(--text-muted); }
+.admin-save:disabled, .admin-reset:disabled { opacity: 0.6; cursor: default; }
+.admin-reset[hidden] { display: none; }
+
 /* ---------- 热门排行 ---------- */
 .stats-panel {
   margin: 0 0 18px;

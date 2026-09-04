@@ -52,6 +52,31 @@ const REQ_OPEN_MAX = 500;
 /** 两种请求类型：want 想要没有的资源，broken 报告站内资源失效。 */
 const REQ_KINDS = ["want", "broken"];
 
+/* ---------- 管理员编辑的约束 ---------- */
+
+/** 可以被覆盖的字段。**故意不含 id 与 section** ——
+ *  点击数、失效反馈都以 id 为键，改了等于把已有统计和反馈丢掉；
+ *  section 关系到跨区逻辑，改动应该走 items.json 而不是临时覆盖。 */
+const OVERRIDE_FIELDS = ["name", "description", "url", "password", "note"];
+
+/** 各字段长度上限（按字符数，中文算 1）。 */
+const OVERRIDE_MAX = {
+  name: 120,
+  description: 400,
+  url: 500,
+  password: 40,
+  note: 1000,
+};
+
+/** 会话有效期，12 小时。到点要重新登录，减少 token 泄露后的窗口。 */
+const SESSION_HOURS = 12;
+
+/** 同一 IP 每分钟最多试几次密码。超了直接 429，挡暴力破解。 */
+const LOGIN_TRIES = 5;
+
+/** PBKDF2 迭代次数。Worker 的 CPU 时间有限，10 万次约几十毫秒，够用。 */
+const PBKDF2_ITER = 100000;
+
 const pad2 = (n) => String(n).padStart(2, "0");
 
 /** ISO 8601 周编号，与前端 app.js 的算法保持一致。 */
@@ -91,7 +116,8 @@ function corsHeaders(request) {
   if (ok && origin) {
     h["Access-Control-Allow-Origin"] = origin;
     h["Access-Control-Allow-Methods"] = "GET,POST,OPTIONS";
-    h["Access-Control-Allow-Headers"] = "Content-Type";
+    // 后台编辑要带 Authorization 头，不放行的话浏览器预检就拦了
+    h["Access-Control-Allow-Headers"] = "Content-Type, Authorization";
     h["Access-Control-Max-Age"] = "86400";
   }
   return { headers: h, allowed: ok };
@@ -365,7 +391,206 @@ async function voteRequest(env, request, rawId) {
   return { status: 200, body: { ok: true } };
 }
 
-/** 定时清理：seen 与投票去重表只留近 400 天，否则会无限增长。 */
+/* ---------- 管理员编辑 ---------- */
+
+/** 随机 hex 串，用于 session token。crypto.getRandomValues 是 CSPRNG。 */
+function randomHex(bytes = 32) {
+  const a = new Uint8Array(bytes);
+  crypto.getRandomValues(a);
+  return [...a].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+/**
+ * PBKDF2-SHA256 派生。存的哈希格式是 `pbkdf2$迭代次数$盐hex$派生hex`，
+ * 自带参数，以后调迭代次数不会让旧哈希失效。
+ */
+async function pbkdf2Hex(password, saltHex, iter = PBKDF2_ITER) {
+  const salt = new Uint8Array(saltHex.match(/../g).map((h) => parseInt(h, 16)));
+  const key = await crypto.subtle.importKey(
+    "raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveBits"]
+  );
+  const bits = await crypto.subtle.deriveBits(
+    { name: "PBKDF2", hash: "SHA-256", salt, iterations: iter }, key, 256
+  );
+  return [...new Uint8Array(bits)].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+/** 定长比较。逐字符异或累加，不提前 return —— 避免按耗时逐位猜出正确值。 */
+function timingSafeEqual(a, b) {
+  if (typeof a !== "string" || typeof b !== "string" || a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+}
+
+/** 校验密码。ADMIN_PASSWORD_HASH 是 Cloudflare secret，不进 git 也不进前端。 */
+async function checkPassword(env, password) {
+  const stored = env.ADMIN_PASSWORD_HASH || "";
+  if (!stored) return false;
+  const parts = stored.split("$");
+  if (parts.length !== 4 || parts[0] !== "pbkdf2") return false;
+  const iter = parseInt(parts[1], 10);
+  if (!Number.isInteger(iter) || iter < 1000) return false;
+  const got = await pbkdf2Hex(password, parts[2], iter);
+  return timingSafeEqual(got, parts[3]);
+}
+
+/** 登录限流。按 IP + 分钟窗计数，只在密码错时才加，避免正常登录被自己挡住。 */
+async function loginThrottled(env, ip) {
+  if (!ip) return false;
+  const win = String(Math.floor(Date.now() / 60000));
+  const row = await env.DB
+    .prepare("SELECT n, window FROM admin_throttle WHERE k = ?").bind(ip).first();
+  if (!row || row.window !== win) return false;
+  return row.n >= LOGIN_TRIES;
+}
+
+async function bumpLoginFail(env, ip) {
+  if (!ip) return;
+  const win = String(Math.floor(Date.now() / 60000));
+  await env.DB.prepare(
+    `INSERT INTO admin_throttle (k, n, window) VALUES (?, 1, ?)
+     ON CONFLICT (k) DO UPDATE SET
+       n = CASE WHEN admin_throttle.window = excluded.window THEN admin_throttle.n + 1 ELSE 1 END,
+       window = excluded.window`
+  ).bind(ip, win).run();
+}
+
+/** 登录，成功则发一个 12 小时有效的 session token。 */
+async function adminLogin(env, request, body) {
+  const ip = request.headers.get("CF-Connecting-IP") || "";
+  if (!env.ADMIN_PASSWORD_HASH) {
+    return { status: 503, body: { error: "后台未启用（未设置 ADMIN_PASSWORD_HASH）" } };
+  }
+  if (await loginThrottled(env, ip)) {
+    return { status: 429, body: { error: "尝试太频繁，等一分钟再试" } };
+  }
+  const password = typeof body.password === "string" ? body.password : "";
+  if (!password || !(await checkPassword(env, password))) {
+    await bumpLoginFail(env, ip);
+    // 不区分「没这个用户」和「密码错」，少给一点探测信息
+    return { status: 401, body: { error: "密码不对" } };
+  }
+
+  const token = randomHex(32);
+  const now = new Date();
+  const exp = new Date(now.getTime() + SESSION_HOURS * 3600000);
+  await env.DB.prepare(
+    "INSERT INTO admin_sessions (token, created, expires, ip) VALUES (?, ?, ?, ?)"
+  ).bind(token, now.toISOString(), exp.toISOString(), ip).run();
+
+  return { status: 200, body: { ok: true, token, expires: exp.toISOString() } };
+}
+
+/** 从 Authorization: Bearer 取 token 并校验。过期的顺手删掉。 */
+async function adminAuth(env, request) {
+  const raw = request.headers.get("Authorization") || "";
+  const m = raw.match(/^Bearer\s+([0-9a-f]{64})$/i);
+  if (!m) return null;
+  const token = m[1].toLowerCase();
+  const row = await env.DB
+    .prepare("SELECT token, expires FROM admin_sessions WHERE token = ?").bind(token).first();
+  if (!row) return null;
+  if (new Date(row.expires).getTime() <= Date.now()) {
+    await env.DB.prepare("DELETE FROM admin_sessions WHERE token = ?").bind(token).run();
+    return null;
+  }
+  return token;
+}
+
+async function adminLogout(env, token) {
+  await env.DB.prepare("DELETE FROM admin_sessions WHERE token = ?").bind(token).run();
+  return { status: 200, body: { ok: true } };
+}
+
+/** 读全部覆盖。前端加载 items.json 后用它盖住原值，所以要一次全给。 */
+async function listOverrides(env) {
+  const cols = OVERRIDE_FIELDS.join(", ");
+  const { results } = await env.DB
+    .prepare(`SELECT item_id, ${cols}, updated FROM overrides ORDER BY updated DESC`)
+    .all();
+  const map = {};
+  (results || []).forEach((r) => {
+    const o = {};
+    OVERRIDE_FIELDS.forEach((f) => {
+      // null 表示这个字段没被覆盖，别塞进去 —— 否则前端会把原值盖成 null
+      if (r[f] !== null && r[f] !== undefined) o[f] = r[f];
+    });
+    o.updated = r.updated;
+    map[r.item_id] = o;
+  });
+  return { overrides: map, count: Object.keys(map).length };
+}
+
+/**
+ * 保存一条覆盖。body: { item_id, fields: {name?, description?, url?, password?, note?} }
+ *
+ * 语义约定：
+ *   字段给了字符串 -> 覆盖成这个值（空串就是「显示为空」）
+ *   字段给 null    -> 撤销这一项的覆盖，回到 items.json 的原值
+ *   字段没出现     -> 保持现状，不动
+ */
+async function saveOverride(env, body) {
+  const itemId = String(body.item_id ?? "").trim();
+  // 和失效反馈同一个理由：id 只校验不清洗，截断超长 id 会撞上另一条真实条目
+  if (!ID_RE.test(itemId)) return { status: 400, body: { error: "缺少有效的资源 id" } };
+
+  const fields = body.fields;
+  if (!fields || typeof fields !== "object" || Array.isArray(fields)) {
+    return { status: 400, body: { error: "fields 必须是对象" } };
+  }
+
+  const unknown = Object.keys(fields).filter((k) => !OVERRIDE_FIELDS.includes(k));
+  if (unknown.length) {
+    // 明确报错而不是静默忽略 —— 静默会让人以为改了 id/section 却没生效
+    return { status: 400, body: { error: `不可编辑的字段：${unknown.join(", ")}` } };
+  }
+
+  // 读现有覆盖，做增量更新
+  const cur = await env.DB
+    .prepare(`SELECT ${OVERRIDE_FIELDS.join(", ")} FROM overrides WHERE item_id = ?`)
+    .bind(itemId).first();
+
+  const next = {};
+  for (const f of OVERRIDE_FIELDS) {
+    if (!(f in fields)) {
+      next[f] = cur ? cur[f] : null;   // 没提到就保持现状
+      continue;
+    }
+    const v = fields[f];
+    if (v === null) {
+      next[f] = null;                  // 显式撤销这一项
+      continue;
+    }
+    if (typeof v !== "string") {
+      return { status: 400, body: { error: `${f} 必须是字符串或 null` } };
+    }
+    const clean = sanitizeText(v, OVERRIDE_MAX[f]);
+    // url 额外校验：只收 http(s)，否则可能被塞 javascript: 这类伪协议
+    if (f === "url" && clean && !/^https?:\/\//i.test(clean)) {
+      return { status: 400, body: { error: "链接必须以 http:// 或 https:// 开头" } };
+    }
+    next[f] = clean;
+  }
+
+  // 全部字段都撤销了就删掉整行，别留一行空覆盖
+  if (OVERRIDE_FIELDS.every((f) => next[f] === null)) {
+    await env.DB.prepare("DELETE FROM overrides WHERE item_id = ?").bind(itemId).run();
+    return { status: 200, body: { ok: true, cleared: true } };
+  }
+
+  const cols = OVERRIDE_FIELDS.join(", ");
+  const marks = OVERRIDE_FIELDS.map(() => "?").join(", ");
+  const sets = OVERRIDE_FIELDS.map((f) => `${f} = excluded.${f}`).join(", ");
+  await env.DB.prepare(
+    `INSERT INTO overrides (item_id, ${cols}, updated, by_who)
+     VALUES (?, ${marks}, ?, 'admin')
+     ON CONFLICT (item_id) DO UPDATE SET ${sets}, updated = excluded.updated`
+  ).bind(itemId, ...OVERRIDE_FIELDS.map((f) => next[f]), new Date().toISOString()).run();
+
+  return { status: 200, body: { ok: true, item_id: itemId } };
+}
+
 async function cleanup(env) {
   const cutoff = new Date(Date.now() - 400 * 86400000);
   const day = `${cutoff.getUTCFullYear()}-${pad2(cutoff.getUTCMonth() + 1)}-${pad2(cutoff.getUTCDate())}`;
@@ -373,6 +598,11 @@ async function cleanup(env) {
   // 投票去重键同样会累积。注意只清去重键，requests 里的票数不动 ——
   // 票数是历史累计值，清了会让老求助凭空掉票。
   await env.DB.prepare("DELETE FROM request_votes WHERE day < ?").bind(day).run();
+  // 过期会话与登录失败计数也顺手清掉，两张表都只有短期意义
+  await env.DB.prepare("DELETE FROM admin_sessions WHERE expires < ?")
+    .bind(new Date().toISOString()).run();
+  await env.DB.prepare("DELETE FROM admin_throttle WHERE window < ?")
+    .bind(String(Math.floor(Date.now() / 60000) - 60)).run();
 }
 
 export default {
@@ -443,6 +673,44 @@ export default {
         return json(r.body, request, r.status);
       }
 
+      /* ---------- 管理员编辑 ---------- */
+
+      // 覆盖层是公开读的：每个访客都要用它盖住 items.json 的原值。
+      // 里面只有站长自己写的展示文本，没有隐私。
+      if (url.pathname === "/api/overrides" && request.method === "GET") {
+        return json(await listOverrides(env), request);
+      }
+
+      if (url.pathname === "/api/admin/login" && request.method === "POST") {
+        const body = await request.json().catch(() => ({}));
+        const r = await adminLogin(env, request, body || {});
+        return json(r.body, request, r.status);
+      }
+
+      // 以下都要带有效 token
+      if (url.pathname === "/api/admin/logout" && request.method === "POST") {
+        const token = await adminAuth(env, request);
+        if (!token) return json({ error: "未登录或登录已过期" }, request, 401);
+        const r = await adminLogout(env, token);
+        return json(r.body, request, r.status);
+      }
+
+      if (url.pathname === "/api/admin/session" && request.method === "GET") {
+        const token = await adminAuth(env, request);
+        return json({ ok: !!token }, request, token ? 200 : 401);
+      }
+
+      if (url.pathname === "/api/admin/override" && request.method === "POST") {
+        const token = await adminAuth(env, request);
+        if (!token) return json({ error: "未登录或登录已过期" }, request, 401);
+        const body = await request.json().catch(() => null);
+        if (!body || typeof body !== "object") {
+          return json({ error: "bad request body" }, request, 400);
+        }
+        const r = await saveOverride(env, body);
+        return json(r.body, request, r.status);
+      }
+
       return json({ error: "not found" }, request, 404);
     } catch (err) {
       // 不把内部堆栈回给前端
@@ -470,4 +738,12 @@ export const _internal = {
   REQ_PER_DAY,
   REQ_OPEN_MAX,
   REQ_KINDS,
+  OVERRIDE_FIELDS,
+  OVERRIDE_MAX,
+  SESSION_HOURS,
+  LOGIN_TRIES,
+  PBKDF2_ITER,
+  pbkdf2Hex,
+  timingSafeEqual,
+  randomHex,
 };

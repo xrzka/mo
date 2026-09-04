@@ -376,6 +376,8 @@
 
   const state = {
     items: [],
+    // items.json 的原始数据。改完覆盖层要用它重建 items，不必重新发请求。
+    rawItems: [],
     generatedAt: null,
     section: "all",
     sub: "all",
@@ -400,6 +402,21 @@
   // 本机已反馈过失效的条目 id。init() 里赋值，用于让按钮在刷新后仍是完成态。
   let reportedSet = new Set();
 
+  // 后台编辑的覆盖层：{ itemId: {name?, description?, url?, password?, note?, updated} }
+  // 站点是纯静态的，浏览器改不了 items.json，所以编辑结果存在 D1 里，
+  // 渲染前合并进来（见 normalize 的 ov 参数）。
+  let overrides = {};
+
+  // 管理员登录态。token 只放内存，不落 localStorage ——
+  // 存起来省事，但 XSS 一旦发生就等于把写权限也交出去了。
+  // 代价是刷新页面要重新登录，改几条内容而已，可以接受。
+  let adminToken = "";
+
+  // 保存/撤销后整页重渲染会把卡片换成新节点，编辑器和提示随之消失，
+  // 看着像什么都没发生。这里记住「哪张卡刚操作过、要显示什么提示」，
+  // 新卡片建好时自动恢复成展开态。
+  let adminFlash = null;
+
   const $ = (sel, root = document) => root.querySelector(sel);
   const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
 
@@ -421,8 +438,18 @@
     setTimeout(() => (btn.textContent = original), 1500);
   }
 
-  /** 收敛原始数据，缺字段给安全默认值；未知分区归到「收录 / 杂类」以免丢卡片。 */
-  function normalize(raw, index) {
+  /** 收敛原始数据，缺字段给安全默认值；未知分区归到「收录 / 杂类」以免丢卡片。
+   *
+   *  ov 是后台编辑的覆盖层（来自 /api/overrides）。站点是纯静态的，浏览器改不了
+   *  items.json，所以后台编辑存在 D1 里，渲染前在这里合并进来。
+   *  只覆盖展示类字段 —— id / section 不在覆盖范围，见 worker 的 OVERRIDE_FIELDS。
+   */
+  function normalize(raw, index, ov) {
+    // 覆盖值优先。用 in 判断而不是真值判断：空串是有意义的覆盖（显示为空），
+    // 而 `ov.password || raw.password` 会把空串当成「没改」退回原值。
+    const pick = (field, fallback) =>
+      ov && field in ov && typeof ov[field] === "string" ? ov[field] : fallback;
+
     const section =
       SECTION_MAP.has(raw.section) && raw.section !== "all" ? raw.section : FALLBACK_SECTION;
     const subOf = (secId, subId) => {
@@ -443,11 +470,23 @@
       sections.push({ id, sub: subOf(id, extra.subsection) });
     });
 
+    const url = pick("url", raw.url || "");
+    const password = pick("password", raw.password || "");
+    // links 里的主源要跟着改后的 url / 提取码走，否则「打开」按钮还指向旧地址
+    const rawLinks = Array.isArray(raw.links) && raw.links.length
+      ? raw.links.filter((l) => l && /^https?:\/\//i.test(l.url))
+      : url
+        ? [{ name: "打开", url, password }]
+        : [];
+    const links = rawLinks.map((l, i) =>
+      i === 0 ? { ...l, url: url || l.url, password: password || l.password } : l
+    );
+
     return {
       id: raw.id || "item-" + index,
-      name: raw.name || "未命名资源",
-      description: raw.description || "暂无简介",
-      url: raw.url || "",
+      name: pick("name", raw.name || "未命名资源"),
+      description: pick("description", raw.description || "暂无简介"),
+      url,
       section,
       sub,
       sections,
@@ -456,15 +495,12 @@
       kind: raw.kind || "网站",
       needLogin: raw.need_login === true,
       updateInfo: raw.update_info || "未标注",
-      note: raw.note || "",
-      password: raw.password || "",
+      note: pick("note", raw.note || ""),
+      password,
       adult: raw.adult === true,
-      // 多网盘源；没有 links 字段时用主链接兜底成单元素数组
-      links: Array.isArray(raw.links) && raw.links.length
-        ? raw.links.filter((l) => l && /^https?:\/\//i.test(l.url))
-        : raw.url
-          ? [{ name: "打开", url: raw.url, password: raw.password || "" }]
-          : [],
+      // 后台是否改过这条，卡片上给个小标记，方便自己核对
+      edited: !!(ov && Object.keys(ov).some((k) => k !== "updated")),
+      links,
     };
   }
 
@@ -643,6 +679,15 @@
     field("updateInfo").textContent = item.updateInfo;
     field("note").textContent = item.note;
 
+    // 后台改过的条目给个标记 —— 只对已登录的自己显示，访客看不到，
+    // 免得让人以为站里的内容被人动过手脚。
+    if (item.edited && adminToken) {
+      const mark = document.createElement("span");
+      mark.className = "section-pill alt";
+      mark.textContent = "后台已改";
+      field("section").after(mark);
+    }
+
     // 点击数角标：按当前排序周期显示，0 次不显示以免整页都是「0 次」
     const paintHits = () => {
       const hitsPill = field("hits");
@@ -745,6 +790,40 @@
       });
     } else {
       reportWrap.remove();
+    }
+
+    // 后台编辑入口：只有登录后才存在。没登录时整块 remove 掉，
+    // 而不是 hidden —— DOM 里压根不留，免得看着像藏了个入口。
+    const adminWrap = field("adminWrap");
+    if (adminToken) {
+      adminWrap.hidden = false;
+      const btn = field("adminBtn");
+      const msg = field("adminMsg");
+      const box = field("adminForm");
+      const openEditor = () => {
+        box.hidden = false;
+        btn.textContent = "收起编辑";
+        buildAdminEditor(item, node, box, msg);
+      };
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();   // 别让点击冒泡把卡片折起来
+        if (box.hidden) {
+          openEditor();
+        } else {
+          box.hidden = true;
+          btn.textContent = "编辑这条";
+        }
+      });
+      // 保存后这张卡会被整块换掉。adminFlash 让新卡片自动回到「编辑器展开 +
+      // 显示上一步结果」的状态 —— 否则点了保存表单就收起、提示也没了，
+      // 看着像什么都没发生。
+      if (adminFlash && adminFlash.id === item.id) {
+        openEditor();
+        msg.textContent = adminFlash.text;
+        msg.className = "card-admin-msg" + (adminFlash.kind ? " " + adminFlash.kind : "");
+      }
+    } else {
+      adminWrap.remove();
     }
 
     const detail = node.querySelector("[data-detail]");
@@ -1067,6 +1146,247 @@
 
   /** 帮找依赖后端。没有可用接口时整块隐藏 —— 显示一个提交后没反应的表单更糟。 */
   const wantedApi = () => (stats.mode === "site" ? stats.api : "");
+
+  /* ---------- 后台编辑：覆盖层 ---------- */
+
+  /** 后端地址。覆盖层与统计走同一个 Worker，但覆盖层在 stats.pull() 之前就要用，
+   *  那时 stats.api 还没定，所以直接取配置里的第一个候选。 */
+  function apiBase() {
+    if (stats.api) return stats.api;
+    const cfg = window.MO_CONFIG || {};
+    const list = Array.isArray(cfg.statsApi) ? cfg.statsApi : cfg.statsApi ? [cfg.statsApi] : [];
+    return list[0] || "";
+  }
+
+  /** 拉覆盖层。拿不到就返回空对象 —— 顶多显示原值，别让整页加载失败。 */
+  async function loadOverrides() {
+    const api = apiBase();
+    if (!api) return {};
+    try {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 8000);
+      let res;
+      try {
+        // no-store：改完要立刻能看到，不能吃缓存
+        res = await fetch(`${api}/api/overrides`, { cache: "no-store", signal: ctrl.signal });
+      } finally {
+        clearTimeout(timer);
+      }
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      const data = await res.json();
+      return data && data.overrides && typeof data.overrides === "object" ? data.overrides : {};
+    } catch {
+      return {};
+    }
+  }
+
+  /** 覆盖层变了之后重建 state.items 并重渲染。改一条不必整页刷新。 */
+  async function refreshOverrides() {
+    overrides = await loadOverrides();
+    state.items = state.rawItems.map((r, i) => normalize(r, i, overrides[r && r.id]));
+    render();
+    refreshScrollDock();
+  }
+
+  /* ---------- 后台登录与卡片内编辑 ---------- */
+
+  /** 带 token 发请求。401 说明会话没了，就地清掉登录态并重渲染。 */
+  async function adminFetch(path, body) {
+    const api = apiBase();
+    if (!api) return { ok: false, error: "后端不可用" };
+    try {
+      const res = await fetch(api + path, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(adminToken ? { Authorization: "Bearer " + adminToken } : {}),
+        },
+        body: JSON.stringify(body || {}),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.status === 401 && adminToken) {
+        adminToken = "";
+        renderAdmin();
+        render();
+        return { ok: false, error: "登录已过期，请重新登录" };
+      }
+      return res.ok ? { ok: true, data } : { ok: false, error: data.error || "操作失败" };
+    } catch {
+      return { ok: false, error: "网络不通" };
+    }
+  }
+
+  function renderAdmin() {
+    const panel = $("[data-admin-panel]");
+    if (!panel) return;
+    // 只有地址带 #admin 才露出来。这不是安全措施（真正的门是密码），
+    // 只是不想在页面上给访客一个后台入口。
+    const wanted = location.hash === "#admin";
+    panel.hidden = !wanted;
+    if (!wanted) return;
+
+    const logged = !!adminToken;
+    const form = $("[data-admin-login]");
+    const input = $("[data-admin-input]");
+    const submit = $("[data-admin-submit]");
+    const logout = $("[data-admin-logout]");
+    const sub = $("[data-admin-sub]");
+
+    if (input) input.hidden = logged;
+    if (submit) submit.hidden = logged;
+    if (logout) logout.hidden = !logged;
+    if (form) form.querySelector('label[for="admin-pw"]').hidden = logged;
+    if (sub) {
+      sub.textContent = logged
+        ? "已登录。展开任意卡片，点里面的「编辑这条」即可修改；改动立刻对所有访客生效。"
+        : "登录后可以直接在卡片上改标题、简介、链接和提取码。";
+    }
+  }
+
+  function bindAdmin() {
+    const form = $("[data-admin-login]");
+    if (!form) return;
+    const input = $("[data-admin-input]");
+    const submit = $("[data-admin-submit]");
+    const msg = $("[data-admin-msg]");
+    const say = (t, kind = "") => {
+      if (msg) {
+        msg.textContent = t;
+        msg.className = "admin-msg" + (kind ? " " + kind : "");
+      }
+    };
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const pw = (input.value || "").trim();
+      if (!pw) return say("请输入密码", "bad");
+      submit.disabled = true;
+      say("登录中…");
+      const r = await adminFetch("/api/admin/login", { password: pw });
+      submit.disabled = false;
+      input.value = ""; // 无论成败都清掉，别把密码留在 DOM 里
+      if (!r.ok) return say(r.error, "bad");
+      adminToken = r.data.token;
+      say("登录成功，展开卡片即可编辑", "ok");
+      renderAdmin();
+      render(); // 重渲染让卡片长出编辑按钮
+    });
+
+    const logout = $("[data-admin-logout]");
+    if (logout) {
+      logout.addEventListener("click", async () => {
+        await adminFetch("/api/admin/logout", {});
+        adminToken = "";
+        say("已退出", "ok");
+        renderAdmin();
+        render();
+      });
+    }
+
+    // 支持直接改 hash 进出后台，不用刷新
+    window.addEventListener("hashchange", renderAdmin);
+  }
+
+  function initAdmin() {
+    bindAdmin();
+    renderAdmin();
+  }
+
+  /** 卡片里的编辑表单。只在已登录时构建。 */
+  const ADMIN_EDIT_FIELDS = [
+    { key: "name", label: "标题", type: "text" },
+    { key: "description", label: "简介", type: "textarea" },
+    { key: "url", label: "跳转链接", type: "text" },
+    { key: "password", label: "提取码", type: "text" },
+    { key: "note", label: "备注", type: "textarea" },
+  ];
+
+  function buildAdminEditor(item, wrap, box, msg) {
+    box.textContent = "";
+    const ov = overrides[item.id] || {};
+    const inputs = {};
+
+    ADMIN_EDIT_FIELDS.forEach((f) => {
+      const row = document.createElement("label");
+      row.className = "admin-field";
+
+      const name = document.createElement("span");
+      name.textContent = f.label;
+      // 标出这一项是不是被覆盖过，方便判断当前看到的是原值还是改过的值
+      if (f.key in ov) {
+        const tag = document.createElement("em");
+        tag.textContent = "已改";
+        name.appendChild(tag);
+      }
+      row.appendChild(name);
+
+      const el = document.createElement(f.type === "textarea" ? "textarea" : "input");
+      if (f.type === "textarea") el.rows = 3;
+      else el.type = "text";
+      el.value = item[f.key] || "";
+      row.appendChild(el);
+      inputs[f.key] = el;
+      box.appendChild(row);
+    });
+
+    const actions = document.createElement("div");
+    actions.className = "admin-actions";
+
+    const save = document.createElement("button");
+    save.type = "button";
+    save.className = "admin-save";
+    save.textContent = "保存";
+    actions.appendChild(save);
+
+    const reset = document.createElement("button");
+    reset.type = "button";
+    reset.className = "admin-reset";
+    reset.textContent = "撤销全部改动";
+    reset.hidden = !Object.keys(ov).some((k) => k !== "updated");
+    actions.appendChild(reset);
+    box.appendChild(actions);
+
+    const say = (t, kind = "") => {
+      msg.textContent = t;
+      msg.className = "card-admin-msg" + (kind ? " " + kind : "");
+    };
+
+    save.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      // 只提交真正变了的字段。和当前显示值一样就不发 ——
+      // 全量提交会把「没覆盖」的字段也写成覆盖，之后想回落原值都难。
+      const fields = {};
+      ADMIN_EDIT_FIELDS.forEach((f) => {
+        const v = inputs[f.key].value;
+        if (v !== (item[f.key] || "")) fields[f.key] = v;
+      });
+      if (!Object.keys(fields).length) return say("没有改动", "");
+      save.disabled = true;
+      say("保存中…");
+      const r = await adminFetch("/api/admin/override", { item_id: item.id, fields });
+      save.disabled = false;
+      if (!r.ok) return say(r.error, "bad");
+      // 重渲染会把这张卡换成新节点，所以提示得交给新卡片去显示
+      adminFlash = { id: item.id, text: "已保存，所有访客立即可见", kind: "ok" };
+      await refreshOverrides();
+      adminFlash = null;
+    });
+
+    reset.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      reset.disabled = true;
+      say("撤销中…");
+      // 每一项都置 null，后端会把整行删掉，条目回到 items.json 的原值
+      const fields = {};
+      ADMIN_EDIT_FIELDS.forEach((f) => (fields[f.key] = null));
+      const r = await adminFetch("/api/admin/override", { item_id: item.id, fields });
+      reset.disabled = false;
+      if (!r.ok) return say(r.error, "bad");
+      adminFlash = { id: item.id, text: "已回到原始值", kind: "ok" };
+      await refreshOverrides();
+      adminFlash = null;
+    });
+  }
 
   /** 本机记下已反馈过的条目，避免同一个人反复点同一张卡。
    *  后端也按指纹去重，这里只是让按钮状态在刷新后仍然正确。 */
@@ -1732,11 +2052,18 @@
     reportedSet = loadReported();
     refreshScrollDock = bindScrollDock() || (() => {});
     try {
-      const res = await fetch(DATA_URL, { cache: "no-cache" });
+      // 覆盖层与 items.json 并行拉。覆盖层失败不影响主流程 ——
+      // 顶多显示原值，比整页加载失败好。
+      const [res, ovMap] = await Promise.all([
+        fetch(DATA_URL, { cache: "no-cache" }),
+        loadOverrides(),
+      ]);
       if (!res.ok) throw new Error("HTTP " + res.status);
       const payload = await res.json();
       const raw = Array.isArray(payload) ? payload : payload.items || [];
-      state.items = raw.map(normalize);
+      overrides = ovMap;
+      state.rawItems = raw;
+      state.items = raw.map((r, i) => normalize(r, i, overrides[r && r.id]));
       state.generatedAt = payload.generated_at || null;
       $("[data-footer-updated]").textContent = fmtDate(state.generatedAt);
       renderModeUI();
@@ -1752,6 +2079,8 @@
         renderWanted();
         refreshScrollDock();
       }
+      // 后台入口：地址带 #admin 时展开登录面板
+      initAdmin();
     } catch (err) {
       const feed = $("[data-feed]");
       feed.textContent = "";

@@ -203,9 +203,93 @@ curl --proxy http://127.0.0.1:7890 https://mo-stats.werneruszcb71.workers.dev/ap
 断言公告文案要用 `inner_text()` 而不是 `text_content()` —— 后者返回
 `node.textContent`，会把 `hidden` 的那半句也算进来，测不出可见性差别。
 
+站长后台（覆盖层）：
+
+| 方法 | 路径 | 说明 |
+| --- | --- | --- |
+| GET | `/api/overrides` | 全部覆盖，公开读（访客也要用它盖住原值） |
+| POST | `/api/admin/login` | `{"password":"..."}`，成功返回 12 小时有效的 token |
+| POST | `/api/admin/logout` | 作废当前 token |
+| GET | `/api/admin/session` | 查 token 还有效没有 |
+| POST | `/api/admin/override` | `{"item_id":"...","fields":{...}}`，需 `Authorization: Bearer <token>` |
+
 写接口只接受 `ALLOWED_ORIGINS`（`index.js` 顶部）里的来源，默认只有
 `https://xrzka.github.io`。换域名要改这里，改完两个入口都要重新部署。
 读接口不限来源，方便你直接在浏览器里看数字。
+
+## 站长后台（改卡片内容）
+
+登录入口在 `https://xrzka.github.io/mo/#admin` —— 页面上没有任何按钮指向它，
+必须手打 hash。这不是安全措施（真正的门是密码），只是不想给访客一个后台入口。
+
+登录后展开任意卡片，底部会多一个「编辑这条」，可以改**标题 / 简介 / 跳转链接 /
+提取码 / 备注**五项。保存即对所有访客生效，不吃 CDN 缓存。
+
+### 为什么是覆盖层而不是直接改 items.json
+
+站点是 GitHub Pages 纯静态的，浏览器改不了仓库里的文件。三条路里选了覆盖层：
+
+1. **覆盖层（现在这个）**：编辑存进 D1 的 `overrides` 表，前端加载 `items.json`
+   后合并渲染。Worker 不需要任何 GitHub 权限，改完立刻生效，删掉那行就回滚。
+2. Worker 存一个 GitHub PAT 直接提交 —— 单一数据源更干净，但 Worker 里就多了
+   个能写整个仓库的令牌，泄露代价大得多，而且要等 CDN 缓存过期才生效。
+3. 本地工具改完自动 commit —— 最简单，但只能在这台机器上改。
+
+**还有个决定性理由**：`import_from_xlsx.py` 会重新生成 `xlsx-*` / `gal-*` 那
+五百多条。直接改 `items.json` 的话，下次重跑导入全被冲掉；覆盖层不会。
+
+代价是 `items.json` 会和线上显示逐渐不一致。改得多了记得把覆盖折回文件：
+
+```bash
+./wr.sh d1 execute mo-stats --remote --command \
+  "SELECT item_id, name, description, url, password, note, updated FROM overrides ORDER BY updated DESC"
+```
+
+按输出手工同步进 `data/items.json`，然后删掉对应的覆盖行。
+
+### 安全上的几个决定
+
+**只放开五个展示字段。** `OVERRIDE_FIELDS` 里**故意没有 `id` 和 `section`**：
+点击数（`clicks.item`）与失效反馈（`requests.item_id`）都以 id 为键，改了等于
+把这条已有的统计和反馈全丢掉；`section` 牵扯跨区逻辑，该走 `items.json`。
+传了这两个字段会明确 400 报错，不是静默忽略 —— 静默会让人以为改了却没生效。
+
+**密码只以 PBKDF2 哈希存在 Cloudflare secret 里**，不进 git、不进前端 JS。
+格式 `pbkdf2$迭代次数$盐$派生值`，自带参数，以后调迭代次数不会让旧哈希失效。
+比较走 `timingSafeEqual()` 常量时间，避免按响应耗时逐位猜。
+
+**token 只放前端内存，不落 localStorage。** 存起来省事，但 XSS 一旦发生就等于
+把写权限也交出去。代价是刷新页面要重新登录 —— 改几条内容，可以接受。
+
+**登录失败按 IP + 分钟窗限流**（`LOGIN_TRIES = 5`）。注意被限流期间即使密码
+正确也会被挡，这是有意的，别给暴力破解留缝。
+
+**`url` 只收 http(s)。** 卡片上的链接是 `<a href>`，`javascript:` / `data:`
+会变成 XSS，一律 400。`//evil.com` 这种协议相对地址也挡掉。
+
+**未登录时卡片里的编辑入口是 `remove()` 而不是 `hidden`。** DOM 里留着等于
+告诉访客"这儿有个后台"，还可能被人改 CSS 显示出来（虽然写操作仍会被 401 挡）。
+
+### 重建时要做的两件事
+
+换账号或重建时，除了建表还要设密码：
+
+```bash
+cd worker
+./wr.sh d1 execute mo-stats --remote --file=schema.sql   # overrides 等三张表
+
+# 密码从 stdin 读，不走命令行参数（参数会进 shell 历史和进程列表）
+printf '%s' '你的密码' | node gen_admin_hash.mjs | ./wr.sh secret put ADMIN_PASSWORD_HASH
+cd pages
+printf '%s' '你的密码' | node ../gen_admin_hash.mjs | ../wr.sh pages secret put ADMIN_PASSWORD_HASH
+```
+
+**两个入口的 secret 要分别设**：Worker 用 `secret put`，Pages 用
+`pages secret put`，两套是独立的。只设一边的话，前端切到另一个地址时后台会
+返回 503「未启用」。
+
+没设 `ADMIN_PASSWORD_HASH` 时登录接口一律回 503，**不会退化成无密码放行** ——
+这条有测试盯着（`test_admin.mjs` 的「未配置 ADMIN_PASSWORD_HASH」）。
 
 ## 资源帮找 / 失效反馈怎么运维
 
@@ -311,6 +395,7 @@ node test_frontend_parity.mjs    # 前后端桶名一致性、本机模式分桶
 node test_selectors.mjs          # app.js 用的选择器在 index.html 里都存在
 node test_worker.mjs             # 统计逻辑（真 SQL，node:sqlite 内存库当 D1）
 node test_requests.mjs           # 帮找与失效反馈逻辑（两类去重互不干扰、投票幂等、限流、注入拦截）
+node test_admin.mjs              # 后台鉴权与覆盖层（密码、限流、越权字段、伪协议、增量更新）
 python test_browser.py           # 真 Chromium 端到端，含多地址回退、重试、降级、帮找与失效反馈全流程
 python test_live.py              # 打线上真接口（默认 pages.dev，可直连）
 python test_live.py --requests    # 额外测帮找接口（会写真实库再清理）
@@ -326,6 +411,12 @@ python test_live.py --api https://mo-stats.werneruszcb71.workers.dev --proxy htt
 每张卡片都有按钮（含无链接条目，文案换成求补档）、刷新后仍是完成态、
 重复反馈合并成票数、后端报错后按钮放回可点且不写本机记录、
 以及后端还是老版时整个入口消失。
+
+后台那几条盯的是：未登录时 DOM 里压根没有编辑入口、密码错不给入口、
+改标题/简介/链接/提取码后当场生效且刷新仍在、访客（未登录）也看到改后的值、
+撤销后回到 `items.json` 的原值、会话在服务端失效后提示重新登录而不是静默失败。
+`test_admin.mjs` 用真 SQL 补齐后端侧：越权字段 400、伪协议 400、超长截断、
+空串与 `null` 的语义区别、登录限流、过期 token 自动清理。
 
 `test_browser.py` 在 Git Bash 里要带 `PYTHONIOENCODING=utf-8`
 （控制台是 GBK，`↳` 这类字符会让 `print` 抛 `UnicodeEncodeError`，

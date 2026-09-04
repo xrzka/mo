@@ -9,9 +9,9 @@
       content="墨小说漫画 · 小说、漫画、动画、游戏、AI 资源导航，分区整理，点击直达。"
     />
     <title>墨小说漫画 · 资源导航</title>
-    <script src="config.js?v=20260904i"></script>
-    <link rel="stylesheet" href="styles.css?v=20260904i" />
-    <script src="app.js?v=20260904i" defer></script>
+    <script src="config.js?v=20260904j"></script>
+    <link rel="stylesheet" href="styles.css?v=20260904j" />
+    <script src="app.js?v=20260904j" defer></script>
   </head>
   <body>
     <a class="skip-link" href="#feed">跳到资源列表</a>
@@ -105,6 +105,24 @@
           <ol class="rank-list" data-stats-rank></ol>
           <p class="stats-empty" data-stats-empty hidden>这个周期还没有点击记录。</p>
         </div>
+      </section>
+
+      <!-- 后台入口：地址栏加 #admin 才显示，页面上没有按钮指向它 -->
+      <section class="admin-panel" id="admin" data-admin-panel hidden aria-labelledby="admin-title">
+        <h2 id="admin-title"><span aria-hidden="true">🔧</span> 站长后台</h2>
+        <p class="admin-sub" data-admin-sub>登录后可以直接在卡片上改标题、简介、链接和提取码。</p>
+        <form class="admin-login" data-admin-login>
+          <label for="admin-pw">密码</label>
+          <input
+            type="password"
+            id="admin-pw"
+            autocomplete="current-password"
+            data-admin-input
+          />
+          <button type="submit" class="admin-submit" data-admin-submit>登录</button>
+          <button type="button" class="admin-logout" data-admin-logout hidden>退出</button>
+          <span class="admin-msg" data-admin-msg aria-live="polite"></span>
+        </form>
       </section>
 
       <nav class="tab-bar" aria-label="资源分区" data-tabs></nav>
@@ -290,6 +308,13 @@
             </button>
             <span class="card-report-hint">内容失效、解压码不对、要求补档都可以点</span>
             <span class="card-report-msg" data-field="reportMsg" aria-live="polite"></span>
+          </div>
+
+          <!-- 后台编辑：只有管理员登录后才显示，见 app.js 的 buildAdminEditor -->
+          <div class="card-admin" data-field="adminWrap" hidden>
+            <button type="button" class="card-admin-btn" data-field="adminBtn">编辑这条</button>
+            <span class="card-admin-msg" data-field="adminMsg" aria-live="polite"></span>
+            <div class="card-admin-form" data-field="adminForm" hidden></div>
           </div>
         </div>
       </article>

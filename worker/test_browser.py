@@ -84,10 +84,30 @@ class StatsStub(http.server.BaseHTTPRequestHandler):
         cls.force_error = None
         cls.legacy_summary = False
 
+    # ---- 后台编辑 ----
+    # 覆盖层：itemId -> {name?, description?, url?, password?, note?, updated}
+    overrides = {}
+    # 已发出的 session token 集合。真 Worker 存在 D1，这里够用。
+    sessions = set()
+    admin_password = "correct-horse-battery"
+    # 与 Worker 的 OVERRIDE_FIELDS 保持一致。多一项少一项都会让测试测不到实情。
+    override_fields = ("name", "description", "url", "password", "note")
+
+    @classmethod
+    def reset_admin(cls):
+        cls.overrides = {}
+        cls.sessions = set()
+
+    def _bearer(self):
+        raw = self.headers.get("Authorization") or ""
+        m = re.match(r"^Bearer\s+(\S+)$", raw)
+        return m.group(1) if m else ""
+
     def _cors(self):
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Methods", "GET,POST,OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        # 后台要带 Authorization，不放行的话浏览器预检就拦了
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization")
 
     def _send(self, obj, status=200):
         body = json.dumps(obj).encode()
@@ -104,6 +124,18 @@ class StatsStub(http.server.BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_GET(self):
+        if self.path.startswith("/api/overrides"):
+            # 后台编辑的覆盖层。前端加载时用它盖住 items.json 的原值。
+            return self._send({
+                "overrides": {k: dict(v) for k, v in StatsStub.overrides.items()},
+                "count": len(StatsStub.overrides),
+            })
+
+        if self.path.startswith("/api/admin/session"):
+            tok = self._bearer()
+            ok = bool(tok) and tok in StatsStub.sessions
+            return self._send({"ok": ok}, 200 if ok else 401)
+
         if self.path.startswith("/api/requests"):
             q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
             want_kind = (q.get("kind") or [""])[0]
@@ -162,6 +194,55 @@ class StatsStub(http.server.BaseHTTPRequestHandler):
             status, payload = StatsStub.force_error
             StatsStub.force_error = None
             return self._send(payload, status)
+
+        # ---- 后台编辑 ----
+        if self.path == "/api/admin/login":
+            if body.get("password") != StatsStub.admin_password:
+                return self._send({"error": "密码不对"}, 401)
+            tok = "a" * 64
+            StatsStub.sessions.add(tok)
+            exp = "2099-01-01T00:00:00.000Z"
+            return self._send({"ok": True, "token": tok, "expires": exp})
+
+        if self.path == "/api/admin/logout":
+            tok = self._bearer()
+            StatsStub.sessions.discard(tok)
+            return self._send({"ok": True})
+
+        if self.path == "/api/admin/override":
+            tok = self._bearer()
+            if not tok or tok not in StatsStub.sessions:
+                return self._send({"error": "未登录或登录已过期"}, 401)
+
+            item_id = str(body.get("item_id") or "").strip()
+            if not re.fullmatch(r"[A-Za-z0-9_-]{1,64}", item_id):
+                return self._send({"error": "缺少有效的资源 id"}, 400)
+
+            fields = body.get("fields")
+            if not isinstance(fields, dict):
+                return self._send({"error": "fields 必须是对象"}, 400)
+            unknown = [k for k in fields if k not in StatsStub.override_fields]
+            if unknown:
+                return self._send({"error": f"不可编辑的字段：{', '.join(unknown)}"}, 400)
+
+            cur = dict(StatsStub.overrides.get(item_id) or {})
+            cur.pop("updated", None)
+            for k, v in fields.items():
+                if v is None:
+                    cur.pop(k, None)          # null 撤销这一项
+                elif isinstance(v, str):
+                    if k == "url" and v and not re.match(r"^https?://", v, re.I):
+                        return self._send({"error": "链接必须以 http:// 或 https:// 开头"}, 400)
+                    cur[k] = v
+                else:
+                    return self._send({"error": f"{k} 必须是字符串或 null"}, 400)
+
+            if cur:
+                cur["updated"] = "2026-09-04T10:00:00.000Z"
+                StatsStub.overrides[item_id] = cur
+            else:
+                StatsStub.overrides.pop(item_id, None)   # 全撤销就删整行
+            return self._send({"ok": True, "item_id": item_id})
 
         if self.path == "/api/hit":
             item = body.get("id")
@@ -1295,6 +1376,240 @@ def test_broken_hidden_on_legacy_backend(page, base, stub_port):
     StatsStub.legacy_summary = False
 
 
+def admin_login(page, password=None):
+    """走 #admin 入口登录后台。"""
+    page.evaluate("() => { location.hash = '#admin'; }")
+    page.wait_for_timeout(300)
+    page.fill("[data-admin-input]", password if password is not None else StatsStub.admin_password)
+    page.click("[data-admin-submit]")
+    page.wait_for_timeout(700)
+
+
+def card_editor(page, item_id):
+    """展开某张卡片并打开它的编辑表单，返回定位器。"""
+    card = page.locator(f'.feed-card[data-item-id="{item_id}"]')
+    if card.get_attribute("aria-expanded") != "true":
+        card.click()
+        page.wait_for_timeout(200)
+    btn = card.locator(".card-admin-btn")
+    if card.locator(".card-admin-form").is_hidden():
+        btn.click()
+        page.wait_for_timeout(300)
+    return card
+
+
+def test_admin_hidden_by_default(page, base, stub_port):
+    """没有 #admin、没登录时，页面上不该有任何后台痕迹。
+
+    卡片里的编辑入口是 remove 掉而不是 hidden —— DOM 里留着等于告诉访客
+    「这里有个后台」，还可能被改 CSS 显示出来（虽然写操作仍会被 401 挡）。
+    """
+    print("\n--- 后台：默认完全不可见 ---")
+    StatsStub.reset_admin()
+    stub_config(page, f"http://127.0.0.1:{stub_port}")
+    page.goto(base, wait_until="networkidle")
+    page.wait_for_timeout(1300)
+
+    check("后台面板隐藏", page.is_hidden("[data-admin-panel]"))
+    check("卡片里没有编辑按钮", page.locator(".card-admin-btn").count() == 0)
+    check("卡片里没有编辑表单", page.locator(".card-admin-form").count() == 0)
+
+    # 加上 #admin 只露出登录框，编辑入口仍然不给
+    page.evaluate("() => { location.hash = '#admin'; }")
+    page.wait_for_timeout(400)
+    check("#admin 时露出登录框", page.is_visible("[data-admin-panel]"))
+    check("未登录仍无编辑按钮", page.locator(".card-admin-btn").count() == 0)
+    check("退出按钮此时不显示", page.is_hidden("[data-admin-logout]"))
+
+
+def test_admin_login(page, base, stub_port):
+    print("\n--- 后台：登录与退出 ---")
+    StatsStub.reset_admin()
+    stub_config(page, f"http://127.0.0.1:{stub_port}")
+    page.goto(base, wait_until="networkidle")
+    page.wait_for_timeout(1300)
+
+    admin_login(page, "wrong-password")
+    msg = page.text_content("[data-admin-msg]")
+    check("密码错有提示", "密码不对" in msg, msg.strip())
+    check("密码错不给编辑入口", page.locator(".card-admin-btn").count() == 0)
+    check("失败后清空密码框", page.input_value("[data-admin-input]") == "")
+
+    admin_login(page)
+    msg = page.text_content("[data-admin-msg]")
+    check("登录成功有提示", "登录成功" in msg, msg.strip())
+    check("登录后卡片长出编辑按钮", page.locator(".card-admin-btn").count() > 0,
+          str(page.locator(".card-admin-btn").count()))
+    check("显示退出按钮", page.is_visible("[data-admin-logout]"))
+    check("成功后也清空密码框", page.input_value("[data-admin-input]") == "")
+    # 密码不该留在 DOM 或 localStorage 里
+    check("密码没落 localStorage",
+          page.evaluate("() => JSON.stringify(Object.entries(localStorage))").find("horse") < 0)
+
+    page.click("[data-admin-logout]")
+    page.wait_for_timeout(600)
+    check("退出后编辑入口消失", page.locator(".card-admin-btn").count() == 0)
+    check("退出后 session 也清了", len(StatsStub.sessions) == 0, str(len(StatsStub.sessions)))
+
+
+def test_admin_edit(page, base, stub_port):
+    """改标题/简介/链接/提取码，保存后当场生效。"""
+    print("\n--- 后台：编辑四项字段 ---")
+    StatsStub.reset_admin()
+    stub_config(page, f"http://127.0.0.1:{stub_port}")
+    page.goto(base, wait_until="networkidle")
+    page.wait_for_timeout(1300)
+    admin_login(page)
+
+    item_id = page.locator(".feed-card").nth(0).get_attribute("data-item-id")
+    card = card_editor(page, item_id)
+    fields = card.locator(".card-admin-form .admin-field")
+    check("表单有 5 个字段", fields.count() == 5, str(fields.count()))
+
+    # 表单初值应是当前显示值，不是空的
+    first_input = card.locator(".card-admin-form .admin-field input").nth(0)
+    shown_title = card.locator(".card-title").text_content().strip()
+    check("标题输入框带当前值", first_input.input_value().strip() == shown_title,
+          f"{first_input.input_value()[:24]} vs {shown_title[:24]}")
+
+    NEW_TITLE = "后台改过的标题"
+    NEW_DESC = "后台改过的简介"
+    NEW_URL = "https://edited.example.com/x"
+    NEW_PW = "9527"
+    first_input.fill(NEW_TITLE)
+    card.locator(".card-admin-form textarea").nth(0).fill(NEW_DESC)
+    card.locator(".card-admin-form .admin-field input").nth(1).fill(NEW_URL)
+    card.locator(".card-admin-form .admin-field input").nth(2).fill(NEW_PW)
+    card.locator(".admin-save").click()
+    page.wait_for_timeout(900)
+
+    msg = card.locator(".card-admin-msg").text_content()
+    check("保存成功有提示", "已保存" in msg, msg.strip())
+
+    ov = StatsStub.overrides.get(item_id) or {}
+    check("后端存了标题", ov.get("name") == NEW_TITLE, str(ov.get("name")))
+    check("后端存了简介", ov.get("description") == NEW_DESC, str(ov.get("description")))
+    check("后端存了链接", ov.get("url") == NEW_URL, str(ov.get("url")))
+    check("后端存了提取码", ov.get("password") == NEW_PW, str(ov.get("password")))
+
+    # 页面当场更新，不用刷新
+    card = page.locator(f'.feed-card[data-item-id="{item_id}"]')
+    check("卡片标题当场变了", card.locator(".card-title").text_content().strip() == NEW_TITLE,
+          card.locator(".card-title").text_content().strip()[:30])
+
+    # 刷新后仍然是改后的值（说明真的来自后端而不是本地状态）
+    page.reload(wait_until="networkidle")
+    page.wait_for_timeout(1400)
+    card = page.locator(f'.feed-card[data-item-id="{item_id}"]')
+    check("刷新后仍是新标题",
+          card.locator(".card-title").text_content().strip() == NEW_TITLE,
+          card.locator(".card-title").text_content().strip()[:30])
+    card.click()
+    page.wait_for_timeout(300)
+    href = card.locator("a.visit-link").nth(0).get_attribute("href")
+    check("跳转链接跟着换了", href == NEW_URL, str(href))
+    check("提取码跟着换了", NEW_PW in card.locator(".card-detail").inner_text(),
+          card.locator(".card-detail").inner_text()[:60].replace("\n", " "))
+
+
+def test_admin_visitor_sees_edits(page, base, stub_port):
+    """访客（未登录）也要看到改后的内容 —— 覆盖层是公开读的。"""
+    print("\n--- 后台：访客看到的是改后的值 ---")
+    StatsStub.reset_admin()
+    StatsStub.overrides["manual-manga-1"] = {
+        "name": "访客也能看到的新标题",
+        "note": "访客也能看到的新备注",
+        "updated": "2026-09-04T10:00:00.000Z",
+    }
+    stub_config(page, f"http://127.0.0.1:{stub_port}")
+    page.goto(base, wait_until="networkidle")
+    page.wait_for_timeout(1400)
+
+    page.fill('[data-filter="q"]', "访客也能看到的新标题")
+    page.wait_for_timeout(500)
+    card = page.locator('.feed-card[data-item-id="manual-manga-1"]')
+    check("按新标题能搜到", card.count() == 1, str(card.count()))
+    check("显示新标题", card.locator(".card-title").text_content().strip() == "访客也能看到的新标题")
+    check("访客没有编辑入口", page.locator(".card-admin-btn").count() == 0)
+    # 「后台已改」标记只给登录后的自己看，访客不该看到
+    check("访客看不到「后台已改」标记",
+          "后台已改" not in page.locator("[data-feed]").inner_text())
+
+
+def test_admin_reset(page, base, stub_port):
+    """撤销全部改动后回到 items.json 的原值。"""
+    print("\n--- 后台：撤销改动 ---")
+    StatsStub.reset_admin()
+    stub_config(page, f"http://127.0.0.1:{stub_port}")
+    page.goto(base, wait_until="networkidle")
+    page.wait_for_timeout(1300)
+
+    item_id = page.locator(".feed-card").nth(0).get_attribute("data-item-id")
+    original = page.locator(f'.feed-card[data-item-id="{item_id}"] .card-title').text_content().strip()
+
+    admin_login(page)
+    card = card_editor(page, item_id)
+    card.locator(".card-admin-form .admin-field input").nth(0).fill("临时改的标题")
+    card.locator(".admin-save").click()
+    page.wait_for_timeout(900)
+    card = page.locator(f'.feed-card[data-item-id="{item_id}"]')
+    check("先确认改成功", card.locator(".card-title").text_content().strip() == "临时改的标题")
+
+    card = card_editor(page, item_id)
+    check("有改动时才显示撤销按钮", card.locator(".admin-reset").is_visible())
+    card.locator(".admin-reset").click()
+    page.wait_for_timeout(900)
+
+    check("后端删掉了这条覆盖", item_id not in StatsStub.overrides,
+          json.dumps(list(StatsStub.overrides)))
+    card = page.locator(f'.feed-card[data-item-id="{item_id}"]')
+    check("标题回到原值", card.locator(".card-title").text_content().strip() == original,
+          f"{card.locator('.card-title').text_content().strip()[:24]} vs {original[:24]}")
+
+
+def test_admin_session_expired(page, base, stub_port):
+    """会话在服务端失效后，前端要提示重新登录，而不是静默失败。"""
+    print("\n--- 后台：会话失效 ---")
+    StatsStub.reset_admin()
+    stub_config(page, f"http://127.0.0.1:{stub_port}")
+    page.goto(base, wait_until="networkidle")
+    page.wait_for_timeout(1300)
+    admin_login(page)
+
+    item_id = page.locator(".feed-card").nth(0).get_attribute("data-item-id")
+    card = card_editor(page, item_id)
+    # 服务端把会话清掉，模拟 12 小时到期
+    StatsStub.sessions.clear()
+
+    card.locator(".card-admin-form .admin-field input").nth(0).fill("过期后改的标题")
+    card.locator(".admin-save").click()
+    page.wait_for_timeout(900)
+
+    check("没写进后端", item_id not in StatsStub.overrides, json.dumps(list(StatsStub.overrides)))
+    # 401 后前端应清掉登录态，编辑入口随之消失
+    check("编辑入口消失", page.locator(".card-admin-btn").count() == 0)
+    check("提示重新登录", "重新登录" in page.text_content("[data-admin-sub]")
+          or page.is_visible("[data-admin-submit]"))
+
+
+def test_admin_no_backend(page, base):
+    """后端整体不可用时，后台面板不能假装能用。"""
+    print("\n--- 后台：后端不可用 ---")
+    StatsStub.reset_admin()
+    stub_config(page, ["http://127.0.0.1:1"])
+    page.goto(base, wait_until="networkidle")
+    page.wait_for_timeout(1000)
+    page.evaluate("() => { location.hash = '#admin'; }")
+    page.wait_for_timeout(400)
+
+    page.fill("[data-admin-input]", "any-password")
+    page.click("[data-admin-submit]")
+    page.wait_for_timeout(900)
+    msg = page.text_content("[data-admin-msg]")
+    check("给出失败提示而不是静默", msg.strip() != "", msg.strip()[:60])
+    check("仍然没有编辑入口", page.locator(".card-admin-btn").count() == 0)
+
+
 def test_api_down(page, base):
     print("\n--- 后端全都不可用时降级 ---")
     # 两个地址都连不上，模拟 Worker 挂掉或整体被网络挡住
@@ -1420,6 +1735,35 @@ def main():
 
             ctx = browser.new_context()
             test_broken_hidden_on_legacy_backend(ctx.new_page(), base, stub_port)
+            ctx.close()
+
+            # ---- 站长后台 ----
+            ctx = browser.new_context()
+            test_admin_hidden_by_default(ctx.new_page(), base, stub_port)
+            ctx.close()
+
+            ctx = browser.new_context()
+            test_admin_login(ctx.new_page(), base, stub_port)
+            ctx.close()
+
+            ctx = browser.new_context()
+            test_admin_edit(ctx.new_page(), base, stub_port)
+            ctx.close()
+
+            ctx = browser.new_context()
+            test_admin_visitor_sees_edits(ctx.new_page(), base, stub_port)
+            ctx.close()
+
+            ctx = browser.new_context()
+            test_admin_reset(ctx.new_page(), base, stub_port)
+            ctx.close()
+
+            ctx = browser.new_context()
+            test_admin_session_expired(ctx.new_page(), base, stub_port)
+            ctx.close()
+
+            ctx = browser.new_context()
+            test_admin_no_backend(ctx.new_page(), base)
             ctx.close()
 
             ctx = browser.new_context()

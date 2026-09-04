@@ -83,6 +83,17 @@ const skip = new Set(["field", "filter", "stat", "card-template", "item-id"]);
   "notice-broken-fallback",
 ].forEach((a) => check(`帮找节点 data-${a}`, htmlAttrs.has(a)));
 
+// 后台的关键节点。漏一个整块后台就静默失效（$() 拿不到就 return）
+[
+  "admin-panel",
+  "admin-sub",
+  "admin-login",
+  "admin-input",
+  "admin-submit",
+  "admin-logout",
+  "admin-msg",
+].forEach((a) => check(`后台节点 data-${a}`, htmlAttrs.has(a)));
+
 // data-wanted-input 是带值的属性，单独核对
 const wantedInputs = new Set();
 for (const m of js.matchAll(/data-wanted-input="([^"]+)"/g)) wantedInputs.add(m[1]);
