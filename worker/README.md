@@ -184,9 +184,13 @@ curl --proxy http://127.0.0.1:7890 https://mo-stats.werneruszcb71.workers.dev/ap
 
 **部署顺序：先 Worker/Pages，再推前端。** 前端会用 summary 的形状探测后端版本
 （分 kind 的是 `{want:{...},broken:{...}}`，老版是扁平的 `{open,found,closed}`），
-探测不到就把失效反馈入口整个藏掉。所以顺序反了不会存脏数据，只是那段时间
+探测不到就把失效反馈入口整个藏掉：类型标签、卡片按钮、以及入站公告里那句
+「点里面的『链接失效？点这里反馈』」。所以顺序反了不会存脏数据，只是那段时间
 访客看不到反馈按钮。这条路径有测试盯着（`test_browser.py` 的
 「失效反馈：老后端下不给入口」）。
+
+断言公告文案要用 `inner_text()` 而不是 `text_content()` —— 后者返回
+`node.textContent`，会把 `hidden` 的那半句也算进来，测不出可见性差别。
 
 写接口只接受 `ALLOWED_ORIGINS`（`index.js` 顶部）里的来源，默认只有
 `https://xrzka.github.io`。换域名要改这里，改完两个入口都要重新部署。

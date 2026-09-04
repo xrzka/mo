@@ -1302,9 +1302,20 @@
     const hint = $("[data-wanted-broken-hint]");
     if (hint) hint.hidden = state.wantedKind !== "broken";
 
+    renderNoticeBroken();
     renderWantedKindTabs();
     renderWantedTabs();
     renderWantedList();
+  }
+
+  /** 公告里那句「点卡片里的反馈按钮」只有按钮真的存在时才说。
+   *  卡片按钮的显示条件是后端认识 kind（brokenReady），没部署时公告若还教用户
+   *  去点，用户会满页找一个不存在的按钮 —— 那时退回原来的「去反馈群说」。 */
+  function renderNoticeBroken() {
+    const on = $("[data-notice-broken]");
+    const off = $("[data-notice-broken-fallback]");
+    if (on) on.hidden = !state.brokenReady;
+    if (off) off.hidden = state.brokenReady;
   }
 
   /** +1 想看。乐观更新数字，失败则回滚 —— 别让用户点了没有任何反馈。 */

@@ -881,6 +881,12 @@ def test_broken_panel(page, base, stub_port):
     sub = page.text_content("[data-wanted-sub]")
     check("说明里两类分开计数", "1 条待找" in sub and "1 条待补档" in sub, sub.strip())
 
+    # 后端支持时，公告才教用户去点卡片里的按钮。
+    # 用 inner_text 而不是 text_content —— 后者返回 node.textContent，
+    # 把 hidden 的那半句也算进来，断言就测不到可见性了。
+    notice = page.locator(".notice-board-sub").inner_text()
+    check("公告指向卡片反馈按钮", "点这里反馈" in notice, notice.strip()[:80])
+
     kinds = page.eval_on_selector_all(
         "[data-wanted-kinds] .wanted-kind",
         "els => els.map(e => [e.textContent, e.getAttribute('aria-selected') === 'true'])",
@@ -1091,6 +1097,11 @@ def test_broken_hidden_on_legacy_backend(page, base, stub_port):
     # 卡片里的反馈按钮也不能出现
     open_first_card(page)
     check("卡片没有失效反馈按钮", page.locator(".card-report-btn").count() == 0)
+
+    # 公告也不能教用户去点一个不存在的按钮
+    notice = page.locator(".notice-board-sub").inner_text()
+    check("公告不提卡片反馈按钮", "点这里反馈" not in notice, notice.strip()[:80])
+    check("公告退回反馈群说法", "反馈群" in notice, notice.strip()[:80])
 
     StatsStub.legacy_summary = False
 
