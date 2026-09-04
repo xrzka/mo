@@ -1,15 +1,16 @@
 /**
- * 墨小说漫画 —— 点击 / 访问统计 + 资源帮找后端（Cloudflare Worker + D1）。
+ * 墨小说漫画 —— 点击 / 访问统计 + 资源帮找与失效反馈后端（Cloudflare Worker + D1）。
  *
  * 统计接口：
  *   GET  /api/stats  返回各周期 Top N 点击数 + 访问人数
  *   POST /api/hit    {"id":"资源id"}  点击 +1
  *   POST /api/visit  {}               当天访问人数 +1（按访客指纹去重）
  *
- * 资源帮找接口：
- *   GET  /api/requests            列出求助（默认按票数排）
- *   POST /api/requests            {"title":"...","note":"..."} 新建
- *   POST /api/requests/vote       {"id":123}  +1 想看（按指纹去重）
+ * 反馈接口（requests 表，用 kind 区分两类）：
+ *   GET  /api/requests             列出，可带 ?kind=want|broken&status=...
+ *   POST /api/requests             kind=want   {"title":"作品名","note":"..."}
+ *                                  kind=broken {"item_id":"站内条目id","note":"..."}
+ *   POST /api/requests/vote        {"id":123}  +1（按指纹去重）
  *
  * 设计取舍：
  * - 用 D1 而不是 KV。计数是读改写，KV 最终一致会丢数；D1 的
@@ -17,7 +18,7 @@
  * - 访客不写 IP，只存 IP+UA+日期 的 SHA-256 前 32 位。日期当盐，
  *   跨天无法关联同一访客，也无法反查 IP。
  * - 统计接口没有鉴权，因为它只能让计数变大，读不到隐私数据。
- *   帮找接口能写入任意文本，所以额外加了长度上限、每日条数上限和
+ *   反馈接口能写入任意文本，所以额外加了长度上限、每日条数上限和
  *   控制字符过滤，见 REQ_* 常量与 sanitizeText()。
  */
 
@@ -33,7 +34,7 @@ const RATE_LIMIT = 60;
 /** 资源 id 白名单字符集，防止任意字符串灌进表里把库撑大。 */
 const ID_RE = /^[A-Za-z0-9_-]{1,64}$/;
 
-/* ---------- 资源帮找的约束 ---------- */
+/* ---------- 资源帮找 / 失效反馈的约束 ---------- */
 
 /** 作品名与补充说明的长度上限，按字符数算（中文一个字算 1）。 */
 const REQ_TITLE_MAX = 60;
@@ -42,11 +43,14 @@ const REQ_NOTE_MAX = 300;
 /** 列表一次最多返回多少条。 */
 const REQ_PAGE_MAX = 100;
 
-/** 同一访客每天最多提交几条，防止刷屏。 */
+/** 同一访客每天最多提交几条，防止刷屏。两种 kind 分别计数。 */
 const REQ_PER_DAY = 5;
 
-/** 库里最多保留多少条待处理求助，满了拒绝新增而不是无限膨胀。 */
+/** 库里最多保留多少条待处理，满了拒绝新增而不是无限膨胀。 */
 const REQ_OPEN_MAX = 500;
+
+/** 两种请求类型：want 想要没有的资源，broken 报告站内资源失效。 */
+const REQ_KINDS = ["want", "broken"];
 
 const pad2 = (n) => String(n).padStart(2, "0");
 
@@ -210,60 +214,94 @@ async function visitorFp(request) {
   return (await sha256Hex(`${ip}|${ua}|${b.day}`)).slice(0, 32);
 }
 
-/** 列出求助。status 可过滤，默认全部；按票数降序，同票数按新的在前。 */
+/** 列出请求。kind / status 可过滤；按票数降序，同票数按新的在前。 */
 async function listRequests(env, url) {
+  const kind = url.searchParams.get("kind") || "";
   const status = url.searchParams.get("status") || "";
   const limit = Math.min(
     Math.max(parseInt(url.searchParams.get("limit") || "60", 10) || 60, 1),
     REQ_PAGE_MAX
   );
 
-  const where = ["open", "found", "closed"].includes(status) ? "WHERE status = ?" : "";
-  const sql =
-    `SELECT id, display AS title, note, status, votes, reply, created FROM requests ` +
-    `${where} ORDER BY votes DESC, id DESC LIMIT ?`;
-  const stmt = where ? env.DB.prepare(sql).bind(status, limit) : env.DB.prepare(sql).bind(limit);
-  const { results } = await stmt.all();
+  const where = [];
+  const args = [];
+  if (REQ_KINDS.includes(kind)) {
+    where.push("kind = ?");
+    args.push(kind);
+  }
+  if (["open", "found", "closed"].includes(status)) {
+    where.push("status = ?");
+    args.push(status);
+  }
+  const clause = where.length ? "WHERE " + where.join(" AND ") : "";
 
+  const sql =
+    `SELECT id, kind, item_id, display AS title, note, status, votes, reply, created ` +
+    `FROM requests ${clause} ORDER BY votes DESC, id DESC LIMIT ?`;
+  const { results } = await env.DB.prepare(sql).bind(...args, limit).all();
+
+  // 汇总按 kind 分开算，前端两块面板各显示自己的计数
   const counts = await env.DB
-    .prepare("SELECT status, COUNT(*) c FROM requests GROUP BY status")
+    .prepare("SELECT kind, status, COUNT(*) c FROM requests GROUP BY kind, status")
     .all();
-  const summary = { open: 0, found: 0, closed: 0 };
+  const blank = () => ({ open: 0, found: 0, closed: 0 });
+  const summary = { want: blank(), broken: blank() };
   (counts.results || []).forEach((r) => {
-    if (r.status in summary) summary[r.status] = r.c;
+    if (summary[r.kind] && r.status in summary[r.kind]) summary[r.kind][r.status] = r.c;
   });
 
   return { items: results || [], summary };
 }
 
 /**
- * 新建求助。重复标题不再插一条，而是给已有的那条 +1 票 ——
- * 同一部作品多人想看，票数才有意义，分散成多条反而看不出热度。
+ * 新建请求。两种 kind：
+ *   want   访客想要站里没有的资源，title 是作品名
+ *   broken 访客报告站内某条资源失效，item_id 指向那条资源
+ *
+ * 重复提交不插新行，而是给已有的那条 +1 票 —— 同一部作品多人想要、
+ * 同一条资源多人报失效，票数才有意义，分散成多条反而看不出热度。
  */
 async function createRequest(env, request, body) {
+  const kind = REQ_KINDS.includes(body.kind) ? body.kind : "want";
+  const broken = kind === "broken";
+
   const title = sanitizeText(body.title, REQ_TITLE_MAX);
   const note = sanitizeText(body.note, REQ_NOTE_MAX);
-  if (!title) return { status: 400, body: { error: "作品名不能为空" } };
+  // item_id 是精确匹配的键，只能校验不能清洗 —— 用 sanitizeText 截断到 64
+  // 会让超长 id 变成另一个合法 id，可能撞上真实条目，把反馈记到错误的资源上。
+  const itemId = broken ? String(body.item_id ?? "").trim() : "";
 
-  const norm = normalizeTitle(title);
-  if (!norm) return { status: 400, body: { error: "作品名需要包含有效文字" } };
+  if (broken) {
+    if (!ID_RE.test(itemId)) {
+      return { status: 400, body: { error: "缺少有效的资源 id" } };
+    }
+  } else if (!title) {
+    return { status: 400, body: { error: "作品名不能为空" } };
+  }
+
+  // 去重键：want 用标准化后的作品名，broken 用 item: 前缀 + 条目 id。
+  // 两种 kind 的键空间不同，唯一索引建在 (kind, title) 上，互不干扰。
+  const norm = broken ? "item:" + itemId : normalizeTitle(title);
+  if (!norm || norm === "item:") {
+    return { status: 400, body: { error: "作品名需要包含有效文字" } };
+  }
 
   const fp = await visitorFp(request);
   const b = buckets();
 
-  // 每日提交条数上限，按指纹算
+  // 每日提交条数上限，按指纹与 kind 分别算 —— 报失效和求资源是两件事，
+  // 报了 5 条失效就不能再求资源，那样太苛刻
   const mine = await env.DB
-    .prepare("SELECT COUNT(*) c FROM requests WHERE fp = ? AND created LIKE ?")
-    .bind(fp, b.day + "%")
+    .prepare("SELECT COUNT(*) c FROM requests WHERE fp = ? AND kind = ? AND created LIKE ?")
+    .bind(fp, kind, b.day + "%")
     .first();
   if (mine && mine.c >= REQ_PER_DAY) {
     return { status: 429, body: { error: `今天已提交 ${REQ_PER_DAY} 条，明天再来吧` } };
   }
 
-  // 已存在同名（标准化后）就转成投票，不重复建条目
   const dup = await env.DB
-    .prepare("SELECT id FROM requests WHERE title = ?")
-    .bind(norm)
+    .prepare("SELECT id FROM requests WHERE kind = ? AND title = ?")
+    .bind(kind, norm)
     .first();
   if (dup) {
     const voted = await voteRequest(env, request, dup.id);
@@ -277,17 +315,19 @@ async function createRequest(env, request, body) {
     .prepare("SELECT COUNT(*) c FROM requests WHERE status = 'open'")
     .first();
   if (open && open.c >= REQ_OPEN_MAX) {
-    return { status: 503, body: { error: "待处理的求助太多了，等清理一批后再提交" } };
+    return { status: 503, body: { error: "待处理的反馈太多了，等清理一批后再提交" } };
   }
 
-  // title 列存标准化后的值供唯一索引去重，display 列存展示用的原文
+  // display 存展示用的原文。broken 没填标题时用条目 id 兜底，
+  // 列表上至少能看出是哪条资源。
+  const display = title || itemId;
   const created = new Date().toISOString();
   const res = await env.DB
     .prepare(
-      `INSERT INTO requests (title, display, note, status, votes, reply, created, fp)
-       VALUES (?, ?, ?, 'open', 1, '', ?, ?)`
+      `INSERT INTO requests (kind, item_id, title, display, note, status, votes, reply, created, fp)
+       VALUES (?, ?, ?, ?, ?, 'open', 1, '', ?, ?)`
     )
-    .bind(norm, title, note, created, fp)
+    .bind(kind, itemId, norm, display, note, created, fp)
     .run();
 
   // 提交者自己那一票也要记进去重表，否则他能再点一次 +1
@@ -299,7 +339,7 @@ async function createRequest(env, request, body) {
   return { status: 200, body: { ok: true, id: res.meta.last_row_id } };
 }
 
-/** +1 想看。同一指纹对同一条只能投一次。 */
+/** +1（想看 / 我也遇到失效）。同一指纹对同一条只能投一次。 */
 async function voteRequest(env, request, rawId) {
   const id = Number(rawId);
   if (!Number.isInteger(id) || id <= 0) {
@@ -307,7 +347,7 @@ async function voteRequest(env, request, rawId) {
   }
 
   const row = await env.DB.prepare("SELECT id FROM requests WHERE id = ?").bind(id).first();
-  if (!row) return { status: 404, body: { error: "求助不存在" } };
+  if (!row) return { status: 404, body: { error: "反馈不存在" } };
 
   const fp = await visitorFp(request);
   const b = buckets();
@@ -376,7 +416,7 @@ export default {
         return json({ ok: true }, request);
       }
 
-      /* ---------- 资源帮找 ---------- */
+      /* ---------- 资源帮找 / 失效反馈 ---------- */
 
       if (url.pathname === "/api/requests" && request.method === "GET") {
         return json(await listRequests(env, url), request);
@@ -429,4 +469,5 @@ export const _internal = {
   REQ_NOTE_MAX,
   REQ_PER_DAY,
   REQ_OPEN_MAX,
+  REQ_KINDS,
 };

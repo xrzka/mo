@@ -73,6 +73,8 @@ const skip = new Set(["field", "filter", "stat", "card-template", "item-id"]);
   "wanted-form",
   "wanted-submit",
   "wanted-msg",
+  "wanted-kinds",
+  "wanted-broken-hint",
   "wanted-tabs",
   "wanted-list",
   "wanted-empty",

@@ -9,9 +9,11 @@
 """
 import http.server
 import json
+import re
 import socketserver
 import threading
 import time
+import urllib.parse
 from pathlib import Path
 
 from playwright.sync_api import sync_playwright
@@ -60,12 +62,16 @@ class StatsStub(http.server.BaseHTTPRequestHandler):
     next_id = 1
     # 下一次写请求强制返回的 (状态码, 响应体)，用来测错误分支
     force_error = None
+    # 设成 True 就假装是还没部署 kind 的老后端：summary 回扁平的
+    # {open,found,closed}。前端靠这个形状差别决定是否给出失效反馈入口。
+    legacy_summary = False
 
     @classmethod
     def reset_requests(cls):
         cls.requests = {}
         cls.next_id = 1
         cls.force_error = None
+        cls.legacy_summary = False
 
     def _cors(self):
         self.send_header("Access-Control-Allow-Origin", "*")
@@ -88,13 +94,35 @@ class StatsStub(http.server.BaseHTTPRequestHandler):
 
     def do_GET(self):
         if self.path.startswith("/api/requests"):
-            items = sorted(
-                StatsStub.requests.values(), key=lambda x: (-x["votes"], -x["id"])
-            )
-            summary = {"open": 0, "found": 0, "closed": 0}
+            q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+            want_kind = (q.get("kind") or [""])[0]
+            want_status = (q.get("status") or [""])[0]
+
+            rows = list(StatsStub.requests.values())
+            if want_kind in ("want", "broken"):
+                rows = [r for r in rows if r.get("kind", "want") == want_kind]
+            if want_status in ("open", "found", "closed"):
+                rows = [r for r in rows if r["status"] == want_status]
+            items = sorted(rows, key=lambda x: (-x["votes"], -x["id"]))
+
+            # 汇总按 kind 分开，与 Worker 的 listRequests() 返回同一形状
+            summary = {
+                "want": {"open": 0, "found": 0, "closed": 0},
+                "broken": {"open": 0, "found": 0, "closed": 0},
+            }
             for it in StatsStub.requests.values():
-                if it["status"] in summary:
-                    summary[it["status"]] += 1
+                k = it.get("kind", "want")
+                if k in summary and it["status"] in summary[k]:
+                    summary[k][it["status"]] += 1
+
+            if StatsStub.legacy_summary:
+                # 老后端：不分 kind 的扁平汇总
+                flat = {"open": 0, "found": 0, "closed": 0}
+                for it in StatsStub.requests.values():
+                    if it["status"] in flat:
+                        flat[it["status"]] += 1
+                return self._send({"items": items, "summary": flat})
+
             return self._send({"items": items, "summary": summary})
 
         periods = ["day", "week", "month", "year", "all"]
@@ -125,20 +153,35 @@ class StatsStub(http.server.BaseHTTPRequestHandler):
         elif self.path == "/api/visit":
             StatsStub.visits += 1
         elif self.path == "/api/requests":
+            kind = body.get("kind") if body.get("kind") in ("want", "broken") else "want"
             title = (body.get("title") or "").strip()
-            if not title:
-                return self._send({"error": "作品名不能为空"}, 400)
-            # 归一化去重：去掉非字母数字，和后端 normalizeTitle 同一思路
-            norm = "".join(c for c in title.lower() if c.isalnum())
+            item_id = str(body.get("item_id") or "").strip()
+
+            if kind == "broken":
+                # broken 的键是条目 id，标题只用于展示
+                if not re.fullmatch(r"[A-Za-z0-9_-]{1,64}", item_id):
+                    return self._send({"error": "缺少有效的资源 id"}, 400)
+                norm = "item:" + item_id
+                display = title or item_id
+            else:
+                if not title:
+                    return self._send({"error": "作品名不能为空"}, 400)
+                # 归一化去重：去掉非字母数字，和后端 normalizeTitle 同一思路
+                norm = "".join(c for c in title.lower() if c.isalnum())
+                display = title
+
+            # 去重键在 (kind, norm) 上，两类互不干扰
             for it in StatsStub.requests.values():
-                if it["_norm"] == norm:
+                if it.get("kind", "want") == kind and it["_norm"] == norm:
                     it["votes"] += 1
                     return self._send({"ok": True, "id": it["id"], "merged": True})
             rid = StatsStub.next_id
             StatsStub.next_id += 1
             StatsStub.requests[rid] = {
                 "id": rid,
-                "title": title,
+                "kind": kind,
+                "item_id": item_id,
+                "title": display,
                 "note": (body.get("note") or "").strip(),
                 "status": "open",
                 "votes": 1,
@@ -584,6 +627,20 @@ def wanted_rows(page):
     )
 
 
+def switch_wanted_kind(page, label):
+    """切到「想要资源」或「失效反馈」面板。"""
+    page.click(f'[data-wanted-kinds] button:has-text("{label}")')
+    page.wait_for_timeout(400)
+
+
+def open_first_card(page):
+    """展开第一张有链接的卡片，返回它的 id。失效反馈按钮只在这类卡片上。"""
+    card = page.locator(".feed-card").nth(0)
+    card.click()
+    page.wait_for_timeout(200)
+    return card.get_attribute("data-item-id")
+
+
 def test_wanted_hidden_without_backend(page, base):
     """没有后端时整块必须隐藏 —— 表单点了没反应比没有表单更让人困惑。"""
     print("\n--- 帮找：无后端时隐藏 ---")
@@ -727,6 +784,214 @@ def test_wanted_status_tabs(page, base, stub_port):
           json.dumps(rows, ensure_ascii=False)[:120])
 
 
+def test_broken_report(page, base, stub_port):
+    """卡片内的失效反馈按钮：必须自动带上条目 id，不靠用户手打名字。"""
+    print("\n--- 失效反馈：卡片按钮提交 ---")
+    StatsStub.reset_requests()
+    stub_config(page, f"http://127.0.0.1:{stub_port}")
+    page.goto(base, wait_until="networkidle")
+    page.wait_for_timeout(1300)
+
+    item_id = open_first_card(page)
+    card = page.locator(f'.feed-card[data-item-id="{item_id}"]')
+    btn = card.locator(".card-report-btn")
+    check("有链接的卡片显示反馈按钮", btn.count() == 1 and btn.is_visible(), item_id)
+
+    btn.click()
+    page.wait_for_timeout(900)
+
+    rec = list(StatsStub.requests.values())
+    check("后端收到一条记录", len(rec) == 1, str(len(rec)))
+    check("kind 是 broken", rec and rec[0]["kind"] == "broken",
+          rec[0]["kind"] if rec else "-")
+    check("自动带上了条目 id", rec and rec[0]["item_id"] == item_id,
+          f'{rec[0]["item_id"] if rec else "-"} vs {item_id}')
+    check("提交后按钮禁用", btn.is_disabled())
+    check("按钮文案变完成态", "已反馈" in btn.text_content(), btn.text_content().strip())
+    check("旁边给出成功提示", "感谢反馈" in card.locator(".card-report-msg").text_content(),
+          card.locator(".card-report-msg").text_content().strip())
+    # 按钮里 stopPropagation 了，点它不该把卡片折叠回去
+    check("点按钮不折叠卡片", card.get_attribute("aria-expanded") == "true")
+
+    stored = page.evaluate("() => JSON.parse(localStorage.getItem('mo-reported-v1') || '[]')")
+    check("本机记下已反馈的 id", item_id in stored, json.dumps(stored)[:120])
+
+    # 刷新后按钮仍是完成态 —— 靠 localStorage，不然用户会以为没提交成功
+    page.reload(wait_until="networkidle")
+    page.wait_for_timeout(1300)
+    page.locator(f'.feed-card[data-item-id="{item_id}"]').click()
+    page.wait_for_timeout(300)
+    btn2 = page.locator(f'.feed-card[data-item-id="{item_id}"] .card-report-btn')
+    check("刷新后按钮仍禁用", btn2.is_disabled())
+    check("刷新后文案仍是完成态", "已反馈过" in btn2.text_content(), btn2.text_content().strip())
+
+
+def test_broken_no_button_without_links(page, base, stub_port):
+    """没有可打开链接的条目（教程、公众号之类）不该出现反馈按钮 —— 没链接就无所谓失效。"""
+    print("\n--- 失效反馈：无链接条目不显示按钮 ---")
+    StatsStub.reset_requests()
+    stub_config(page, f"http://127.0.0.1:{stub_port}")
+    page.goto(base, wait_until="networkidle")
+    page.wait_for_timeout(1300)
+
+    # 数据里挑一条既没 links 也没 url 的
+    target = page.evaluate(
+        """async () => {
+            const r = await fetch('data/items.json');
+            const d = await r.json();
+            const items = Array.isArray(d) ? d : d.items;
+            const x = items.find(i => !(i.links && i.links.length) && !i.url && !i.adult);
+            return x ? { id: x.id, name: x.name } : null;
+        }"""
+    )
+    if not target:
+        check("数据里有无链接条目可测", False, "items.json 里没有既无 links 也无 url 的条目")
+        return
+
+    page.fill('[data-filter="q"]', target["name"])
+    page.wait_for_timeout(400)
+    card = page.locator(f'.feed-card[data-item-id="{target["id"]}"]')
+    check("搜到该条目", card.count() == 1, target["id"])
+    card.click()
+    page.wait_for_timeout(300)
+    check("无链接条目没有反馈按钮", card.locator(".card-report-btn").count() == 0)
+
+
+def test_broken_panel(page, base, stub_port):
+    """失效反馈面板：与「想要资源」分开计数，状态叫法也不同（待补档而不是待找）。"""
+    print("\n--- 失效反馈：面板与状态叫法 ---")
+    StatsStub.reset_requests()
+    StatsStub.requests = {
+        1: {"id": 1, "kind": "want", "item_id": "", "title": "想看的作品", "note": "",
+            "status": "open", "votes": 2, "reply": "",
+            "created": "2026-09-01T00:00:00.000Z", "_norm": "a"},
+        2: {"id": 2, "kind": "broken", "item_id": "manual-novel-1", "title": "失效的资源",
+            "note": "", "status": "open", "votes": 5, "reply": "",
+            "created": "2026-09-02T00:00:00.000Z", "_norm": "item:manual-novel-1"},
+        3: {"id": 3, "kind": "broken", "item_id": "manual-manga-1", "title": "已补好的资源",
+            "note": "", "status": "found", "votes": 1, "reply": "已换新链接",
+            "created": "2026-08-31T00:00:00.000Z", "_norm": "item:manual-manga-1"},
+    }
+    StatsStub.next_id = 4
+    stub_config(page, f"http://127.0.0.1:{stub_port}")
+    page.goto(base, wait_until="networkidle")
+    page.wait_for_timeout(1300)
+    open_wanted(page)
+
+    sub = page.text_content("[data-wanted-sub]")
+    check("说明里两类分开计数", "1 条待找" in sub and "1 条待补档" in sub, sub.strip())
+
+    kinds = page.eval_on_selector_all(
+        "[data-wanted-kinds] .wanted-kind",
+        "els => els.map(e => [e.textContent, e.getAttribute('aria-selected') === 'true'])",
+    )
+    check("默认停在想要资源", len(kinds) == 2 and kinds[0][1] is True and kinds[1][1] is False,
+          str(kinds))
+    check("想要资源下显示表单", page.is_visible("[data-wanted-form]"))
+    check("想要资源下不显示引导", page.is_hidden("[data-wanted-broken-hint]"))
+
+    rows = wanted_rows(page)
+    check("想要资源只列 want", len(rows) == 1 and rows[0]["title"] == "想看的作品",
+          json.dumps(rows, ensure_ascii=False)[:120])
+
+    switch_wanted_kind(page, "失效反馈")
+    check("表单在失效反馈下隐藏", page.is_hidden("[data-wanted-form]"))
+    check("改为显示卡片引导", page.is_visible("[data-wanted-broken-hint]"))
+    hint = page.text_content("[data-wanted-broken-hint]")
+    check("引导指向卡片按钮", "链接失效" in hint, hint.strip()[:60])
+
+    tabs = page.eval_on_selector_all(
+        "[data-wanted-tabs] .wanted-tab",
+        "els => els.map(e => e.textContent)",
+    )
+    check("状态改叫待补档/已补上",
+          any("待补档" in t for t in tabs) and any("已补上" in t for t in tabs), str(tabs))
+
+    rows = wanted_rows(page)
+    check("待补档只列 broken 的 open", len(rows) == 1 and rows[0]["title"] == "失效的资源",
+          json.dumps(rows, ensure_ascii=False)[:120])
+    check("票数取后端值", rows and rows[0]["votes"] == 5, str(rows[0]["votes"]) if rows else "-")
+    check("状态徽标写待补档", rows and rows[0]["status"] == "待补档",
+          rows[0]["status"] if rows else "-")
+
+    page.click('[data-wanted-tabs] button:has-text("已补上")')
+    page.wait_for_timeout(400)
+    rows = wanted_rows(page)
+    check("已补上页列 found", len(rows) == 1 and rows[0]["title"] == "已补好的资源",
+          json.dumps(rows, ensure_ascii=False)[:120])
+    check("显示补档回复", "已换新链接" in rows[0]["reply"], rows[0]["reply"])
+
+    # 切回想要资源应回到待处理页，否则会停在空列表上
+    switch_wanted_kind(page, "想要资源")
+    sel = page.eval_on_selector_all(
+        "[data-wanted-tabs] .wanted-tab",
+        "els => els.filter(e => e.getAttribute('aria-selected')==='true').map(e=>e.textContent)",
+    )
+    check("换类型回到待处理页", len(sel) == 1 and "待找" in sel[0], str(sel))
+
+
+def test_broken_merge(page, base, stub_port):
+    """同一条资源被多人报失效要合并成票数，不该堆成多条。"""
+    print("\n--- 失效反馈：重复反馈合并 ---")
+    StatsStub.reset_requests()
+    stub_config(page, f"http://127.0.0.1:{stub_port}")
+    page.goto(base, wait_until="networkidle")
+    page.wait_for_timeout(1300)
+
+    item_id = open_first_card(page)
+    page.locator(f'.feed-card[data-item-id="{item_id}"] .card-report-btn').click()
+    page.wait_for_timeout(800)
+    check("第一次反馈入库", len(StatsStub.requests) == 1, str(len(StatsStub.requests)))
+
+    # 换个访客：清掉本机记录再报同一条，后端应合并而不是新建
+    page.evaluate("() => localStorage.removeItem('mo-reported-v1')")
+    page.reload(wait_until="networkidle")
+    page.wait_for_timeout(1300)
+    card = page.locator(f'.feed-card[data-item-id="{item_id}"]')
+    card.click()
+    page.wait_for_timeout(300)
+    btn = card.locator(".card-report-btn")
+    check("清掉本机记录后按钮恢复可点", not btn.is_disabled())
+    btn.click()
+    page.wait_for_timeout(900)
+
+    check("仍只有 1 条", len(StatsStub.requests) == 1, str(len(StatsStub.requests)))
+    check("票数涨到 2", list(StatsStub.requests.values())[0]["votes"] == 2,
+          str(list(StatsStub.requests.values())[0]["votes"]))
+    msg = card.locator(".card-report-msg").text_content()
+    check("提示说明已合并", "加了一票" in msg, msg.strip())
+
+
+def test_broken_error_handling(page, base, stub_port):
+    """后端拒绝时要说明原因，并且把按钮放回可点状态。"""
+    print("\n--- 失效反馈：错误处理 ---")
+    StatsStub.reset_requests()
+    stub_config(page, f"http://127.0.0.1:{stub_port}")
+    page.goto(base, wait_until="networkidle")
+    page.wait_for_timeout(1300)
+
+    StatsStub.force_error = (429, {"error": "今天已提交 5 条，明天再来吧"})
+    item_id = open_first_card(page)
+    card = page.locator(f'.feed-card[data-item-id="{item_id}"]')
+    btn = card.locator(".card-report-btn")
+    btn.click()
+    page.wait_for_timeout(900)
+
+    msg = card.locator(".card-report-msg").text_content()
+    check("显示后端返回的原因", "明天再来" in msg, msg.strip())
+    check("失败后按钮恢复可点", not btn.is_disabled())
+    check("失败不写本机记录",
+          page.evaluate("() => localStorage.getItem('mo-reported-v1')") in (None, "[]"),
+          str(page.evaluate("() => localStorage.getItem('mo-reported-v1')")))
+
+    # 重试一次应该成功（force_error 只生效一次）
+    btn.click()
+    page.wait_for_timeout(900)
+    check("重试后提交成功", len(StatsStub.requests) == 1, str(len(StatsStub.requests)))
+    check("重试后按钮变完成态", btn.is_disabled() and "已反馈" in btn.text_content(),
+          btn.text_content().strip())
+
+
 def test_wanted_xss(page, base, stub_port):
     """用户提交的内容必须走 textContent，绝不能被当 HTML 执行。"""
     print("\n--- 帮找：XSS 载荷 ---")
@@ -784,6 +1049,50 @@ def test_wanted_notice_jump(page, base, stub_port):
     page.wait_for_timeout(900)
     check("点击后自动展开", page.get_attribute("[data-wanted-toggle]", "aria-expanded") == "true")
     check("表单可见", page.is_visible("[data-wanted-form]"))
+
+
+def test_broken_hidden_on_legacy_backend(page, base, stub_port):
+    """后端还没部署认识 kind 的那版时，失效反馈入口必须整个消失。
+
+    否则点了会在老后端存成一条以资源名为标题的「想要资源」，
+    站长看到一堆分不清是求资源还是报失效的条目，得手工清。
+    前端先上线、Worker 后部署的窗口期就是这个场景。
+    """
+    print("\n--- 失效反馈：老后端下不给入口 ---")
+    StatsStub.reset_requests()
+    StatsStub.legacy_summary = True
+    StatsStub.requests = {
+        1: {"id": 1, "kind": "want", "item_id": "", "title": "想看的作品", "note": "",
+            "status": "open", "votes": 2, "reply": "",
+            "created": "2026-09-01T00:00:00.000Z", "_norm": "a"},
+    }
+    StatsStub.next_id = 2
+    stub_config(page, f"http://127.0.0.1:{stub_port}")
+    page.goto(base, wait_until="networkidle")
+    page.wait_for_timeout(1300)
+
+    # 帮找本身还在，只是退回单一「想要资源」形态
+    check("帮找区仍显示", page.is_visible("[data-wanted-panel]"))
+    open_wanted(page)
+    check("类型标签整条隐藏", page.is_hidden("[data-wanted-kinds]"))
+    check("表单仍可用", page.is_visible("[data-wanted-form]"))
+    check("不显示失效反馈引导", page.is_hidden("[data-wanted-broken-hint]"))
+
+    sub = page.text_content("[data-wanted-sub]")
+    check("说明不提失效反馈", "待补档" not in sub and "1 条待找" in sub, sub.strip())
+    check("旧的扁平 summary 计到待找", "1 条待找" in sub, sub.strip())
+
+    tabs = page.eval_on_selector_all(
+        "[data-wanted-tabs] .wanted-tab",
+        "els => els.map(e => e.textContent)",
+    )
+    check("状态仍叫待找/已找到", any("待找" in t for t in tabs), str(tabs))
+
+    # 卡片里的反馈按钮也不能出现
+    open_first_card(page)
+    check("卡片没有失效反馈按钮", page.locator(".card-report-btn").count() == 0)
+
+    StatsStub.legacy_summary = False
 
 
 def test_api_down(page, base):
@@ -870,6 +1179,31 @@ def main():
 
             ctx = browser.new_context()
             test_wanted_notice_jump(ctx.new_page(), base, stub_port)
+            ctx.close()
+
+            # ---- 失效反馈 ----
+            ctx = browser.new_context()
+            test_broken_report(ctx.new_page(), base, stub_port)
+            ctx.close()
+
+            ctx = browser.new_context()
+            test_broken_no_button_without_links(ctx.new_page(), base, stub_port)
+            ctx.close()
+
+            ctx = browser.new_context()
+            test_broken_panel(ctx.new_page(), base, stub_port)
+            ctx.close()
+
+            ctx = browser.new_context()
+            test_broken_merge(ctx.new_page(), base, stub_port)
+            ctx.close()
+
+            ctx = browser.new_context()
+            test_broken_error_handling(ctx.new_page(), base, stub_port)
+            ctx.close()
+
+            ctx = browser.new_context()
+            test_broken_hidden_on_legacy_backend(ctx.new_page(), base, stub_port)
             ctx.close()
 
             ctx = browser.new_context()

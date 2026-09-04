@@ -80,6 +80,10 @@ const get = async (env, path) => {
 };
 const create = (env, title, note = "", opts) =>
   post(env, "/api/requests", { title, note }, opts);
+
+/** 报告站内某条资源失效。按钮在卡片上，所以 item_id 总是准确的。 */
+const reportBroken = (env, itemId, title = "", opts) =>
+  post(env, "/api/requests", { kind: "broken", item_id: itemId, title }, opts);
 /* ---------- 1. 文本清洗与去重键 ---------- */
 {
   console.log("\n--- 文本清洗 ---");
@@ -122,7 +126,7 @@ const create = (env, title, note = "", opts) =>
   check("补充说明保留", it.note === "想看最终季", it.note);
   check("初始状态 open", it.status === "open");
   check("初始票数 1", it.votes === 1, String(it.votes));
-  check("汇总计数正确", data.summary.open === 1 && data.summary.found === 0,
+  check("汇总计数正确", data.summary.want.open === 1 && data.summary.want.found === 0,
     JSON.stringify(data.summary));
   check("不泄露提交者指纹", !("fp" in it), Object.keys(it).join(","));
 
@@ -247,7 +251,7 @@ const create = (env, title, note = "", opts) =>
   check("已找到的带回复", data.items[0].reply === "已加到漫画区", data.items[0].reply);
 
   data = (await get(env, "/api/requests")).data;
-  check("汇总区分状态", data.summary.open === 2 && data.summary.found === 1,
+  check("汇总区分状态", data.summary.want.open === 2 && data.summary.want.found === 1,
     JSON.stringify(data.summary));
 
   // limit 上限保护
@@ -330,6 +334,168 @@ const create = (env, title, note = "", opts) =>
   check("清掉过期投票去重键", left.c === 0, String(left.c));
   check("票数不受清理影响", after.votes === before.votes,
     `${before.votes} -> ${after.votes}`);
+}
+
+/* ---------- 9. 失效反馈（kind=broken） ---------- */
+{
+  console.log("\n--- 失效反馈：基本流程 ---");
+  const env = { DB: makeD1() };
+
+  let r = await reportBroken(env, "manual-manga-2", "G社漫画");
+  check("首次反馈返回 200", r.status === 200, String(r.status));
+  const body = await r.json();
+  check("返回新建 id", Number.isInteger(body.id) && body.id > 0, JSON.stringify(body));
+
+  const { data } = await get(env, "/api/requests");
+  check("列表含 1 条", data.items.length === 1, String(data.items.length));
+  const it = data.items[0];
+  check("kind 是 broken", it.kind === "broken", it.kind);
+  check("记下了失效的条目 id", it.item_id === "manual-manga-2", it.item_id);
+  check("展示名用传入的标题", it.title === "G社漫画", it.title);
+  check("初始状态 open", it.status === "open");
+  check("初始票数 1", it.votes === 1, String(it.votes));
+  check("不泄露提交者指纹", !("fp" in it), Object.keys(it).join(","));
+
+  // 汇总按 kind 分开
+  check("汇总里 broken.open = 1", data.summary.broken.open === 1,
+    JSON.stringify(data.summary));
+  check("汇总里 want 仍为 0", data.summary.want.open === 0);
+}
+
+/* ---------- 10. 缺 item_id / 坏 item_id ---------- */
+{
+  console.log("\n--- 失效反馈：参数校验 ---");
+  const env = { DB: makeD1() };
+
+  check("缺 item_id 被 400",
+    (await post(env, "/api/requests", { kind: "broken", title: "某资源" })).status === 400);
+  check("空 item_id 被 400", (await reportBroken(env, "")).status === 400);
+  check("注入串 item_id 被 400",
+    (await reportBroken(env, "'; DROP TABLE requests; --")).status === 400);
+  check("非 ASCII item_id 被 400", (await reportBroken(env, "中文id")).status === 400);
+  check("超长 item_id 被 400", (await reportBroken(env, "x".repeat(65))).status === 400);
+  check("合法 item_id 通过", (await reportBroken(env, "manual-novel-4")).status === 200);
+
+  const alive = env.DB._db.prepare("SELECT COUNT(*) c FROM requests").get();
+  check("requests 表未被注入破坏", alive.c === 1, JSON.stringify(alive));
+
+  // 没传标题时用 item_id 兜底，列表上至少能看出是哪条
+  const { data } = await get(env, "/api/requests");
+  check("无标题时展示名回落到 item_id", data.items[0].title === "manual-novel-4",
+    data.items[0].title);
+}
+
+/* ---------- 11. 两类去重互不干扰 ---------- */
+{
+  console.log("\n--- 两类去重互不干扰 ---");
+  const env = { DB: makeD1() };
+
+  // 同一条资源被多人报失效 → 合并加票
+  await reportBroken(env, "manual-manga-2", "G社漫画", { ip: "1.1.1.1" });
+  const dup = await reportBroken(env, "manual-manga-2", "G社漫画", { ip: "2.2.2.2" });
+  const dupBody = await dup.json();
+  check("同一条资源重复反馈合并", dupBody.merged === true, JSON.stringify(dupBody));
+
+  let { data } = await get(env, "/api/requests?kind=broken");
+  check("broken 仍只有 1 条", data.items.length === 1, String(data.items.length));
+  check("票数涨到 2", data.items[0].votes === 2, String(data.items[0].votes));
+
+  // 关键：want 用同名标题提交，不该和 broken 那条撞去重键
+  const w = await create(env, "G社漫画", "", { ip: "3.3.3.3" });
+  const wBody = await w.json();
+  check("want 用同名不被误判为重复", wBody.merged !== true, JSON.stringify(wBody));
+
+  data = (await get(env, "/api/requests")).data;
+  check("库里现在两条", data.items.length === 2, String(data.items.length));
+  const kinds = data.items.map((x) => x.kind).sort();
+  check("两条 kind 分别是 broken 与 want", kinds.join(",") === "broken,want", kinds.join(","));
+
+  data = (await get(env, "/api/requests?kind=want")).data;
+  check("按 kind=want 过滤只剩 1 条", data.items.length === 1 && data.items[0].kind === "want");
+  data = (await get(env, "/api/requests?kind=broken")).data;
+  check("按 kind=broken 过滤只剩 1 条", data.items.length === 1 && data.items[0].kind === "broken");
+}
+
+/* ---------- 12. 每日上限按 kind 分开算 ---------- */
+{
+  console.log("\n--- 每日上限按 kind 分开 ---");
+  const env = { DB: makeD1() };
+  const { REQ_PER_DAY } = _internal;
+  const ip = "7.7.7.7";
+
+  // 先把 broken 的额度用满
+  let blocked = 0;
+  for (let i = 0; i < REQ_PER_DAY + 2; i++) {
+    const r = await reportBroken(env, `item-${i}`, `资源${i}`, { ip });
+    if (r.status === 429) blocked++;
+  }
+  check(`broken 超过 ${REQ_PER_DAY} 条被挡`, blocked === 2, `blocked=${blocked}`);
+
+  // 同一个人的 want 额度不该被 broken 吃掉 —— 报失效和求资源是两件事
+  const w = await create(env, "另一部作品", "", { ip });
+  check("broken 用满后 want 仍可提交", w.status === 200, String(w.status));
+
+  const { data } = await get(env, "/api/requests");
+  check(`broken 恰好 ${REQ_PER_DAY} 条`,
+    data.items.filter((x) => x.kind === "broken").length === REQ_PER_DAY);
+  check("want 有 1 条", data.items.filter((x) => x.kind === "want").length === 1);
+}
+
+/* ---------- 13. 投票与状态流转 ---------- */
+{
+  console.log("\n--- 失效反馈：投票与状态 ---");
+  const env = { DB: makeD1() };
+  const r = await reportBroken(env, "manual-novel-6", "wenku8", { ip: "1.1.1.1" });
+  const { id } = await r.json();
+
+  // 提交者自己那一票已记入，不能再投
+  let v = await post(env, "/api/requests/vote", { id }, { ip: "1.1.1.1" });
+  check("提交者不能给自己再投", (await v.json()).ok === false);
+
+  v = await post(env, "/api/requests/vote", { id }, { ip: "9.9.9.9" });
+  check("其他人可以投「我也遇到失效」", (await v.json()).ok === true);
+
+  let { data } = await get(env, "/api/requests");
+  check("票数为 2", data.items[0].votes === 2, String(data.items[0].votes));
+
+  // 站长补档后标 found 并写回复
+  env.DB._db
+    .prepare("UPDATE requests SET status='found', reply='已换新链接' WHERE id=?")
+    .run(id);
+
+  data = (await get(env, "/api/requests?kind=broken&status=open")).data;
+  check("补档后不在 open 列表", data.items.length === 0, String(data.items.length));
+
+  data = (await get(env, "/api/requests?kind=broken&status=found")).data;
+  check("出现在 found 列表", data.items.length === 1);
+  check("带上补档回复", data.items[0].reply === "已换新链接", data.items[0].reply);
+
+  data = (await get(env, "/api/requests")).data;
+  check("汇总反映状态变化",
+    data.summary.broken.found === 1 && data.summary.broken.open === 0,
+    JSON.stringify(data.summary.broken));
+}
+
+/* ---------- 14. kind 非法值回落 ---------- */
+{
+  console.log("\n--- kind 非法值处理 ---");
+  const env = { DB: makeD1() };
+
+  // 未知 kind 一律当 want 处理，而不是报错 —— 老客户端不传 kind 也要能用
+  const r = await post(env, "/api/requests", { kind: "nonsense", title: "某作品" });
+  check("未知 kind 回落成 want", r.status === 200, String(r.status));
+  let { data } = await get(env, "/api/requests");
+  check("落库的 kind 是 want", data.items[0].kind === "want", data.items[0].kind);
+
+  // 不传 kind（老前端的行为）也走 want
+  const r2 = await post(env, "/api/requests", { title: "另一部作品" });
+  check("不传 kind 也当 want", r2.status === 200);
+  data = (await get(env, "/api/requests")).data;
+  check("两条都是 want", data.items.every((x) => x.kind === "want"));
+
+  // 非法 kind 过滤参数应被忽略，返回全部而不是空
+  data = (await get(env, "/api/requests?kind=bogus")).data;
+  check("非法 kind 过滤被忽略", data.items.length === 2, String(data.items.length));
 }
 
 console.log(fail ? `\n${fail} 项失败` : "\n全部通过");

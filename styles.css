@@ -805,6 +805,73 @@ h1 {
   .wanted-side { flex-direction: row; justify-content: flex-start; }
 }
 
+/* ---------- 反馈类型切换（想要资源 / 失效反馈） ---------- */
+.wanted-kinds { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.wanted-kind {
+  padding: 7px 16px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.wanted-kind:hover { border-color: var(--accent); color: var(--accent); }
+.wanted-kind[aria-selected="true"] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+/* 失效反馈没有表单，改成一句引导：去资源卡片里点按钮 */
+.wanted-broken-hint {
+  margin: 0 0 14px;
+  padding: 10px 13px;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 9px;
+  background: var(--bg);
+  color: var(--text-muted);
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.wanted-broken-hint[hidden] { display: none; }
+
+.wanted-form[hidden] { display: none; }
+
+/* ---------- 卡片内的失效反馈按钮 ---------- */
+.card-report {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+  padding-top: 11px;
+  border-top: 1px dashed var(--border);
+}
+.card-report[hidden] { display: none; }
+
+.card-report-btn {
+  padding: 5px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+/* 这个按钮是次要操作，默认弱化；hover 才提示可点 */
+.card-report-btn:hover:not(:disabled) { border-color: #d97706; color: #d97706; }
+.card-report-btn:disabled { cursor: default; opacity: 0.75; }
+.card-report-btn.done { border-color: var(--accent); color: var(--accent); }
+
+.card-report-msg { color: var(--text-muted); font-size: 12px; }
+.card-report-msg.ok { color: var(--accent); }
+.card-report-msg.bad { color: #d97706; }
+
 /* ---------- 热门排行 ---------- */
 .stats-panel {
   margin: 0 0 18px;

@@ -362,10 +362,17 @@
     statsOpen: false,
     wantedOpen: false,
     wantedStatus: "open", // open | found | closed
+    wantedKind: "want", // want 想要资源 | broken 失效反馈
+    // 后端是否已部署认识 kind 的那版。老后端会把失效反馈当成「想要资源」
+    // 记成一条以资源名为标题的求助，所以探测不到就整块不给用。
+    brokenReady: false,
     wantedItems: [],
-    wantedSummary: { open: 0, found: 0, closed: 0 },
+    wantedSummary: { want: { open: 0, found: 0, closed: 0 }, broken: { open: 0, found: 0, closed: 0 } },
     wantedLoaded: false,
   };
+
+  // 本机已反馈过失效的条目 id。init() 里赋值，用于让按钮在刷新后仍是完成态。
+  let reportedSet = new Set();
 
   const $ = (sel, root = document) => root.querySelector(sel);
   const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
@@ -635,6 +642,29 @@
       });
     } else {
       linkBox.remove();
+    }
+
+    // 失效反馈按钮：只有能打开的资源才需要（没链接的教程之类不显示），
+    // 并且后端得认识 kind —— 老后端会把它存成一条以资源名为标题的求助。
+    // 放在卡片里而不是做成独立表单，是为了自动带上这条的 id ——
+    // 让用户手打资源名的话，收到的反馈往往对不上具体条目。
+    const reportWrap = field("reportWrap");
+    if (item.links.length && state.brokenReady) {
+      reportWrap.hidden = false;
+      const btn = field("reportBtn");
+      const msg = field("reportMsg");
+      // 已反馈过的条目直接显示成完成态，刷新页面后按钮状态仍然正确
+      if (reportedSet.has(item.id)) {
+        btn.disabled = true;
+        btn.textContent = "已反馈过，等待补档";
+        btn.classList.add("done");
+      }
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();   // 别让点击冒泡去折叠卡片
+        reportBroken(item, btn, msg);
+      });
+    } else {
+      reportWrap.remove();
     }
 
     const detail = node.querySelector("[data-detail]");
@@ -945,8 +975,81 @@
 
   const WANTED_STATUS_LABEL = { open: "待找", found: "已找到", closed: "已关闭" };
 
+  /** 失效反馈的状态标签。同一张表，但用户视角不同：待找→待补档。 */
+  const BROKEN_STATUS_LABEL = { open: "待补档", found: "已补上", closed: "已关闭" };
+
   /** 帮找依赖后端。没有可用接口时整块隐藏 —— 显示一个提交后没反应的表单更糟。 */
   const wantedApi = () => (stats.mode === "site" ? stats.api : "");
+
+  /** 本机记下已反馈过的条目，避免同一个人反复点同一张卡。
+   *  后端也按指纹去重，这里只是让按钮状态在刷新后仍然正确。 */
+  const REPORTED_KEY = "mo-reported-v1";
+
+  function loadReported() {
+    try {
+      const raw = JSON.parse(localStorage.getItem(REPORTED_KEY) || "[]");
+      return new Set(Array.isArray(raw) ? raw : []);
+    } catch {
+      return new Set();
+    }
+  }
+
+  function markReported(id) {
+    try {
+      const s = loadReported();
+      s.add(id);
+      // 只留最近 200 条，避免无限增长
+      localStorage.setItem(REPORTED_KEY, JSON.stringify([...s].slice(-200)));
+    } catch {
+      /* 隐私模式下存不下，无所谓：后端仍会按指纹去重 */
+    }
+  }
+
+  /** 报告某条资源失效。按钮就在那张卡上，所以 item_id 一定准确。 */
+  async function reportBroken(item, btn, msg) {
+    const api = wantedApi();
+    if (!api) {
+      msg.textContent = "反馈功能暂时不可用";
+      msg.className = "card-report-msg bad";
+      return;
+    }
+    if (btn.disabled) return;
+    btn.disabled = true;
+    msg.textContent = "提交中…";
+    msg.className = "card-report-msg";
+    try {
+      const res = await fetch(`${api}/api/requests`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          kind: "broken",
+          item_id: item.id,
+          title: item.name,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        msg.textContent = data.error || "提交失败，稍后再试";
+        msg.className = "card-report-msg bad";
+        btn.disabled = false;
+        return;
+      }
+      markReported(item.id);
+      btn.textContent = "已反馈，会尽快补档";
+      btn.classList.add("done");
+      msg.textContent = data.merged ? "已有人反馈过，帮你加了一票" : "收到，感谢反馈";
+      msg.className = "card-report-msg ok";
+      // 失效反馈列表变了，顺手刷新面板
+      if (state.wantedLoaded) {
+        await loadWanted();
+        renderWanted();
+      }
+    } catch {
+      msg.textContent = "网络不通，稍后再试";
+      msg.className = "card-report-msg bad";
+      btn.disabled = false;
+    }
+  }
 
   const fmtWantedDate = (iso) => {
     if (!iso) return "";
@@ -954,6 +1057,38 @@
     if (isNaN(d)) return "";
     return d.toLocaleDateString("zh-CN", { month: "2-digit", day: "2-digit" });
   };
+
+  /** 后端是否已认识 kind。分 kind 的 summary 形如 {want:{...},broken:{...}}，
+   *  老后端返回的是扁平的 {open,found,closed} —— 用这个形状差别当探测信号，
+   *  比另加一个版本号接口省事，也不用两边同时改。 */
+  const summaryIsKindAware = (raw) =>
+    !!raw && typeof raw === "object" &&
+    ["want", "broken"].some((k) => raw[k] && typeof raw[k] === "object");
+
+  /** 把 summary 归一成 {want:{open,found,closed}, broken:{...}}。
+   *  老后端返回扁平形状时，库里只可能是想要资源的记录，所以整份计到 want 上，
+   *  broken 归零 —— 前端先上线、后端后部署的窗口期里不会显示 undefined。 */
+  function normalizeWantedSummary(raw) {
+    const blank = () => ({ open: 0, found: 0, closed: 0 });
+    const out = { want: blank(), broken: blank() };
+    if (!raw || typeof raw !== "object") return out;
+
+    const pick = (src, dst) => {
+      if (!src || typeof src !== "object") return;
+      ["open", "found", "closed"].forEach((s) => {
+        const n = Number(src[s]);
+        if (Number.isFinite(n) && n >= 0) dst[s] = n;
+      });
+    };
+
+    if (summaryIsKindAware(raw)) {
+      pick(raw.want, out.want);
+      pick(raw.broken, out.broken);
+    } else {
+      pick(raw, out.want);
+    }
+    return out;
+  }
 
   /** 拉取求助列表。失败时不清空已有数据，避免网络抖动把列表闪成空。 */
   async function loadWanted() {
@@ -971,31 +1106,76 @@
       if (!res.ok) throw new Error("HTTP " + res.status);
       const data = await res.json();
       state.wantedItems = Array.isArray(data.items) ? data.items : [];
-      state.wantedSummary = data.summary && typeof data.summary === "object"
-        ? data.summary
-        : { open: 0, found: 0, closed: 0 };
+      state.brokenReady = summaryIsKindAware(data.summary);
+      state.wantedSummary = normalizeWantedSummary(data.summary);
       state.wantedLoaded = true;
+      // 后端还是老版时退回单一「想要资源」视图，别让用户停在一个点了会存脏数据的面板上
+      if (!state.brokenReady && state.wantedKind === "broken") {
+        state.wantedKind = "want";
+        state.wantedStatus = "open";
+      }
       return true;
     } catch {
       return false;
     }
   }
 
+  /** 类型切换：想要资源 / 失效反馈。两类用同一张表，靠 kind 区分。 */
+  const WANTED_KINDS = [
+    { id: "want", label: "想要资源" },
+    { id: "broken", label: "失效反馈" },
+  ];
+
+  const kindStatusLabel = (kind) =>
+    kind === "broken" ? BROKEN_STATUS_LABEL : WANTED_STATUS_LABEL;
+
+  function renderWantedKindTabs() {
+    const bar = $("[data-wanted-kinds]");
+    if (!bar) return;
+    bar.textContent = "";
+    // 后端不支持 kind 时只有一类，两个标签没有意义，整条隐藏
+    bar.hidden = !state.brokenReady;
+    if (!state.brokenReady) return;
+    WANTED_KINDS.forEach((k) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "wanted-kind";
+      btn.setAttribute("role", "tab");
+      btn.setAttribute("aria-selected", String(state.wantedKind === k.id));
+      btn.textContent = k.label;
+
+      const cnt = document.createElement("span");
+      cnt.className = "tab-count";
+      cnt.textContent = (state.wantedSummary[k.id] || {}).open ?? 0;
+      btn.appendChild(cnt);
+
+      btn.addEventListener("click", () => {
+        state.wantedKind = k.id;
+        state.wantedStatus = "open"; // 换类型回到待处理，否则可能停在空列表上
+        renderWanted();
+      });
+      bar.appendChild(btn);
+    });
+  }
+
   function renderWantedTabs() {
     const bar = $("[data-wanted-tabs]");
     if (!bar) return;
     bar.textContent = "";
+    const labels = kindStatusLabel(state.wantedKind);
+    const counts = state.wantedSummary[state.wantedKind] || {};
     WANTED_TABS.forEach((t) => {
       const btn = document.createElement("button");
       btn.type = "button";
       btn.className = "wanted-tab";
       btn.setAttribute("role", "tab");
       btn.setAttribute("aria-selected", String(state.wantedStatus === t.id));
-      btn.textContent = t.label;
+      // 两类的状态叫法不同：想要资源是「待找/已找到」，失效反馈是「待补档/已补上」
+      btn.textContent = labels[t.id] || t.label;
 
       const cnt = document.createElement("span");
       cnt.className = "tab-count";
-      cnt.textContent = state.wantedSummary[t.id] ?? 0;
+      cnt.textContent = counts[t.id] ?? 0;
       btn.appendChild(cnt);
 
       btn.addEventListener("click", () => {
@@ -1014,14 +1194,21 @@
     if (!box) return;
     box.textContent = "";
 
-    const list = state.wantedItems.filter((x) => x.status === state.wantedStatus);
+    const labels = kindStatusLabel(state.wantedKind);
+    const list = state.wantedItems.filter(
+      (x) => (x.kind || "want") === state.wantedKind && x.status === state.wantedStatus
+    );
     const empty = $("[data-wanted-empty]");
     if (empty) {
       empty.hidden = list.length > 0;
-      empty.textContent =
-        state.wantedStatus === "open"
-          ? "还没有人留言，你可以第一个提交。"
-          : `暂无${WANTED_STATUS_LABEL[state.wantedStatus]}的求助。`;
+      if (state.wantedStatus !== "open") {
+        empty.textContent = `暂无${labels[state.wantedStatus]}的记录。`;
+      } else {
+        empty.textContent =
+          state.wantedKind === "broken"
+            ? "目前没有待补档的资源。发现链接失效可以在资源卡片里点「链接失效？点这里反馈」。"
+            : "还没有人留言，你可以第一个提交。";
+      }
     }
 
     list.forEach((item) => {
@@ -1065,7 +1252,7 @@
       const vote = document.createElement("button");
       vote.type = "button";
       vote.className = "wanted-vote";
-      vote.title = "我也想看";
+      vote.title = state.wantedKind === "broken" ? "我也遇到失效了" : "我也想看";
       const arrow = document.createElement("span");
       arrow.setAttribute("aria-hidden", "true");
       arrow.textContent = "▲";
@@ -1078,7 +1265,7 @@
 
       const pill = document.createElement("span");
       pill.className = "wanted-status " + item.status;
-      pill.textContent = WANTED_STATUS_LABEL[item.status] || item.status;
+      pill.textContent = labels[item.status] || item.status;
       side.appendChild(pill);
 
       li.appendChild(side);
@@ -1097,11 +1284,25 @@
     }
     const sub = $("[data-wanted-sub]");
     if (sub) {
-      const n = state.wantedSummary.open || 0;
-      sub.textContent = state.wantedLoaded
-        ? `匿名留言想看的作品，找到后会加进站里。当前 ${n} 条待找。`
-        : "匿名留言想看的作品，找到后会加进站里。";
+      const want = (state.wantedSummary.want || {}).open || 0;
+      const broken = (state.wantedSummary.broken || {}).open || 0;
+      if (!state.wantedLoaded) {
+        sub.textContent = "想要的资源可以留言，站内资源失效也能反馈。";
+      } else if (state.brokenReady) {
+        sub.textContent =
+          `想要的资源可以留言，站内资源失效也能反馈。当前 ${want} 条待找、${broken} 条待补档。`;
+      } else {
+        // 老后端只有求资源这一类，别提失效反馈，免得用户去找不存在的入口
+        sub.textContent = `匿名留言想看的作品，找到后会加进站里。当前 ${want} 条待找。`;
+      }
     }
+    // 只有「想要资源」需要提交表单；失效反馈走资源卡片上的按钮
+    const form = $("[data-wanted-form]");
+    if (form) form.hidden = state.wantedKind !== "want";
+    const hint = $("[data-wanted-broken-hint]");
+    if (hint) hint.hidden = state.wantedKind !== "broken";
+
+    renderWantedKindTabs();
     renderWantedTabs();
     renderWantedList();
   }
@@ -1429,6 +1630,8 @@
     bindWantedForm();
     bindWantedJump();
     stats.init();
+    // 卡片渲染时要读它来决定反馈按钮是否已完成态，所以得在首次 render 之前
+    reportedSet = loadReported();
     refreshScrollDock = bindScrollDock() || (() => {});
     try {
       const res = await fetch(DATA_URL, { cache: "no-cache" });
@@ -1443,10 +1646,11 @@
       // 远端统计后到：拉到就重渲染，拉不到保持本机数据，不影响已渲染的页面
       if (await stats.pull()) {
         stats.reportVisit();
-        render();
         // 帮找依赖同一个后端，接口通了才显示这一块。
         // 只拉汇总不展开列表 —— 待找条数要显示在标题上。
+        // 必须在 render() 之前拉：卡片要按 brokenReady 决定是否画失效反馈按钮。
         await loadWanted();
+        render();
         renderWanted();
         refreshScrollDock();
       }

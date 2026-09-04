@@ -82,6 +82,31 @@ npm install -g wrangler        # 装过就跳过（装在 D:\npm-global）
 就切到全站模式。改 `config.js` 时记得把 `index.html` 里三个 `?v=` 版本号一起提，
 否则缓存不更新。
 
+### 给已有库补 kind / item_id 两列（已执行过一次）
+
+`schema.sql` 里全是 `CREATE TABLE IF NOT EXISTS`，所以**对已经存在的
+`requests` 表不会生效** —— 加失效反馈时那张表已经建好了，光跑 schema.sql
+不会多出 `kind` 和 `item_id` 两列。已有库要显式迁移：
+
+```bash
+./wr.sh d1 execute mo-stats --remote --command \
+  "ALTER TABLE requests ADD COLUMN kind TEXT NOT NULL DEFAULT 'want'"
+./wr.sh d1 execute mo-stats --remote --command \
+  "ALTER TABLE requests ADD COLUMN item_id TEXT NOT NULL DEFAULT ''"
+
+# 去重键与列表索引都要带上 kind，旧的先删再建
+./wr.sh d1 execute mo-stats --remote --command \
+  "DROP INDEX IF EXISTS idx_requests_norm; CREATE UNIQUE INDEX idx_requests_norm ON requests (kind, title)"
+./wr.sh d1 execute mo-stats --remote --command \
+  "DROP INDEX IF EXISTS idx_requests_list; CREATE INDEX idx_requests_list ON requests (kind, status, votes DESC, id DESC)"
+./wr.sh d1 execute mo-stats --remote --command \
+  "CREATE INDEX IF NOT EXISTS idx_requests_item ON requests (item_id)"
+```
+
+老数据的 `kind` 会落成默认值 `want`，正是它们本来的语义，不用回填。
+线上库已经跑过这几条了（用 `PRAGMA table_info(requests)` 和
+`SELECT sql FROM sqlite_master WHERE tbl_name='requests'` 可以复核）。
+
 ### 部署时踩到的两个坑
 
 **`wrangler login` 只等 120 秒。** 源码里 `12e4` 毫秒硬编码，超时就把回调端口
@@ -145,28 +170,42 @@ curl --proxy http://127.0.0.1:7890 https://mo-stats.werneruszcb71.workers.dev/ap
 | POST | `/api/hit` | `{"id":"资源id"}`，该资源计数 +1 |
 | POST | `/api/visit` | `{}`，当天访问人数 +1（去重后） |
 
-资源帮找：
+资源帮找 / 失效反馈（同一张 `requests` 表，用 `kind` 区分）：
 
 | 方法 | 路径 | 说明 |
 | --- | --- | --- |
-| GET | `/api/requests` | 列出求助，可带 `?status=open\|found\|closed`、`?limit=N` |
-| POST | `/api/requests` | `{"title":"作品名","note":"补充说明"}` 新建；同名会合并成投票 |
-| POST | `/api/requests/vote` | `{"id":123}`，+1 想看（按访客指纹去重） |
+| GET | `/api/requests` | 列出，可带 `?kind=want\|broken`、`?status=open\|found\|closed`、`?limit=N` |
+| POST | `/api/requests` | `kind=want`（默认）：`{"title":"作品名","note":"补充说明"}`；`kind=broken`：`{"kind":"broken","item_id":"站内条目id"}`。重复提交合并成投票 |
+| POST | `/api/requests/vote` | `{"id":123}`，+1（按访客指纹去重） |
+
+`kind` 只接受 `want` / `broken`，其它值一律回落成 `want`。
+`item_id` 走 `ID_RE` 精确校验而**不清洗**——截断超长 id 会撞上另一条真实条目，
+把失效反馈记到错误的资源上。
+
+**部署顺序：先 Worker/Pages，再推前端。** 前端会用 summary 的形状探测后端版本
+（分 kind 的是 `{want:{...},broken:{...}}`，老版是扁平的 `{open,found,closed}`），
+探测不到就把失效反馈入口整个藏掉。所以顺序反了不会存脏数据，只是那段时间
+访客看不到反馈按钮。这条路径有测试盯着（`test_browser.py` 的
+「失效反馈：老后端下不给入口」）。
 
 写接口只接受 `ALLOWED_ORIGINS`（`index.js` 顶部）里的来源，默认只有
 `https://xrzka.github.io`。换域名要改这里，改完两个入口都要重新部署。
 读接口不限来源，方便你直接在浏览器里看数字。
 
-## 资源帮找怎么运维
+## 资源帮找 / 失效反馈怎么运维
 
 访客只能提交和投票，**改状态、写回复要你自己在 D1 里做**。常用几条：
 
 ```bash
-# 看待处理的（按票数排）
+# 看待处理的求资源（按票数排）
 ./wr.sh d1 execute mo-stats --remote --command \
-  "SELECT id, display, note, votes, created FROM requests WHERE status='open' ORDER BY votes DESC"
+  "SELECT id, display, note, votes, created FROM requests WHERE kind='want' AND status='open' ORDER BY votes DESC"
 
-# 找到了：标成 found 并写回复，回复会显示在卡片上
+# 看待补档的失效资源。item_id 直接对应 data/items.json 里的条目 id
+./wr.sh d1 execute mo-stats --remote --command \
+  "SELECT id, item_id, display, votes, created FROM requests WHERE kind='broken' AND status='open' ORDER BY votes DESC"
+
+# 找到了 / 补好了：标成 found 并写回复，回复会显示在卡片上
 ./wr.sh d1 execute mo-stats --remote --command \
   "UPDATE requests SET status='found', reply='已加到漫画区' WHERE id=3"
 
@@ -179,16 +218,26 @@ curl --proxy http://127.0.0.1:7890 https://mo-stats.werneruszcb71.workers.dev/ap
   "DELETE FROM request_votes WHERE k LIKE '9|%'; DELETE FROM requests WHERE id=9"
 ```
 
-**几个约束写在代码里，改的话看 `index.js` 顶部的 `REQ_*` 常量：**
-标题 60 字、说明 300 字、单访客每天最多 5 条、待处理上限 500 条。
-到 500 条会拒绝新增而不是无限膨胀 —— 处理掉一批（标 found/closed）就能继续收。
+**两类反馈的入口不一样。** 求资源是面板里的表单，访客手打作品名；
+失效反馈是**资源卡片里的按钮**，点一下就自动带上那条的 `item_id`。
+之所以不给失效反馈也做个表单：让用户手打名字，收到的反馈经常对不上具体条目，
+还得回头猜是哪一条。
 
-**同名合并**靠 `normalizeTitle()`：小写化后只保留数字、拉丁字母与中日韩文字，
-所以「进击的巨人」和「进击的巨人！！」是同一条。`title` 列存这个归一化后的键
-（有唯一索引），`display` 列存用户输入的原文用于展示。
+**几个约束写在代码里，改的话看 `index.js` 顶部的 `REQ_*` 常量：**
+标题 60 字、说明 300 字、单访客每天最多 5 条（两种 `kind` 分别计数）、
+待处理上限 500 条。到 500 条会拒绝新增而不是无限膨胀 ——
+处理掉一批（标 found/closed）就能继续收。
+
+**重复提交合并**成投票，两类的去重键不同：
+`want` 用 `normalizeTitle()` 归一化后的作品名（小写化后只保留数字、拉丁字母与
+中日韩文字，所以「进击的巨人」和「进击的巨人！！」是同一条）；
+`broken` 用 `item:` + 条目 id。两者都存在 `title` 列，唯一索引建在
+`(kind, title)` 上，所以键空间互不干扰。`display` 列存展示用的原文。
 
 **去重与隐私**和访问统计同一套：只存 `SHA-256(IP+UA+当天日期)` 的前 32 位，
 日期当盐，跨天无法关联同一个人，也反推不出 IP。列表接口不返回 `fp` 字段。
+前端另外在 `localStorage`（`mo-reported-v1`）记了本机已反馈过哪些条目，
+只为让按钮刷新后仍是完成态；真正的去重在后端。
 
 ## 几个设计决定
 
@@ -224,8 +273,8 @@ node test_buckets.mjs            # 桶名算法、id 校验
 node test_frontend_parity.mjs    # 前后端桶名一致性、本机模式分桶、真实数据 id 合法性
 node test_selectors.mjs          # app.js 用的选择器在 index.html 里都存在
 node test_worker.mjs             # 统计逻辑（真 SQL，node:sqlite 内存库当 D1）
-node test_requests.mjs           # 资源帮找逻辑（去重、投票幂等、限流、注入拦截）
-python test_browser.py           # 真 Chromium 端到端，含多地址回退、重试、降级、帮找全流程
+node test_requests.mjs           # 帮找与失效反馈逻辑（两类去重互不干扰、投票幂等、限流、注入拦截）
+python test_browser.py           # 真 Chromium 端到端，含多地址回退、重试、降级、帮找与失效反馈全流程
 python test_live.py              # 打线上真接口（默认 pages.dev，可直连）
 python test_live.py --requests    # 额外测帮找接口（会写真实库再清理）
 python test_live.py --api https://mo-stats.werneruszcb71.workers.dev --proxy http://127.0.0.1:7890
@@ -236,6 +285,13 @@ python test_live.py --api https://mo-stats.werneruszcb71.workers.dev --proxy htt
 用 Playwright 起真浏览器，本地 HTTP 桩假装后端，覆盖点击写入、跨天分桶、
 排行榜定位、未成年模式过滤、多地址回退、首轮失败重试、降级后补报、
 全部不通时降级 —— 它会把 `config.js` 路由桩掉，所以结果不依赖真实网络。
+失效反馈那几条盯的是：按钮自动带对 `item_id`、点它不折叠卡片、
+无链接条目不显示按钮、刷新后仍是完成态、重复反馈合并成票数、
+后端报错后按钮放回可点且不写本机记录、以及后端还是老版时整个入口消失。
+
+`test_browser.py` 在 Git Bash 里要带 `PYTHONIOENCODING=utf-8`
+（控制台是 GBK，`↳` 这类字符会让 `print` 抛 `UnicodeEncodeError`，
+测试跑到一半崩掉，看着像功能坏了）。
 
 `test_live.py` 打的是线上真接口，会往 D1 写一条 `live-smoke-<时间戳>` 再删掉。
 它必须伪装浏览器 UA：Cloudflare 边缘的机器人防护会用 403 挡 `Python-urllib`
