@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-04T13:51:30+08:00",
+  "generated_at": "2026-09-04T15:59:13+08:00",
   "note": "新增资源在 items 数组里加一项即可。section 取值：novel / manga / anime / game / music / tool / ai / forum / guide / collection。不确定归哪个分区就填 collection（收录 / 杂类），填错或留空也会落到那里。",
   "items": [
     {
@@ -13703,6 +13703,24 @@
       "need_login": true,
       "update_info": "公众号推送",
       "note": "没有网页版链接，需要在微信内搜索公众号名称关注。公众号名可能变动或被封，搜不到时试另一个名字。"
+    },
+    {
+      "id": "manual-manga-6",
+      "name": "韩版漫画 tkor101（툰코 系列域名）",
+      "section": "manga",
+      "subsection": "site",
+      "description": "韩文漫画在线站，域名按 tkorNNN 编号轮换。收录时全站不可用（见备注）。",
+      "url": "https://tkor101.com/",
+      "tags": [
+        "在线阅读",
+        "韩漫",
+        "韩文原版",
+        "域名轮换"
+      ],
+      "kind": "在线漫画网站",
+      "need_login": false,
+      "update_info": "未标注",
+      "note": "实测收录当天打不开：首页连试三次都是 Cloudflare 520（error code: 520），挂代理同样 520。520 是 Cloudflare 连不上源站，属于站点自己的问题，不是国内被墙 —— 所以换 IP、翻墙都没用，只能等站长修或换域名。同系列 tkor100 / 102 / 103 / 104 / 105 / 110 一并试过，全是 520。域名按编号轮换，哪天这条打不开就试相邻编号。"
     }
   ]
 }
