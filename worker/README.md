@@ -270,6 +270,14 @@ curl --proxy http://127.0.0.1:7890 https://mo-stats.werneruszcb71.workers.dev/ap
 **未登录时卡片里的编辑入口是 `remove()` 而不是 `hidden`。** DOM 里留着等于
 告诉访客"这儿有个后台"，还可能被人改 CSS 显示出来（虽然写操作仍会被 401 挡）。
 
+**卡片整体可点展开，所以表单控件必须排除在外。** 这里踩过坑：卡片的 click
+处理器早先只排除 `<a>`，于是点编辑框的事件冒泡上去把卡片收起了，压根没法输入。
+现在按元素类型统一判断（`a, button, input, textarea, select, label, code`），
+比给每个控件挨个加 `stopPropagation` 可靠 —— 后者加一个新控件就容易漏一个。
+`keydown` 同理，要判断 `e.target === node`，否则输入框里敲空格会被
+`preventDefault` 吃掉，连空格都打不出来。这条有测试盯着
+（`test_browser.py` 的「后台：表单交互不误触卡片」）。
+
 ### 重建时要做的两件事
 
 换账号或重建时，除了建表还要设密码：

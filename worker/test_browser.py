@@ -1452,6 +1452,58 @@ def test_admin_login(page, base, stub_port):
     check("退出后 session 也清了", len(StatsStub.sessions) == 0, str(len(StatsStub.sessions)))
 
 
+def test_admin_form_interaction(page, base, stub_port):
+    """在编辑表单里点击/打字不能把卡片收起来。
+
+    这条是真踩过的 bug：卡片整体绑了 click 展开/收起，早先只排除了 <a>，
+    于是点输入框的事件冒泡上去把卡片折了，压根没法输入。
+    keydown 同理 —— 不判断 e.target 的话，输入框里敲空格会被 preventDefault
+    吃掉，连空格都打不出来。
+    """
+    print("\n--- 后台：表单交互不误触卡片 ---")
+    StatsStub.reset_admin()
+    stub_config(page, f"http://127.0.0.1:{stub_port}")
+    page.goto(base, wait_until="networkidle")
+    page.wait_for_timeout(1300)
+    admin_login(page)
+
+    item_id = page.locator(".feed-card").nth(0).get_attribute("data-item-id")
+    card = card_editor(page, item_id)
+
+    title = card.locator(".card-admin-form .admin-field input").nth(0)
+    title.click()
+    page.wait_for_timeout(200)
+    check("点输入框后卡片仍展开", card.get_attribute("aria-expanded") == "true")
+    check("点输入框后表单仍在", card.locator(".card-admin-form").is_visible())
+    check("输入框拿到焦点",
+          page.evaluate("() => document.activeElement.tagName.toLowerCase()") == "input")
+
+    # 逐字敲入，含空格 —— 空格曾被卡片的 keydown 处理器吃掉
+    title.fill("")
+    title.type("新 标 题", delay=20)
+    page.wait_for_timeout(200)
+    check("空格能正常输入", title.input_value() == "新 标 题", repr(title.input_value()))
+    check("打字后卡片仍展开", card.get_attribute("aria-expanded") == "true")
+
+    # textarea 同样不能触发收起
+    note = card.locator(".card-admin-form textarea").nth(0)
+    note.click()
+    note.type("备 注 文本", delay=20)
+    page.wait_for_timeout(200)
+    check("textarea 可输入空格", "备 注 文本" in note.input_value(), repr(note.input_value()[:20]))
+    check("操作 textarea 后卡片仍展开", card.get_attribute("aria-expanded") == "true")
+
+    # 点字段标签（label）也不该收起
+    card.locator(".card-admin-form .admin-field > span").nth(0).click()
+    page.wait_for_timeout(200)
+    check("点字段标签不收起", card.get_attribute("aria-expanded") == "true")
+
+    # 点卡片空白处仍然要能收起 —— 别为了修 bug 把正常交互也堵死
+    card.locator(".card-desc").click()
+    page.wait_for_timeout(300)
+    check("点卡片正文仍能收起", card.get_attribute("aria-expanded") == "false")
+
+
 def test_admin_edit(page, base, stub_port):
     """改标题/简介/链接/提取码，保存后当场生效。"""
     print("\n--- 后台：编辑四项字段 ---")
@@ -1744,6 +1796,10 @@ def main():
 
             ctx = browser.new_context()
             test_admin_login(ctx.new_page(), base, stub_port)
+            ctx.close()
+
+            ctx = browser.new_context()
+            test_admin_form_interaction(ctx.new_page(), base, stub_port)
             ctx.close()
 
             ctx = browser.new_context()

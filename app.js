@@ -832,11 +832,21 @@
       node.setAttribute("aria-expanded", String(!open));
       detail.hidden = open;
     };
+
+    // 整张卡片可点来展开/收起，但卡片里的可交互元素不能触发它。
+    // 早先只排除了 <a>，于是点后台编辑的输入框会冒泡上来把卡片收起 ——
+    // 光靠给每个控件加 stopPropagation 容易漏，这里按元素类型统一判断。
+    const INTERACTIVE = "a, button, input, textarea, select, label, code";
+    const fromControl = (e) => !!(e.target.closest && e.target.closest(INTERACTIVE));
+
     node.addEventListener("click", (e) => {
-      if (e.target.closest("a")) return;
+      if (fromControl(e)) return;
       toggle();
     });
     node.addEventListener("keydown", (e) => {
+      // 只有焦点在卡片本身时才响应 Enter/空格。不判断的话，在输入框里
+      // 敲空格会被 preventDefault 吃掉 —— 连空格都打不出来。
+      if (e.target !== node) return;
       if (e.key === "Enter" || e.key === " ") {
         e.preventDefault();
         toggle();
