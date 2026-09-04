@@ -826,9 +826,13 @@ def test_broken_report(page, base, stub_port):
     check("刷新后文案仍是完成态", "已反馈过" in btn2.text_content(), btn2.text_content().strip())
 
 
-def test_broken_no_button_without_links(page, base, stub_port):
-    """没有可打开链接的条目（教程、公众号之类）不该出现反馈按钮 —— 没链接就无所谓失效。"""
-    print("\n--- 失效反馈：无链接条目不显示按钮 ---")
+def test_broken_button_on_linkless_item(page, base, stub_port):
+    """没给链接的条目也要能报 —— 那是最彻底的「拿不到」，只是文案换成求补档。
+
+    早先这里筛掉了无链接条目，理由是「没链接就无所谓失效」。那个判断是错的：
+    该判断的是用户能不能拿到资源，光看 links 字段判断不了。
+    """
+    print("\n--- 失效反馈：无链接条目也能报 ---")
     StatsStub.reset_requests()
     stub_config(page, f"http://127.0.0.1:{stub_port}")
     page.goto(base, wait_until="networkidle")
@@ -854,7 +858,41 @@ def test_broken_no_button_without_links(page, base, stub_port):
     check("搜到该条目", card.count() == 1, target["id"])
     card.click()
     page.wait_for_timeout(300)
-    check("无链接条目没有反馈按钮", card.locator(".card-report-btn").count() == 0)
+
+    btn = card.locator(".card-report-btn")
+    check("无链接条目也有反馈按钮", btn.count() == 1 and btn.is_visible(), target["id"])
+    check("文案换成求补档", "求补档" in btn.text_content(), btn.text_content().strip())
+
+    btn.click()
+    page.wait_for_timeout(900)
+    rec = list(StatsStub.requests.values())
+    check("能报上去", len(rec) == 1, str(len(rec)))
+    check("带的是这条的 id", rec and rec[0]["item_id"] == target["id"],
+          f'{rec[0]["item_id"] if rec else "-"} vs {target["id"]}')
+
+
+def test_broken_button_on_every_item(page, base, stub_port):
+    """有链接的条目文案是「链接失效」，且按钮对所有条目都在 —— 打得开不等于内容还在。"""
+    print("\n--- 失效反馈：有链接条目文案 ---")
+    StatsStub.reset_requests()
+    stub_config(page, f"http://127.0.0.1:{stub_port}")
+    page.goto(base, wait_until="networkidle")
+    page.wait_for_timeout(1300)
+
+    cards = page.locator(".feed-card")
+    total = cards.count()
+    # 当前页每张卡都该有按钮，不管它有没有链接
+    with_btn = page.eval_on_selector_all(
+        ".feed-card",
+        "els => els.filter(e => e.querySelector('.card-report-btn')).length",
+    )
+    check("当页每张卡都有反馈按钮", with_btn == total, f"{with_btn}/{total}")
+
+    item_id = open_first_card(page)
+    btn = page.locator(f'.feed-card[data-item-id="{item_id}"] .card-report-btn')
+    check("有链接的文案是链接失效", "链接失效" in btn.text_content(), btn.text_content().strip())
+    hint = page.locator(f'.feed-card[data-item-id="{item_id}"] .card-report-hint')
+    check("旁边说明不止链接 404", "解压码" in hint.text_content(), hint.text_content().strip())
 
 
 def test_broken_panel(page, base, stub_port):
@@ -885,7 +923,7 @@ def test_broken_panel(page, base, stub_port):
     # 用 inner_text 而不是 text_content —— 后者返回 node.textContent，
     # 把 hidden 的那半句也算进来，断言就测不到可见性了。
     notice = page.locator(".notice-board-sub").inner_text()
-    check("公告指向卡片反馈按钮", "点这里反馈" in notice, notice.strip()[:80])
+    check("公告指向卡片反馈按钮", "反馈按钮" in notice, notice.strip()[:80])
 
     kinds = page.eval_on_selector_all(
         "[data-wanted-kinds] .wanted-kind",
@@ -904,7 +942,7 @@ def test_broken_panel(page, base, stub_port):
     check("表单在失效反馈下隐藏", page.is_hidden("[data-wanted-form]"))
     check("改为显示卡片引导", page.is_visible("[data-wanted-broken-hint]"))
     hint = page.text_content("[data-wanted-broken-hint]")
-    check("引导指向卡片按钮", "链接失效" in hint, hint.strip()[:60])
+    check("引导指向卡片按钮", "卡片" in hint and "反馈按钮" in hint, hint.strip()[:60])
 
     tabs = page.eval_on_selector_all(
         "[data-wanted-tabs] .wanted-tab",
@@ -1100,7 +1138,7 @@ def test_broken_hidden_on_legacy_backend(page, base, stub_port):
 
     # 公告也不能教用户去点一个不存在的按钮
     notice = page.locator(".notice-board-sub").inner_text()
-    check("公告不提卡片反馈按钮", "点这里反馈" not in notice, notice.strip()[:80])
+    check("公告不提卡片反馈按钮", "反馈按钮" not in notice, notice.strip()[:80])
     check("公告退回反馈群说法", "反馈群" in notice, notice.strip()[:80])
 
     StatsStub.legacy_summary = False
@@ -1198,7 +1236,11 @@ def main():
             ctx.close()
 
             ctx = browser.new_context()
-            test_broken_no_button_without_links(ctx.new_page(), base, stub_port)
+            test_broken_button_on_linkless_item(ctx.new_page(), base, stub_port)
+            ctx.close()
+
+            ctx = browser.new_context()
+            test_broken_button_on_every_item(ctx.new_page(), base, stub_port)
             ctx.close()
 
             ctx = browser.new_context()

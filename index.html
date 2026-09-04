@@ -9,9 +9,9 @@
       content="墨小说漫画 · 小说、漫画、动画、游戏、AI 资源导航，分区整理，点击直达。"
     />
     <title>墨小说漫画 · 资源导航</title>
-    <script src="config.js?v=20260904b"></script>
-    <link rel="stylesheet" href="styles.css?v=20260904b" />
-    <script src="app.js?v=20260904b" defer></script>
+    <script src="config.js?v=20260904c"></script>
+    <link rel="stylesheet" href="styles.css?v=20260904c" />
+    <script src="app.js?v=20260904c" defer></script>
   </head>
   <body>
     <a class="skip-link" href="#feed">跳到资源列表</a>
@@ -73,7 +73,7 @@
           </p>
           <p class="notice-board-sub">
             <span data-notice-broken hidden
-              >资源链接失效，展开那条资源的卡片、点里面的「链接失效？点这里反馈」即可，
+              >资源打不开、内容没了、解压码不对，展开那条资源的卡片、点里面的反馈按钮即可，
               系统会自动记下是哪一条。</span
             ><span data-notice-broken-fallback>有问题或资源失效，可在页面底部的反馈群里反馈。</span>
             找不到想看的作品，可以去
@@ -172,8 +172,8 @@
           <div class="wanted-kinds" role="tablist" aria-label="反馈类型" data-wanted-kinds></div>
 
           <p class="wanted-broken-hint" data-wanted-broken-hint hidden>
-            发现站内资源链接失效？不用在这里填 —— 展开那条资源的卡片，
-            点里面的「链接失效？点这里反馈」，系统会自动记下是哪一条。
+            资源打不开、内容没了、解压码不对？不用在这里填 —— 展开那条资源的卡片，
+            点里面的反馈按钮，系统会自动记下是哪一条。
           </p>
 
           <form class="wanted-form" data-wanted-form>
@@ -288,6 +288,7 @@
             <button type="button" class="card-report-btn" data-field="reportBtn">
               链接失效？点这里反馈
             </button>
+            <span class="card-report-hint">内容失效、解压码不对、要求补档都可以点</span>
             <span class="card-report-msg" data-field="reportMsg" aria-live="polite"></span>
           </div>
         </div>

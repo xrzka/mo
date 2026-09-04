@@ -872,6 +872,9 @@ h1 {
 .card-report-msg.ok { color: var(--accent); }
 .card-report-msg.bad { color: #d97706; }
 
+/* 说清楚这个按钮能报什么 —— 不只是链接 404 */
+.card-report-hint { color: var(--text-muted); font-size: 11.5px; opacity: 0.8; }
+
 /* ---------- 热门排行 ---------- */
 .stats-panel {
   margin: 0 0 18px;

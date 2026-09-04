@@ -644,15 +644,21 @@
       linkBox.remove();
     }
 
-    // 失效反馈按钮：只有能打开的资源才需要（没链接的教程之类不显示），
-    // 并且后端得认识 kind —— 老后端会把它存成一条以资源名为标题的求助。
+    // 失效反馈按钮：所有条目都给，不按「有没有链接」筛。
+    // 链接能打开不代表内容还在 —— 教程文档打得开、里面的网盘链接照样会死；
+    // 反过来，压根没给链接的条目是最彻底的拿不到。该判断的是「用户能不能拿到
+    // 资源」，那件事光看 links 字段判断不了，所以交给用户来报。
+    // 唯一的门禁是后端得认识 kind —— 老后端会把它存成一条以资源名为标题的求助。
     // 放在卡片里而不是做成独立表单，是为了自动带上这条的 id ——
     // 让用户手打资源名的话，收到的反馈往往对不上具体条目。
     const reportWrap = field("reportWrap");
-    if (item.links.length && state.brokenReady) {
+    if (state.brokenReady) {
       reportWrap.hidden = false;
       const btn = field("reportBtn");
       const msg = field("reportMsg");
+      // 没给链接的条目说「链接失效」不通 —— 它压根没有链接，文案换成「求补档」
+      const label = item.links.length ? "链接失效？点这里反馈" : "没有链接？点这里求补档";
+      btn.textContent = label;
       // 已反馈过的条目直接显示成完成态，刷新页面后按钮状态仍然正确
       if (reportedSet.has(item.id)) {
         btn.disabled = true;
