@@ -82,7 +82,40 @@ def apply_fixups(items: list[dict]) -> int:
             item["name"] = fixed
             item["description"] = fixed
             n += 1
+        if add_cross_sections(item):
+            n += 1
     return n
+
+
+def add_cross_sections(item: dict) -> bool:
+    """一份资源同时属于多个分区时补 also_in，返回是否改动。
+
+    表格里「XX漫画小说」这类条目，一个网盘包里小说和漫画都有。之前只按
+    section 挂到小说区，逛漫画区的人根本看不见 —— 前端的 also_in 就是为此。
+    写在导入脚本里而不是导入后手改，否则下次重跑表格会被覆盖回去。
+    """
+    if item.get("also_in"):
+        return False
+    name = item.get("name", "")
+    sec, sub = item.get("section"), item.get("subsection")
+
+    extra = []
+    if sec == "novel" and "漫画" in name:
+        # 小说区的韩轻 → 漫画区归韩漫；日轻 → 日漫；其余归下载
+        extra.append({
+            "section": "manga",
+            "subsection": "kr" if sub == "kr" else ("jp" if sub == "jp" else "download"),
+        })
+    elif sec == "manga" and "小说" in name:
+        extra.append({
+            "section": "novel",
+            "subsection": "kr" if sub == "kr" else ("jp" if sub == "jp" else "download"),
+        })
+
+    if not extra:
+        return False
+    item["also_in"] = extra
+    return True
 
 
 def read_sheets(xlsx: Path) -> dict[str, dict[int, dict[str, str]]]:

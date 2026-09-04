@@ -407,6 +407,61 @@ def test_adult_filter(page, base):
     check("成年模式下才出现", rows and rows[0]["n"] == 99, json.dumps(rows, ensure_ascii=False)[:120])
 
 
+def test_cross_section(page, base):
+    """跨区资源（also_in）必须在它列出的每个分区里都出现。
+
+    「XX漫画小说」这类网盘包里小说和漫画都有，只挂小说区的话逛漫画区的人
+    根本看不见。点击数与失效反馈都绑在 id 上，所以是一条数据多处露出，
+    不是复制成两条。
+    """
+    print("\n--- 跨区资源在多个分区都出现 ---")
+    stub_config(page, "")
+    page.goto(base, wait_until="networkidle")
+    page.wait_for_timeout(800)
+
+    target = page.evaluate(
+        """async () => {
+            const r = await fetch('data/items.json');
+            const d = await r.json();
+            const items = Array.isArray(d) ? d : d.items;
+            const x = items.find(i => (i.also_in || []).length && !i.adult);
+            return x ? { id: x.id, name: x.name, section: x.section,
+                         also: x.also_in.map(a => a.section) } : null;
+        }"""
+    )
+    if not target:
+        check("数据里有跨区条目可测", False, "items.json 里没有带 also_in 的非成人条目")
+        return
+    print(f"    用 {target['id']}：主分区 {target['section']}，也在 {target['also']}")
+
+    def visible_in(section_label):
+        page.click(f'[data-tabs] button:has-text("{section_label}")')
+        page.wait_for_timeout(400)
+        page.fill('[data-filter="q"]', target["name"])
+        page.wait_for_timeout(400)
+        return page.locator(f'.feed-card[data-item-id="{target["id"]}"]').count()
+
+    SEC_LABEL = {"novel": "小说", "manga": "漫画", "anime": "动画", "game": "游戏"}
+    check(f"主分区 {target['section']} 里能找到", visible_in(SEC_LABEL[target["section"]]) == 1)
+    for extra in target["also"]:
+        if extra in SEC_LABEL:
+            check(f"附加分区 {extra} 里也能找到", visible_in(SEC_LABEL[extra]) == 1)
+
+    # 卡片上要标出「也在 X」，让人知道这一份里还有别的内容
+    card = page.locator(f'.feed-card[data-item-id="{target["id"]}"]')
+    alt = card.locator(".section-pill.alt")
+    check("卡片标出了另外那些区", alt.count() == 1 and "也在" in alt.text_content(),
+          alt.text_content().strip() if alt.count() else "-")
+
+    # 同一条数据只有一份，不该在同一分区里重复出现
+    page.click('[data-tabs] button:has-text("全部")')
+    page.wait_for_timeout(400)
+    page.fill('[data-filter="q"]', target["name"])
+    page.wait_for_timeout(400)
+    check("全部分区里不重复",
+          page.locator(f'.feed-card[data-item-id="{target["id"]}"]').count() == 1)
+
+
 def test_site_mode(page, base, stub_port):
     print("\n--- 全站模式（Worker 桩） ---")
     StatsStub.hits.clear()
@@ -1175,6 +1230,10 @@ def main():
             test_bucket_rollover(page, base, item_id)
             test_jump(page, base, item_id)
             test_adult_filter(page, base)
+            ctx.close()
+
+            ctx = browser.new_context()
+            test_cross_section(ctx.new_page(), base)
             ctx.close()
 
             ctx = browser.new_context()

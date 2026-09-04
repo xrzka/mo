@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-02T10:55:51Z",
+  "generated_at": "2026-09-04T13:51:30+08:00",
   "note": "新增资源在 items 数组里加一项即可。section 取值：novel / manga / anime / game / music / tool / ai / forum / guide / collection。不确定归哪个分区就填 collection（收录 / 杂类），填错或留空也会落到那里。",
   "items": [
     {
@@ -192,7 +192,13 @@
       "update_info": "网盘分享",
       "note": "",
       "subsection": "kr",
-      "password": "eret"
+      "password": "eret",
+      "also_in": [
+        {
+          "section": "manga",
+          "subsection": "kr"
+        }
+      ]
     },
     {
       "id": "xlsx-novel-5",
@@ -208,7 +214,13 @@
       "update_info": "网盘分享",
       "note": "",
       "subsection": "kr",
-      "password": "rpi3"
+      "password": "rpi3",
+      "also_in": [
+        {
+          "section": "manga",
+          "subsection": "kr"
+        }
+      ]
     },
     {
       "id": "xlsx-novel-6",
@@ -224,7 +236,13 @@
       "update_info": "网盘分享",
       "note": "",
       "subsection": "kr",
-      "password": "844g"
+      "password": "844g",
+      "also_in": [
+        {
+          "section": "manga",
+          "subsection": "kr"
+        }
+      ]
     },
     {
       "id": "xlsx-novel-7",
@@ -240,7 +258,13 @@
       "update_info": "网盘分享",
       "note": "",
       "subsection": "kr",
-      "password": "ksnk"
+      "password": "ksnk",
+      "also_in": [
+        {
+          "section": "manga",
+          "subsection": "kr"
+        }
+      ]
     },
     {
       "id": "xlsx-novel-8",
@@ -256,7 +280,13 @@
       "update_info": "网盘分享",
       "note": "",
       "subsection": "kr",
-      "password": "bfqv"
+      "password": "bfqv",
+      "also_in": [
+        {
+          "section": "manga",
+          "subsection": "kr"
+        }
+      ]
     },
     {
       "id": "xlsx-novel-9",
@@ -272,7 +302,13 @@
       "update_info": "网盘分享",
       "note": "",
       "subsection": "kr",
-      "password": "zcej"
+      "password": "zcej",
+      "also_in": [
+        {
+          "section": "manga",
+          "subsection": "kr"
+        }
+      ]
     },
     {
       "id": "xlsx-novel-10",
@@ -288,7 +324,13 @@
       "update_info": "网盘分享",
       "note": "",
       "subsection": "kr",
-      "password": "pbrd"
+      "password": "pbrd",
+      "also_in": [
+        {
+          "section": "manga",
+          "subsection": "kr"
+        }
+      ]
     },
     {
       "id": "xlsx-novel-11",
@@ -304,7 +346,13 @@
       "update_info": "网盘分享",
       "note": "",
       "subsection": "kr",
-      "password": "ga6n"
+      "password": "ga6n",
+      "also_in": [
+        {
+          "section": "manga",
+          "subsection": "kr"
+        }
+      ]
     },
     {
       "id": "xlsx-novel-12",
@@ -320,7 +368,13 @@
       "update_info": "网盘分享",
       "note": "",
       "subsection": "kr",
-      "password": "f1yg"
+      "password": "f1yg",
+      "also_in": [
+        {
+          "section": "manga",
+          "subsection": "kr"
+        }
+      ]
     },
     {
       "id": "xlsx-novel-13",
@@ -336,7 +390,13 @@
       "update_info": "网盘分享",
       "note": "",
       "subsection": "kr",
-      "password": "5mm6"
+      "password": "5mm6",
+      "also_in": [
+        {
+          "section": "manga",
+          "subsection": "kr"
+        }
+      ]
     },
     {
       "id": "xlsx-novel-14",
@@ -352,7 +412,13 @@
       "update_info": "网盘分享",
       "note": "",
       "subsection": "kr",
-      "password": "vfkp"
+      "password": "vfkp",
+      "also_in": [
+        {
+          "section": "manga",
+          "subsection": "kr"
+        }
+      ]
     },
     {
       "id": "xlsx-novel-15",
@@ -368,7 +434,13 @@
       "update_info": "网盘分享",
       "note": "",
       "subsection": "kr",
-      "password": "4j69"
+      "password": "4j69",
+      "also_in": [
+        {
+          "section": "manga",
+          "subsection": "kr"
+        }
+      ]
     },
     {
       "id": "xlsx-novel-16",
@@ -384,7 +456,13 @@
       "update_info": "网盘分享",
       "note": "",
       "subsection": "kr",
-      "password": "ig42"
+      "password": "ig42",
+      "also_in": [
+        {
+          "section": "manga",
+          "subsection": "kr"
+        }
+      ]
     },
     {
       "id": "xlsx-novel-17",
@@ -400,7 +478,13 @@
       "update_info": "网盘分享",
       "note": "",
       "subsection": "kr",
-      "password": "pb46"
+      "password": "pb46",
+      "also_in": [
+        {
+          "section": "manga",
+          "subsection": "kr"
+        }
+      ]
     },
     {
       "id": "xlsx-novel-18",
@@ -416,7 +500,13 @@
       "update_info": "网盘分享",
       "note": "",
       "subsection": "kr",
-      "password": "dz6y"
+      "password": "dz6y",
+      "also_in": [
+        {
+          "section": "manga",
+          "subsection": "kr"
+        }
+      ]
     },
     {
       "id": "xlsx-novel-19",
@@ -448,7 +538,13 @@
       "update_info": "网盘分享",
       "note": "",
       "subsection": "kr",
-      "password": "d26u"
+      "password": "d26u",
+      "also_in": [
+        {
+          "section": "manga",
+          "subsection": "kr"
+        }
+      ]
     },
     {
       "id": "xlsx-novel-21",
@@ -464,7 +560,13 @@
       "update_info": "网盘分享",
       "note": "",
       "subsection": "kr",
-      "password": "nyk2"
+      "password": "nyk2",
+      "also_in": [
+        {
+          "section": "manga",
+          "subsection": "kr"
+        }
+      ]
     },
     {
       "id": "xlsx-novel-22",
@@ -512,7 +614,13 @@
       "update_info": "网盘分享",
       "note": "",
       "subsection": "kr",
-      "password": "s5rs"
+      "password": "s5rs",
+      "also_in": [
+        {
+          "section": "manga",
+          "subsection": "kr"
+        }
+      ]
     },
     {
       "id": "xlsx-novel-25",
@@ -560,7 +668,13 @@
       "update_info": "网盘分享",
       "note": "",
       "subsection": "kr",
-      "password": "2qk4"
+      "password": "2qk4",
+      "also_in": [
+        {
+          "section": "manga",
+          "subsection": "kr"
+        }
+      ]
     },
     {
       "id": "xlsx-novel-28",
@@ -626,7 +740,17 @@
       "kind": "地址发布页 / 在线站",
       "need_login": false,
       "update_info": "每日更新",
-      "note": "实测：导航页本身在国内直连打不通（多次超时），挂代理也握手失败，所以下面直接给了页面里列出的几个站点地址。这些站点做了韩国 IP 限制，国内访问会间歇性返回 403（Cloudflare 提示 KR_ONLY），首页和小说列表多数能开，作品详情页时通时不通；toki31.com 一直被拦（新旧域名各自也单独收录了一条，见「新书兔」「旧书兔」）。导航页给的办法是装 DNS 绕过 App：安卓/iOS 用 1.1.1.1 或 Unicorn HTTPS，Windows 用 Unicorn HTTPS，开启后重连。看列表不用登录，部分小说标了「일부 포인트」需要站内积分。站内另有 🔞 成人分区和赌博性质的积分小游戏，介意的话别深逛。"
+      "note": "实测：导航页本身在国内直连打不通（多次超时），挂代理也握手失败，所以下面直接给了页面里列出的几个站点地址。这些站点做了韩国 IP 限制，国内访问会间歇性返回 403（Cloudflare 提示 KR_ONLY），首页和小说列表多数能开，作品详情页时通时不通；toki31.com 一直被拦（新旧域名各自也单独收录了一条，见「新书兔」「旧书兔」）。导航页给的办法是装 DNS 绕过 App：安卓/iOS 用 1.1.1.1 或 Unicorn HTTPS，Windows 用 Unicorn HTTPS，开启后重连。看列表不用登录，部分小说标了「일부 포인트」需要站内积分。站内另有 🔞 成人分区和赌博性质的积分小游戏，介意的话别深逛。",
+      "also_in": [
+        {
+          "section": "manga",
+          "subsection": "site"
+        },
+        {
+          "section": "anime",
+          "subsection": "site"
+        }
+      ]
     },
     {
       "id": "manual-novel-2",
@@ -645,7 +769,17 @@
       "kind": "在线小说 / 漫画站",
       "need_login": false,
       "update_info": "每日更新",
-      "note": "实测这个域名国内一直打不开：连试三次首页全部 403，不像旧版那样时通时不通。想直连的话用「旧书兔」那条，或走书兔导航里的固定地址 sbxh9.com。站点做了韩国 IP 限制，国内访问会被 Cloudflare 挡（403，提示 KR_ONLY / only KR is allowed, detected country is CN）。绕过办法：装 DNS 绕过 App —— 安卓/iOS 用 1.1.1.1 或 Unicorn HTTPS，Windows 用 Unicorn HTTPS，开启后重连。看列表不用登录，发帖和部分标「일부 포인트」的作品需要站内积分。站内另有 🔞 成人分区和赌博性质的积分小游戏，介意的话别深逛。"
+      "note": "实测这个域名国内一直打不开：连试三次首页全部 403，不像旧版那样时通时不通。想直连的话用「旧书兔」那条，或走书兔导航里的固定地址 sbxh9.com。站点做了韩国 IP 限制，国内访问会被 Cloudflare 挡（403，提示 KR_ONLY / only KR is allowed, detected country is CN）。绕过办法：装 DNS 绕过 App —— 安卓/iOS 用 1.1.1.1 或 Unicorn HTTPS，Windows 用 Unicorn HTTPS，开启后重连。看列表不用登录，发帖和部分标「일부 포인트」的作品需要站内积分。站内另有 🔞 成人分区和赌博性质的积分小游戏，介意的话别深逛。",
+      "also_in": [
+        {
+          "section": "manga",
+          "subsection": "site"
+        },
+        {
+          "section": "anime",
+          "subsection": "site"
+        }
+      ]
     },
     {
       "id": "manual-novel-3",
@@ -684,7 +818,17 @@
       "kind": "在线小说 / 漫画站",
       "need_login": false,
       "update_info": "每日更新",
-      "note": "实测首页国内能直连打开（连试三次都是 200），是三个地址里最稳的；但点进 /novel、/webtoon 等内页会 403，所以真要看内容仍然需要绕过。站点做了韩国 IP 限制，国内访问会被 Cloudflare 挡（403，提示 KR_ONLY / only KR is allowed, detected country is CN）。绕过办法：装 DNS 绕过 App —— 安卓/iOS 用 1.1.1.1 或 Unicorn HTTPS，Windows 用 Unicorn HTTPS，开启后重连。看列表不用登录，发帖和部分标「일부 포인트」的作品需要站内积分。站内另有 🔞 成人分区和赌博性质的积分小游戏，介意的话别深逛。"
+      "note": "实测首页国内能直连打开（连试三次都是 200），是三个地址里最稳的；但点进 /novel、/webtoon 等内页会 403，所以真要看内容仍然需要绕过。站点做了韩国 IP 限制，国内访问会被 Cloudflare 挡（403，提示 KR_ONLY / only KR is allowed, detected country is CN）。绕过办法：装 DNS 绕过 App —— 安卓/iOS 用 1.1.1.1 或 Unicorn HTTPS，Windows 用 Unicorn HTTPS，开启后重连。看列表不用登录，发帖和部分标「일부 포인트」的作品需要站内积分。站内另有 🔞 成人分区和赌博性质的积分小游戏，介意的话别深逛。",
+      "also_in": [
+        {
+          "section": "manga",
+          "subsection": "site"
+        },
+        {
+          "section": "anime",
+          "subsection": "site"
+        }
+      ]
     },
     {
       "id": "xlsx-manga-29",
@@ -13297,6 +13441,38 @@
       "need_login": false,
       "update_info": "网盘分享",
       "note": "提取码 5b3j。合集内具体收录哪些作品未逐一核实，打开后自行查看目录。"
+    },
+    {
+      "id": "manual-novel-dl-10",
+      "name": "厌学魔法师想毕业（小说 + 漫画）",
+      "section": "novel",
+      "subsection": "download",
+      "also_in": [
+        {
+          "section": "manga",
+          "subsection": "download"
+        }
+      ],
+      "description": "韩轻《厌学魔法师想毕业》的小说 + 漫画打包下载，一个百度网盘分享里都有。",
+      "url": "https://pan.baidu.com/s/1QEIdEddjf5qydx6wlR6dkA?pwd=3934",
+      "password": "3934",
+      "links": [
+        {
+          "name": "百度网盘",
+          "url": "https://pan.baidu.com/s/1QEIdEddjf5qydx6wlR6dkA?pwd=3934",
+          "password": "3934"
+        }
+      ],
+      "tags": [
+        "韩轻",
+        "小说",
+        "漫画",
+        "百度网盘"
+      ],
+      "kind": "网盘资源",
+      "need_login": false,
+      "update_info": "网盘分享",
+      "note": "提取码 3934。包里小说和漫画都有，具体章节数未逐一核实，打开后看目录。"
     },
     {
       "id": "manual-manga-3",

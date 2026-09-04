@@ -328,6 +328,14 @@ h1 {
   font-weight: 600;
 }
 
+/* 跨区资源的「也在 X」标签：弱化，别和主分区标签抢注意力 */
+.section-pill.alt {
+  background: transparent;
+  border: 1px dashed var(--border);
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
 .hits-pill {
   padding: 2px 9px;
   border-radius: 999px;

@@ -32,6 +32,7 @@
         { id: "site", label: "网站" },
         { id: "app", label: "软件" },
         { id: "wechat", label: "公众号" },
+        { id: "download", label: "下载" },
         { id: "kr", label: "韩漫" },
         { id: "jp", label: "日漫" },
       ],
@@ -399,8 +400,24 @@
   function normalize(raw, index) {
     const section =
       SECTION_MAP.has(raw.section) && raw.section !== "all" ? raw.section : FALLBACK_SECTION;
-    const subs = SECTION_MAP.get(section).subs || [];
-    const sub = subs.some((s) => s.id === raw.subsection) ? raw.subsection : null;
+    const subOf = (secId, subId) => {
+      const subs = (SECTION_MAP.get(secId) || {}).subs || [];
+      return subs.some((s) => s.id === subId) ? subId : null;
+    };
+    const sub = subOf(section, raw.subsection);
+
+    // 一份资源可能同时属于多个分区：网盘包里既有小说又有漫画，
+    // 只挂在小说区的话，逛漫画区的人根本看不见它。
+    // 主分区仍是 section（卡片默认显示它的标签），also_in 是附加分区。
+    // 不做成两条独立条目：那样点击数、失效反馈都会被拆成两半。
+    const sections = [{ id: section, sub }];
+    (Array.isArray(raw.also_in) ? raw.also_in : []).forEach((extra) => {
+      const id = extra && extra.section;
+      if (!SECTION_MAP.has(id) || id === "all") return;
+      if (sections.some((s) => s.id === id)) return;
+      sections.push({ id, sub: subOf(id, extra.subsection) });
+    });
+
     return {
       id: raw.id || "item-" + index,
       name: raw.name || "未命名资源",
@@ -408,6 +425,7 @@
       url: raw.url || "",
       section,
       sub,
+      sections,
       icon: raw.icon || SECTION_MAP.get(section).icon,
       tags: Array.isArray(raw.tags) ? raw.tags.slice(0, 6) : [],
       kind: raw.kind || "网站",
@@ -435,11 +453,20 @@
     );
   }
 
-  /** 分区匹配；小分区只在选中主分区时生效。 */
+  /** 分区匹配；小分区只在选中主分区时生效。
+   *  走 item.sections 而不是 item.section —— 跨区资源（如小说+漫画的网盘包）
+   *  在它列出的每个分区里都该出现。 */
   const inSection = (item, sectionId, subId = "all") => {
-    if (sectionId !== "all" && item.section !== sectionId) return false;
-    if (sectionId !== "all" && subId !== "all" && item.sub !== subId) return false;
-    return true;
+    if (sectionId === "all") return true;
+    return (item.sections || [{ id: item.section, sub: item.sub }]).some(
+      (s) => s.id === sectionId && (subId === "all" || s.sub === subId)
+    );
+  };
+
+  /** 当前分区下该显示哪个小分区标签（跨区资源在不同区归属不同）。 */
+  const subInSection = (item, sectionId) => {
+    const hit = (item.sections || []).find((s) => s.id === sectionId);
+    return hit ? hit.sub : item.sub;
   };
 
   /** 未成年模式下过滤掉成人向条目。所有计数与列表都必须经过这一层。 */
@@ -516,13 +543,16 @@
     }
     bar.hidden = false;
 
+    // 用 inSection 而不是 it.section === ——否则跨区资源不进小分区计数
     const inCurrent = allowedItems().filter(
-      (it) => it.section === state.section && matchesQuery(it, state.q)
+      (it) => inSection(it, state.section) && matchesQuery(it, state.q)
     );
     const options = [{ id: "all", label: "全部" }, ...subs];
 
     options.forEach((o) => {
-      const n = inCurrent.filter((it) => o.id === "all" || it.sub === o.id).length;
+      const n = inCurrent.filter(
+        (it) => o.id === "all" || subInSection(it, state.section) === o.id
+      ).length;
       const btn = document.createElement("button");
       btn.type = "button";
       btn.className = "subtab-btn";
@@ -552,10 +582,29 @@
     field("name").textContent = item.name;
     field("description").textContent = item.description;
 
-    const secDef = SECTION_MAP.get(item.section);
-    const subDef = (secDef.subs || []).find((s) => s.id === item.sub);
+    // 标签跟着当前所在分区走：同一份「小说+漫画」资源，在小说区显示「韩轻」，
+    // 在漫画区显示「韩漫」，比永远显示主分区更符合用户此刻的语境。
+    const shownSec = state.section !== "all" && inSection(item, state.section)
+      ? state.section
+      : item.section;
+    const secDef = SECTION_MAP.get(shownSec);
+    const subDef = (secDef.subs || []).find((s) => s.id === subInSection(item, shownSec));
     // 有小分区就显示小分区名，更具体
     field("section").textContent = subDef ? subDef.label : secDef.label;
+
+    // 跨区资源额外标一下另外那些区，让人知道这一份里还有别的内容
+    if ((item.sections || []).length > 1) {
+      const others = item.sections
+        .filter((s) => s.id !== shownSec)
+        .map((s) => (SECTION_MAP.get(s.id) || {}).label)
+        .filter(Boolean);
+      if (others.length) {
+        const pill = document.createElement("span");
+        pill.className = "section-pill alt";
+        pill.textContent = "也在 " + others.join(" / ");
+        field("section").after(pill);
+      }
+    }
 
     const tagList = field("tags");
     item.tags.forEach((t) => {
