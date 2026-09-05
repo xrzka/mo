@@ -92,6 +92,10 @@ const skip = new Set(["field", "filter", "stat", "card-template", "item-id"]);
   "admin-submit",
   "admin-logout",
   "admin-msg",
+  "admin-new",
+  "admin-new-toggle",
+  "admin-new-msg",
+  "admin-new-form",
 ].forEach((a) => check(`后台节点 data-${a}`, htmlAttrs.has(a)));
 
 // data-wanted-input 是带值的属性，单独核对

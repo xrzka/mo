@@ -85,17 +85,40 @@ class StatsStub(http.server.BaseHTTPRequestHandler):
         cls.legacy_summary = False
 
     # ---- 后台编辑 ----
-    # 覆盖层：itemId -> {name?, description?, url?, password?, note?, updated}
+    # 覆盖层：itemId -> {name?, description?, url?, password?, note?,
+    #                    section?, subsection?, updated}
     overrides = {}
+    # 后台新增的条目：id -> 条目 dict（与 items.json 同构）
+    custom_items = {}
+    custom_seq = 0
     # 已发出的 session token 集合。真 Worker 存在 D1，这里够用。
     sessions = set()
     admin_password = "correct-horse-battery"
     # 与 Worker 的 OVERRIDE_FIELDS 保持一致。多一项少一项都会让测试测不到实情。
-    override_fields = ("name", "description", "url", "password", "note")
+    override_fields = (
+        "name", "description", "url", "password", "note", "section", "subsection",
+    )
+    # 与 Worker 的 SECTION_SUBS 保持一致。test_sections.mjs 盯前后端一致性，
+    # 这里只需覆盖测试用到的分区。
+    section_subs = {
+        "novel": ["site", "app", "download", "kr", "jp"],
+        "manga": ["site", "app", "wechat", "download", "kr", "jp"],
+        "anime": ["site", "app"],
+        "game": ["site", "app", "gal"],
+        "music": ["site", "app", "download"],
+        "study": ["course", "video", "doc"],
+        "tool": [],
+        "ai": ["relay", "image", "tool"],
+        "forum": [],
+        "guide": [],
+        "collection": ["site", "app", "cloud", "doc", "guide"],
+    }
 
     @classmethod
     def reset_admin(cls):
         cls.overrides = {}
+        cls.custom_items = {}
+        cls.custom_seq = 0
         cls.sessions = set()
 
     def _bearer(self):
@@ -135,6 +158,13 @@ class StatsStub(http.server.BaseHTTPRequestHandler):
             tok = self._bearer()
             ok = bool(tok) and tok in StatsStub.sessions
             return self._send({"ok": ok}, 200 if ok else 401)
+
+        if self.path.startswith("/api/items"):
+            # 后台新增的条目。和覆盖层一样公开读 —— 访客要看到这些资源。
+            return self._send({
+                "items": [dict(v) for v in StatsStub.custom_items.values()],
+                "count": len(StatsStub.custom_items),
+            })
 
         if self.path.startswith("/api/requests"):
             q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
@@ -233,9 +263,22 @@ class StatsStub(http.server.BaseHTTPRequestHandler):
                 elif isinstance(v, str):
                     if k == "url" and v and not re.match(r"^https?://", v, re.I):
                         return self._send({"error": "链接必须以 http:// 或 https:// 开头"}, 400)
+                    if k == "section" and v and v not in StatsStub.section_subs:
+                        return self._send({"error": f"未知分区：{v}"}, 400)
                     cur[k] = v
                 else:
                     return self._send({"error": f"{k} 必须是字符串或 null"}, 400)
+
+            # 小分区必须属于最终生效的那个分区。只换大区时旧小分区往往不存在
+            # （漫画的 wechat 放到小说下就是无效值），那时清掉它。
+            final_sec = cur.get("section") or ""
+            if final_sec:
+                allowed = StatsStub.section_subs.get(final_sec, [])
+                if cur.get("subsection") and cur["subsection"] not in allowed:
+                    if "subsection" in fields and fields["subsection"]:
+                        return self._send(
+                            {"error": f"「{final_sec}」下没有小分区「{cur['subsection']}」"}, 400)
+                    cur["subsection"] = ""
 
             if cur:
                 cur["updated"] = "2026-09-04T10:00:00.000Z"
@@ -243,6 +286,59 @@ class StatsStub(http.server.BaseHTTPRequestHandler):
             else:
                 StatsStub.overrides.pop(item_id, None)   # 全撤销就删整行
             return self._send({"ok": True, "item_id": item_id})
+
+        if self.path == "/api/admin/item":
+            tok = self._bearer()
+            if not tok or tok not in StatsStub.sessions:
+                return self._send({"error": "未登录或登录已过期"}, 401)
+
+            name = (body.get("name") or "").strip()
+            if not name:
+                return self._send({"error": "资源名不能为空"}, 400)
+            section = (body.get("section") or "").strip()
+            if section not in StatsStub.section_subs:
+                return self._send({"error": "请选择有效的分区"}, 400)
+            subsection = (body.get("subsection") or "").strip()
+            if subsection and subsection not in StatsStub.section_subs[section]:
+                return self._send(
+                    {"error": f"「{section}」下没有小分区「{subsection}」"}, 400)
+            url = (body.get("url") or "").strip()
+            if url and not re.match(r"^https?://", url, re.I):
+                return self._send({"error": "链接必须以 http:// 或 https:// 开头"}, 400)
+
+            StatsStub.custom_seq += 1
+            # 真 Worker 用时间戳+随机，这里用序号，测试里好断言
+            new_id = f"custom-stub{StatsStub.custom_seq}"
+            tags = [t.strip() for t in re.split(r"[,，\s]+", body.get("tags") or "") if t.strip()]
+            StatsStub.custom_items[new_id] = {
+                "id": new_id,
+                "name": name,
+                "description": (body.get("description") or "").strip(),
+                "url": url,
+                "password": (body.get("password") or "").strip(),
+                "note": (body.get("note") or "").strip(),
+                "section": section,
+                "subsection": subsection or None,
+                "tags": tags[:6],
+                "kind": (body.get("kind") or "").strip() or None,
+                "adult": body.get("adult") is True,
+                "update_info": "后台添加",
+            }
+            return self._send({"ok": True, "id": new_id})
+
+        if self.path == "/api/admin/item/delete":
+            tok = self._bearer()
+            if not tok or tok not in StatsStub.sessions:
+                return self._send({"error": "未登录或登录已过期"}, 401)
+            del_id = str(body.get("id") or "").strip()
+            if not re.fullmatch(r"[A-Za-z0-9_-]{1,64}", del_id) \
+                    or not del_id.startswith("custom-"):
+                return self._send({"error": "只能删除后台新增的条目"}, 400)
+            if del_id not in StatsStub.custom_items:
+                return self._send({"error": "条目不存在"}, 404)
+            StatsStub.custom_items.pop(del_id)
+            StatsStub.overrides.pop(del_id, None)   # 连带清掉孤儿覆盖
+            return self._send({"ok": True, "id": del_id})
 
         if self.path == "/api/hit":
             item = body.get("id")
@@ -1516,7 +1612,7 @@ def test_admin_edit(page, base, stub_port):
     item_id = page.locator(".feed-card").nth(0).get_attribute("data-item-id")
     card = card_editor(page, item_id)
     fields = card.locator(".card-admin-form .admin-field")
-    check("表单有 5 个字段", fields.count() == 5, str(fields.count()))
+    check("表单有 7 个字段", fields.count() == 7, str(fields.count()))
 
     # 表单初值应是当前显示值，不是空的
     first_input = card.locator(".card-admin-form .admin-field input").nth(0)
@@ -1586,6 +1682,240 @@ def test_admin_visitor_sees_edits(page, base, stub_port):
     # 「后台已改」标记只给登录后的自己看，访客不该看到
     check("访客看不到「后台已改」标记",
           "后台已改" not in page.locator("[data-feed]").inner_text())
+
+
+def section_tab_count(page, label):
+    """读某个分区标签上的计数角标。移动条目后要靠它确认两边都变了。"""
+    return page.eval_on_selector_all(
+        "[data-tabs] button",
+        """(els, label) => {
+            const b = els.find(e => e.textContent.trim().startsWith(label));
+            if (!b) return null;
+            const c = b.querySelector('.tab-count');
+            return c ? parseInt(c.textContent) : null;
+        }""",
+        label,
+    )
+
+
+def test_admin_move_section(page, base, stub_port):
+    """把条目从一个分区移到另一个分区 + 小分区。
+
+    这条盯的是用户的原话：漫画区的条目要移到「小说 - 日轻」。
+    分区用下拉而不是文本框，因为手打分区 id 极易拼错，而后端对未知分区会 400。
+    """
+    print("\n--- 后台：移动分区 ---")
+    StatsStub.reset_admin()
+    stub_config(page, f"http://127.0.0.1:{stub_port}")
+    page.goto(base, wait_until="networkidle")
+    page.wait_for_timeout(1300)
+    admin_login(page)
+
+    # 挑一条主分区是 manga 的（manual-manga-5 是公众号那条）。
+    # 漫画区有 28 条、每页 20，这条排在第 2 页 —— 直接找卡片会找不到，
+    # 所以先搜出来。计数角标不受搜索影响，仍能反映整区总数。
+    ITEM = "manual-manga-5"
+    page.click('[data-tabs] button:has-text("漫画")')
+    page.wait_for_timeout(400)
+    manga_before = section_tab_count(page, "漫画")
+    novel_before = section_tab_count(page, "小说")
+    page.fill('[data-filter="q"]', "一漫汉化")
+    page.wait_for_timeout(500)
+    check("条目在漫画区", page.locator(f'.feed-card[data-item-id="{ITEM}"]').count() == 1)
+
+    card = card_editor(page, ITEM)
+    selects = card.locator(".card-admin-form select")
+    check("分区两项是下拉框", selects.count() == 2, str(selects.count()))
+
+    sec = selects.nth(0)
+    sub = selects.nth(1)
+    check("分区下拉选中当前分区", sec.input_value() == "manga", sec.input_value())
+    # 小分区选项应是漫画的那套
+    opts = sub.locator("option").all_text_contents()
+    check("小分区列的是漫画的", any("公众号" in o for o in opts), ",".join(opts))
+
+    # 换成小说 -> 小分区选项要跟着重建
+    sec.select_option("novel")
+    page.wait_for_timeout(300)
+    opts = sub.locator("option").all_text_contents()
+    check("换区后小分区跟着换", any("日轻" in o for o in opts) and not any("公众号" in o for o in opts),
+          ",".join(opts))
+    check("换区后小分区重置为空", sub.input_value() == "", sub.input_value())
+
+    sub.select_option("jp")
+    card.locator(".admin-save").click()
+    page.wait_for_timeout(1000)
+
+    ov = StatsStub.overrides.get(ITEM) or {}
+    check("后端记下新分区", ov.get("section") == "novel", str(ov.get("section")))
+    check("后端记下新小分区", ov.get("subsection") == "jp", str(ov.get("subsection")))
+
+    # 计数两边都要变：漫画少一个，小说多一个。
+    # 注意分区角标的计数**会跟着搜索词过滤**（renderTabs 里带了 matchesQuery，
+    # 这样切分区时数字才稳定），所以要先清掉搜索词再读，否则读到的是
+    # 「搜索结果里各区有几条」而不是整区总数。
+    page.fill('[data-filter="q"]', "")
+    page.wait_for_timeout(500)
+    check("漫画区计数 -1", section_tab_count(page, "漫画") == manga_before - 1,
+          f"{manga_before} -> {section_tab_count(page, '漫画')}")
+    check("小说区计数 +1", section_tab_count(page, "小说") == novel_before + 1,
+          f"{novel_before} -> {section_tab_count(page, '小说')}")
+
+    # 漫画区里应该没有它了。重新搜出来看 —— 它原本在第 2 页，
+    # 不搜的话「找不到卡片」可能只是因为翻页，测不出真实情况。
+    page.click('[data-tabs] button:has-text("漫画")')
+    page.wait_for_timeout(400)
+    page.fill('[data-filter="q"]', "一漫汉化")
+    page.wait_for_timeout(500)
+    check("漫画区里没有了", page.locator(f'.feed-card[data-item-id="{ITEM}"]').count() == 0)
+
+    # 小说 - 日轻 里能找到
+    page.click('[data-tabs] button:has-text("小说")')
+    page.wait_for_timeout(400)
+    page.click('[data-subtabs] button:has-text("日轻")')
+    page.wait_for_timeout(400)
+    check("小说/日轻 里能找到", page.locator(f'.feed-card[data-item-id="{ITEM}"]').count() == 1)
+    card = page.locator(f'.feed-card[data-item-id="{ITEM}"]')
+    card.click()
+    page.wait_for_timeout(200)
+    check("分区标签显示日轻", card.locator(".section-pill").nth(0).text_content().strip() == "日轻",
+          card.locator(".section-pill").nth(0).text_content().strip())
+
+    # id 没变，所以点击数与失效反馈都还在这条上 —— 这正是不让改 id 的理由
+    check("id 保持不变", card.get_attribute("data-item-id") == ITEM)
+
+    # 刷新后仍在新分区（确认来自后端而不是本地状态）
+    page.reload(wait_until="networkidle")
+    page.wait_for_timeout(1400)
+    page.click('[data-tabs] button:has-text("小说")')
+    page.wait_for_timeout(400)
+    page.click('[data-subtabs] button:has-text("日轻")')
+    page.wait_for_timeout(400)
+    check("刷新后仍在小说/日轻", page.locator(f'.feed-card[data-item-id="{ITEM}"]').count() == 1)
+
+
+def test_admin_new_item(page, base, stub_port):
+    """后台新增一条资源，当场出现在选定的分区里。"""
+    print("\n--- 后台：新增资源 ---")
+    StatsStub.reset_admin()
+    stub_config(page, f"http://127.0.0.1:{stub_port}")
+    page.goto(base, wait_until="networkidle")
+    page.wait_for_timeout(1300)
+
+    # 未登录时不该有新增入口
+    page.evaluate("() => { location.hash = '#admin'; }")
+    page.wait_for_timeout(400)
+    check("未登录无新增入口", page.is_hidden("[data-admin-new]"))
+
+    admin_login(page)
+    check("登录后出现新增入口", page.is_visible("[data-admin-new-toggle]"))
+
+    page.click("[data-admin-new-toggle]")
+    page.wait_for_timeout(400)
+    form = page.locator("[data-admin-new-form]")
+    check("表单展开", form.is_visible())
+
+    inputs = form.locator("input[type=text], textarea")
+    check("有文本类字段", inputs.count() >= 6, str(inputs.count()))
+
+    # 空名字应被前端挡住，不发请求
+    page.click("[data-admin-new-form] .admin-save")
+    page.wait_for_timeout(500)
+    check("空资源名被挡", len(StatsStub.custom_items) == 0)
+    check("给出提示", "不能为空" in page.text_content("[data-admin-new-msg]"),
+          page.text_content("[data-admin-new-msg]").strip())
+
+    # 填一条完整的
+    form.locator(".admin-field").nth(0).locator("input").fill("后台新增的测试资源")
+    form.locator("select").nth(0).select_option("manga")
+    page.wait_for_timeout(300)
+    form.locator("select").nth(1).select_option("kr")
+    form.locator("textarea").nth(0).fill("这是简介")
+    # 跳转链接是第 2 个 text input（第 1 个是资源名）
+    form.locator(".admin-field input[type=text]").nth(1).fill("https://new.example.com/")
+    form.locator(".admin-field input[type=text]").nth(2).fill("8888")
+    form.locator(".admin-field input[type=text]").nth(3).fill("韩漫, 测试")
+    page.click("[data-admin-new-form] .admin-save")
+    page.wait_for_timeout(1000)
+
+    check("后端收到一条", len(StatsStub.custom_items) == 1, str(len(StatsStub.custom_items)))
+    it = list(StatsStub.custom_items.values())[0]
+    check("名字正确", it["name"] == "后台新增的测试资源", it["name"])
+    check("分区正确", it["section"] == "manga" and it["subsection"] == "kr",
+          f'{it["section"]}/{it["subsection"]}')
+    check("链接正确", it["url"] == "https://new.example.com/", it["url"])
+    check("标签拆开了", it["tags"] == ["韩漫", "测试"], json.dumps(it["tags"], ensure_ascii=False))
+    check("成功提示", "已添加" in page.text_content("[data-admin-new-msg]"),
+          page.text_content("[data-admin-new-msg]").strip())
+    check("提交后清空名字框",
+          form.locator(".admin-field").nth(0).locator("input").input_value() == "")
+    check("但保留分区选择", form.locator("select").nth(0).input_value() == "manga")
+
+    # 当场出现在漫画/韩漫 里
+    new_id = it["id"]
+    page.click('[data-tabs] button:has-text("漫画")')
+    page.wait_for_timeout(400)
+    page.click('[data-subtabs] button:has-text("韩漫")')
+    page.wait_for_timeout(400)
+    check("新条目出现在漫画/韩漫", page.locator(f'.feed-card[data-item-id="{new_id}"]').count() == 1,
+          new_id)
+
+    # 刷新后还在（来自后端而非本地状态）
+    page.reload(wait_until="networkidle")
+    page.wait_for_timeout(1400)
+    page.fill('[data-filter="q"]', "后台新增的测试资源")
+    page.wait_for_timeout(500)
+    check("刷新后仍在", page.locator(f'.feed-card[data-item-id="{new_id}"]').count() == 1)
+
+    # 访客（未登录）也能看到
+    page.evaluate("() => { location.hash = ''; }")
+    page.reload(wait_until="networkidle")
+    page.wait_for_timeout(1400)
+    page.fill('[data-filter="q"]', "后台新增的测试资源")
+    page.wait_for_timeout(500)
+    check("访客也能看到新条目",
+          page.locator(f'.feed-card[data-item-id="{new_id}"]').count() == 1)
+
+
+def test_admin_delete_item(page, base, stub_port):
+    """后台新增的条目能删；items.json 里的条目不给删。"""
+    print("\n--- 后台：删除新增的条目 ---")
+    StatsStub.reset_admin()
+    StatsStub.custom_seq = 0
+    StatsStub.custom_items["custom-stub9"] = {
+        "id": "custom-stub9", "name": "待删除的后台条目", "description": "简介",
+        "url": "https://del.example.com/", "password": "", "note": "",
+        "section": "tool", "subsection": None, "tags": [], "kind": None,
+        "adult": False, "update_info": "后台添加",
+    }
+    stub_config(page, f"http://127.0.0.1:{stub_port}")
+    page.goto(base, wait_until="networkidle")
+    page.wait_for_timeout(1400)
+    admin_login(page)
+
+    # items.json 里的条目不该有删除按钮
+    other = card_editor(page, "manual-manga-1")
+    check("items.json 条目无删除按钮", other.locator(".admin-delete").count() == 0)
+
+    page.fill('[data-filter="q"]', "待删除的后台条目")
+    page.wait_for_timeout(500)
+    card = card_editor(page, "custom-stub9")
+    check("后台条目有删除按钮", card.locator(".admin-delete").count() == 1)
+
+    # 删除有 confirm 拦一道，先测取消
+    page.once("dialog", lambda d: d.dismiss())
+    card.locator(".admin-delete").click()
+    page.wait_for_timeout(700)
+    check("取消确认时不删", "custom-stub9" in StatsStub.custom_items)
+
+    page.once("dialog", lambda d: d.accept())
+    card.locator(".admin-delete").click()
+    page.wait_for_timeout(1000)
+    check("确认后删掉", "custom-stub9" not in StatsStub.custom_items,
+          json.dumps(list(StatsStub.custom_items)))
+    check("卡片消失", page.locator('.feed-card[data-item-id="custom-stub9"]').count() == 0)
+    check("面板上给出提示", "已删除" in page.text_content("[data-admin-new-msg]"),
+          page.text_content("[data-admin-new-msg]").strip())
 
 
 def test_admin_reset(page, base, stub_port):
@@ -1808,6 +2138,18 @@ def main():
 
             ctx = browser.new_context()
             test_admin_visitor_sees_edits(ctx.new_page(), base, stub_port)
+            ctx.close()
+
+            ctx = browser.new_context()
+            test_admin_move_section(ctx.new_page(), base, stub_port)
+            ctx.close()
+
+            ctx = browser.new_context()
+            test_admin_new_item(ctx.new_page(), base, stub_port)
+            ctx.close()
+
+            ctx = browser.new_context()
+            test_admin_delete_item(ctx.new_page(), base, stub_port)
             ctx.close()
 
             ctx = browser.new_context()

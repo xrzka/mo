@@ -54,10 +54,18 @@ const REQ_KINDS = ["want", "broken"];
 
 /* ---------- 管理员编辑的约束 ---------- */
 
-/** 可以被覆盖的字段。**故意不含 id 与 section** ——
- *  点击数、失效反馈都以 id 为键，改了等于把已有统计和反馈丢掉；
- *  section 关系到跨区逻辑，改动应该走 items.json 而不是临时覆盖。 */
-const OVERRIDE_FIELDS = ["name", "description", "url", "password", "note"];
+/**
+ * 可以被覆盖的字段。
+ *
+ * **故意不含 id** —— 点击数（clicks.item）与失效反馈（requests.item_id）都以
+ * id 为键，改了等于把这条已有的统计和反馈全丢掉。
+ *
+ * section / subsection 可以改：换分区只影响它出现在哪个标签页下，
+ * id 不变，所以统计和反馈都跟着走，不会丢。
+ */
+const OVERRIDE_FIELDS = [
+  "name", "description", "url", "password", "note", "section", "subsection",
+];
 
 /** 各字段长度上限（按字符数，中文算 1）。 */
 const OVERRIDE_MAX = {
@@ -66,7 +74,38 @@ const OVERRIDE_MAX = {
   url: 500,
   password: 40,
   note: 1000,
+  section: 32,
+  subsection: 32,
 };
+
+/**
+ * 分区与小分区白名单。**必须与 app.js 的 SECTIONS 保持一致** ——
+ * 不一致的话，这里放行的值到前端会被 normalize() 当成无效丢弃，
+ * 表现为「保存成功但分区没变」。test_sections.mjs 专门盯这件事。
+ *
+ * 空数组表示该分区没有小分区。
+ */
+const SECTION_SUBS = {
+  novel: ["site", "app", "download", "kr", "jp"],
+  manga: ["site", "app", "wechat", "download", "kr", "jp"],
+  anime: ["site", "app"],
+  game: ["site", "app", "gal"],
+  music: ["site", "app", "download"],
+  study: ["course", "video", "doc"],
+  tool: [],
+  ai: ["relay", "image", "tool"],
+  forum: [],
+  guide: [],
+  collection: ["site", "app", "cloud", "doc", "guide"],
+};
+
+/** 新增条目的 id 前缀。挑 custom- 是因为现有 id 都是
+ *  manual- / xlsx- / gal- / relay- 开头，不会撞，也便于一眼认出来源。
+ *  xlsx 导入与 AI 同步脚本只重写自己前缀的条目，所以 custom- 不会被冲掉。 */
+const CUSTOM_PREFIX = "custom-";
+
+/** 后台新增条目的条数上限。防手滑刷爆库，也提示该把数据折回 items.json 了。 */
+const CUSTOM_MAX_ITEMS = 300;
 
 /** 会话有效期，12 小时。到点要重新登录，减少 token 泄露后的窗口。 */
 const SESSION_HOURS = 12;
@@ -570,7 +609,30 @@ async function saveOverride(env, body) {
     if (f === "url" && clean && !/^https?:\/\//i.test(clean)) {
       return { status: 400, body: { error: "链接必须以 http:// 或 https:// 开头" } };
     }
+    // 分区必须在白名单里。放行未知值的话前端 normalize() 会把它当无效丢弃，
+    // 表现为「保存成功但分区没变」，比直接报错更难查。
+    if (f === "section" && clean && !(clean in SECTION_SUBS)) {
+      return { status: 400, body: { error: `未知分区：${clean}` } };
+    }
     next[f] = clean;
+  }
+
+  // 小分区必须属于最终生效的那个分区。只改了 section 没改 subsection 时，
+  // 老的小分区往新分区里往往不存在（漫画的 wechat 放到小说下就是无效值），
+  // 这时清掉它，让条目落在新分区的「全部」里，而不是变成一个查不到的组合。
+  const finalSection = next.section || (cur && cur.section) || "";
+  if (finalSection) {
+    const allowed = SECTION_SUBS[finalSection] || [];
+    if (next.subsection && !allowed.includes(next.subsection)) {
+      if ("subsection" in fields) {
+        // 用户明确指定了一个不合法的小分区，报错而不是悄悄改掉他的输入
+        return {
+          status: 400,
+          body: { error: `「${finalSection}」下没有小分区「${next.subsection}」` },
+        };
+      }
+      next.subsection = "";
+    }
   }
 
   // 全部字段都撤销了就删掉整行，别留一行空覆盖
@@ -589,6 +651,120 @@ async function saveOverride(env, body) {
   ).bind(itemId, ...OVERRIDE_FIELDS.map((f) => next[f]), new Date().toISOString()).run();
 
   return { status: 200, body: { ok: true, item_id: itemId } };
+}
+
+/* ---------- 管理员新增条目 ---------- */
+
+/** 新增条目的字段上限。与覆盖层共用 name/description 等，另加 tags/kind。 */
+const CUSTOM_MAX = { ...OVERRIDE_MAX, tags: 200, kind: 40 };
+
+/** 读全部后台新增的条目，转成和 items.json 同构的形状供前端直接用。 */
+async function listCustomItems(env) {
+  const { results } = await env.DB
+    .prepare(
+      `SELECT id, name, description, url, password, note, section, subsection,
+              tags, kind, adult, created, updated
+       FROM custom_items ORDER BY created DESC`
+    )
+    .all();
+  const items = (results || []).map((r) => ({
+    id: r.id,
+    name: r.name,
+    description: r.description,
+    url: r.url,
+    password: r.password,
+    note: r.note,
+    section: r.section,
+    subsection: r.subsection || undefined,
+    // D1 没有数组类型，tags 存的是逗号分隔串，这里拆回数组
+    tags: r.tags ? r.tags.split(",").filter(Boolean) : [],
+    kind: r.kind || undefined,
+    adult: r.adult === 1,
+    update_info: "后台添加",
+    created: r.created,
+  }));
+  return { items, count: items.length };
+}
+
+/**
+ * 新增一条资源。body 就是各字段，id 由后端生成。
+ *
+ * 不让前端指定 id：撞上 items.json 里已有的 id 会把那条顶掉，
+ * 而且 id 是点击数与失效反馈的键，被覆盖等于两条资源的数据混在一起。
+ */
+async function createCustomItem(env, body) {
+  const name = sanitizeText(body.name, CUSTOM_MAX.name);
+  if (!name) return { status: 400, body: { error: "资源名不能为空" } };
+
+  const section = sanitizeText(body.section, CUSTOM_MAX.section);
+  if (!section || !(section in SECTION_SUBS)) {
+    return { status: 400, body: { error: "请选择有效的分区" } };
+  }
+
+  const subsection = sanitizeText(body.subsection, CUSTOM_MAX.subsection);
+  if (subsection && !(SECTION_SUBS[section] || []).includes(subsection)) {
+    return { status: 400, body: { error: `「${section}」下没有小分区「${subsection}」` } };
+  }
+
+  const url = sanitizeText(body.url, CUSTOM_MAX.url);
+  if (url && !/^https?:\/\//i.test(url)) {
+    return { status: 400, body: { error: "链接必须以 http:// 或 https:// 开头" } };
+  }
+
+  const total = await env.DB.prepare("SELECT COUNT(*) c FROM custom_items").first();
+  if (total && total.c >= CUSTOM_MAX_ITEMS) {
+    return {
+      status: 503,
+      body: { error: `后台新增已达 ${CUSTOM_MAX_ITEMS} 条上限，先把数据折回 items.json` },
+    };
+  }
+
+  // 标签按逗号/空格拆开，各自清洗，最多留 6 个（前端也只显示 6 个）
+  const tags = sanitizeText(body.tags, CUSTOM_MAX.tags)
+    .split(/[,，\s]+/)
+    .map((t) => t.trim())
+    .filter(Boolean)
+    .slice(0, 6)
+    .join(",");
+
+  // id 里带时间戳便于排序，带随机后缀避免同一毫秒内撞车
+  const id = CUSTOM_PREFIX + Date.now().toString(36) + "-" + randomHex(4);
+  const now = new Date().toISOString();
+
+  await env.DB.prepare(
+    `INSERT INTO custom_items
+       (id, name, description, url, password, note, section, subsection,
+        tags, kind, adult, created, updated)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+  ).bind(
+    id, name,
+    sanitizeText(body.description, CUSTOM_MAX.description),
+    url,
+    sanitizeText(body.password, CUSTOM_MAX.password),
+    sanitizeText(body.note, CUSTOM_MAX.note),
+    section, subsection, tags,
+    sanitizeText(body.kind, CUSTOM_MAX.kind),
+    body.adult === true ? 1 : 0,
+    now, now
+  ).run();
+
+  return { status: 200, body: { ok: true, id } };
+}
+
+/** 删除后台新增的条目。只能删 custom- 前缀的 —— items.json 里的条目
+ *  不属于这张表，删不掉也不该从这里删（那得改仓库文件）。 */
+async function deleteCustomItem(env, rawId) {
+  const id = String(rawId ?? "").trim();
+  if (!ID_RE.test(id) || !id.startsWith(CUSTOM_PREFIX)) {
+    return { status: 400, body: { error: "只能删除后台新增的条目" } };
+  }
+  const res = await env.DB.prepare("DELETE FROM custom_items WHERE id = ?").bind(id).run();
+  if (!res.meta || res.meta.changes !== 1) {
+    return { status: 404, body: { error: "条目不存在" } };
+  }
+  // 顺手清掉它的覆盖，否则删了条目却留下一行孤儿覆盖
+  await env.DB.prepare("DELETE FROM overrides WHERE item_id = ?").bind(id).run();
+  return { status: 200, body: { ok: true, id } };
 }
 
 async function cleanup(env) {
@@ -711,6 +887,30 @@ export default {
         return json(r.body, request, r.status);
       }
 
+      // 后台新增的条目。和覆盖层一样公开读 —— 访客要看到这些资源。
+      if (url.pathname === "/api/items" && request.method === "GET") {
+        return json(await listCustomItems(env), request);
+      }
+
+      if (url.pathname === "/api/admin/item" && request.method === "POST") {
+        const token = await adminAuth(env, request);
+        if (!token) return json({ error: "未登录或登录已过期" }, request, 401);
+        const body = await request.json().catch(() => null);
+        if (!body || typeof body !== "object") {
+          return json({ error: "bad request body" }, request, 400);
+        }
+        const r = await createCustomItem(env, body);
+        return json(r.body, request, r.status);
+      }
+
+      if (url.pathname === "/api/admin/item/delete" && request.method === "POST") {
+        const token = await adminAuth(env, request);
+        if (!token) return json({ error: "未登录或登录已过期" }, request, 401);
+        const body = await request.json().catch(() => ({}));
+        const r = await deleteCustomItem(env, body.id);
+        return json(r.body, request, r.status);
+      }
+
       return json({ error: "not found" }, request, 404);
     } catch (err) {
       // 不把内部堆栈回给前端
@@ -740,6 +940,9 @@ export const _internal = {
   REQ_KINDS,
   OVERRIDE_FIELDS,
   OVERRIDE_MAX,
+  SECTION_SUBS,
+  CUSTOM_PREFIX,
+  CUSTOM_MAX_ITEMS,
   SESSION_HOURS,
   LOGIN_TRIES,
   PBKDF2_ITER,

@@ -212,6 +212,9 @@ curl --proxy http://127.0.0.1:7890 https://mo-stats.werneruszcb71.workers.dev/ap
 | POST | `/api/admin/logout` | 作废当前 token |
 | GET | `/api/admin/session` | 查 token 还有效没有 |
 | POST | `/api/admin/override` | `{"item_id":"...","fields":{...}}`，需 `Authorization: Bearer <token>` |
+| GET | `/api/items` | 后台新增的条目，公开读（访客也要看到这些资源） |
+| POST | `/api/admin/item` | 新增一条，`{"name":"...","section":"novel",...}`，id 由后端生成 |
+| POST | `/api/admin/item/delete` | `{"id":"custom-..."}`，只能删 `custom-` 前缀的 |
 
 写接口只接受 `ALLOWED_ORIGINS`（`index.js` 顶部）里的来源，默认只有
 `https://xrzka.github.io`。换域名要改这里，改完两个入口都要重新部署。
@@ -249,10 +252,21 @@ curl --proxy http://127.0.0.1:7890 https://mo-stats.werneruszcb71.workers.dev/ap
 
 ### 安全上的几个决定
 
-**只放开五个展示字段。** `OVERRIDE_FIELDS` 里**故意没有 `id` 和 `section`**：
+**只放开展示字段与分区。** `OVERRIDE_FIELDS` 里**故意没有 `id`**：
 点击数（`clicks.item`）与失效反馈（`requests.item_id`）都以 id 为键，改了等于
-把这条已有的统计和反馈全丢掉；`section` 牵扯跨区逻辑，该走 `items.json`。
-传了这两个字段会明确 400 报错，不是静默忽略 —— 静默会让人以为改了却没生效。
+把这条已有的统计和反馈全丢掉。传了 `id` 会明确 400 报错，不是静默忽略 ——
+静默会让人以为改了却没生效。
+
+`section` / `subsection` **可以改**（这就是「移动分区」）：换区只影响它出现在
+哪个标签页下，id 不变，所以统计和反馈都跟着走。两者都走
+`SECTION_SUBS` 白名单，未知值一律 400 —— 放行的话前端 `normalize()` 会把它
+当无效丢弃，表现为「保存成功但分区没变」，比直接报错难查得多。
+`SECTION_SUBS` 必须与 `app.js` 的 `SECTIONS` 保持一致，`test_sections.mjs`
+专门盯这件事（它从 app.js 源码里解析，因为 IIFE 没法 import）。
+
+小分区必须属于目标分区。只换大区、旧小分区在新分区里不存在时（漫画的
+`wechat` 放到小说下就是无效值）会被静默清空，条目落在新分区的「全部」里；
+但如果**显式**传了一个不合法的小分区，则报 400 —— 不悄悄改掉用户的输入。
 
 **密码只以 PBKDF2 哈希存在 Cloudflare secret 里**，不进 git、不进前端 JS。
 格式 `pbkdf2$迭代次数$盐$派生值`，自带参数，以后调迭代次数不会让旧哈希失效。
@@ -278,6 +292,35 @@ curl --proxy http://127.0.0.1:7890 https://mo-stats.werneruszcb71.workers.dev/ap
 `preventDefault` 吃掉，连空格都打不出来。这条有测试盯着
 （`test_browser.py` 的「后台：表单交互不误触卡片」）。
 
+**改过分区的条目不再带 `also_in`。** 跨区资源本来会同时出现在多个分区，
+但后台一旦显式指定归属，`normalize()` 就丢掉 `also_in` —— 否则会出现
+「移走了却还在原处」，违背用户预期。
+
+### 新增与删除条目
+
+登录后后台面板里有「+ 新增一条资源」，填资源名和分区即可，其余可空。
+新条目存在 `custom_items` 表，前端把它接在 `items.json` 后面一起渲染。
+
+**id 由后端生成**（`custom-<时间戳36进制>-<随机>`），不让前端指定 ——
+撞上 `items.json` 里已有的 id 会把那条顶掉，而 id 又是点击数与失效反馈的键，
+两条资源的数据会混在一起。挑 `custom-` 前缀是因为现有 id 都是
+`manual-` / `xlsx-` / `gal-` / `relay-` 开头，不会撞；xlsx 导入与 AI 同步脚本
+只重写自己前缀的条目，所以重跑导入不会冲掉后台加的东西。
+
+**只能删 `custom-` 前缀的条目。** `items.json` 里的条目不在这张表里，
+删除得改仓库文件；从这里删会让人以为删掉了，刷新又回来。
+删条目时连带清掉它的覆盖行，否则留下一行孤儿数据。
+前端删除前有一次 `confirm` —— 不可撤销，误删得重新填一遍表单。
+
+新增上限 `CUSTOM_MAX_ITEMS = 300`，满了拒绝新增。这既是防手滑刷爆库，
+也是个提醒：该把数据折回 `items.json` 了。
+
+```bash
+# 看后台加了哪些条目
+./wr.sh d1 execute mo-stats --remote --command \
+  "SELECT id, name, section, subsection, url, created FROM custom_items ORDER BY created DESC"
+```
+
 ### 重建时要做的两件事
 
 换账号或重建时，除了建表还要设密码：
@@ -298,6 +341,23 @@ printf '%s' '你的密码' | node ../gen_admin_hash.mjs | ../wr.sh pages secret 
 
 没设 `ADMIN_PASSWORD_HASH` 时登录接口一律回 503，**不会退化成无密码放行** ——
 这条有测试盯着（`test_admin.mjs` 的「未配置 ADMIN_PASSWORD_HASH」）。
+
+### 给已有库补 overrides 的分区两列（已执行过一次）
+
+`schema.sql` 全是 `CREATE TABLE IF NOT EXISTS`，对已经建好的 `overrides`
+不生效 —— 加「移动分区」时那张表已经存在，光跑 schema.sql 不会多出
+`section` / `subsection` 两列。已有库要显式迁移：
+
+```bash
+./wr.sh d1 execute mo-stats --remote --command \
+  "ALTER TABLE overrides ADD COLUMN section TEXT"
+./wr.sh d1 execute mo-stats --remote --command \
+  "ALTER TABLE overrides ADD COLUMN subsection TEXT"
+```
+
+两列都可为 NULL（表示不覆盖分区），老数据不用回填。
+`custom_items` 是新表，`IF NOT EXISTS` 就能建出来，不需要额外命令。
+线上已经跑过了，用 `PRAGMA table_info(overrides)` 可以复核。
 
 ## 资源帮找 / 失效反馈怎么运维
 
@@ -403,7 +463,8 @@ node test_frontend_parity.mjs    # 前后端桶名一致性、本机模式分桶
 node test_selectors.mjs          # app.js 用的选择器在 index.html 里都存在
 node test_worker.mjs             # 统计逻辑（真 SQL，node:sqlite 内存库当 D1）
 node test_requests.mjs           # 帮找与失效反馈逻辑（两类去重互不干扰、投票幂等、限流、注入拦截）
-node test_admin.mjs              # 后台鉴权与覆盖层（密码、限流、越权字段、伪协议、增量更新）
+node test_admin.mjs              # 后台鉴权与覆盖层（密码、限流、越权字段、伪协议、移动分区、新增/删除）
+node test_sections.mjs           # 前后端分区白名单一致性 + items.json 里的取值都合法
 python test_browser.py           # 真 Chromium 端到端，含多地址回退、重试、降级、帮找与失效反馈全流程
 python test_live.py              # 打线上真接口（默认 pages.dev，可直连）
 python test_live.py --requests    # 额外测帮找接口（会写真实库再清理）
@@ -422,9 +483,24 @@ python test_live.py --api https://mo-stats.werneruszcb71.workers.dev --proxy htt
 
 后台那几条盯的是：未登录时 DOM 里压根没有编辑入口、密码错不给入口、
 改标题/简介/链接/提取码后当场生效且刷新仍在、访客（未登录）也看到改后的值、
-撤销后回到 `items.json` 的原值、会话在服务端失效后提示重新登录而不是静默失败。
+撤销后回到 `items.json` 的原值、会话在服务端失效后提示重新登录而不是静默失败、
+在表单里点击打字不误触卡片折叠。
+
+移动分区那组盯的是：小分区下拉跟着大区联动重建、换区后计数两边都变
+（原区 -1、目标区 +1）、原区里查不到、目标区的小分区里能查到、`id` 保持不变、
+刷新后仍在新分区。新增那组盯的是：未登录无入口、空资源名被前端挡住、
+填完当场出现在选定分区、刷新后仍在、访客也能看到；删除那组盯的是：
+`items.json` 的条目没有删除按钮、`confirm` 取消时不删、确认后卡片消失。
+
 `test_admin.mjs` 用真 SQL 补齐后端侧：越权字段 400、伪协议 400、超长截断、
-空串与 `null` 的语义区别、登录限流、过期 token 自动清理。
+空串与 `null` 的语义区别、登录限流、过期 token 自动清理、未知分区与不匹配的
+小分区 400、只换大区时旧小分区静默清空、`custom-` 之外的 id 不许删、
+删条目连带清覆盖。
+
+**桩要和真后端一样严格。** `test_browser.py` 的 Worker 桩里抄了一份
+`section_subs` 与 `override_fields`，必须跟 `index.js` 同步 —— 桩比真后端宽容的话，
+功能坏了测试也是绿的。这个坑踩过：桩早先不认 `Authorization` 头也没有
+`/api/overrides`，那段时间后台相关的断言等于没测。
 
 `test_browser.py` 在 Git Bash 里要带 `PYTHONIOENCODING=utf-8`
 （控制台是 GBK，`↳` 这类字符会让 `print` 抛 `UnicodeEncodeError`，

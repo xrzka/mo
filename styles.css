@@ -984,8 +984,55 @@ h1 {
 }
 .admin-save { border: 1px solid var(--accent); background: var(--accent); color: #fff; }
 .admin-reset { border: 1px solid var(--border); background: transparent; color: var(--text-muted); }
-.admin-save:disabled, .admin-reset:disabled { opacity: 0.6; cursor: default; }
+/* 删除是不可撤销的操作，用警示色区分，别和保存长得一样 */
+.admin-delete { border: 1px solid #d97706; background: transparent; color: #d97706; }
+.admin-save:disabled, .admin-reset:disabled, .admin-delete:disabled { opacity: 0.6; cursor: default; }
 .admin-reset[hidden] { display: none; }
+
+/* ---------- 后台新增资源 ---------- */
+.admin-new {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--border);
+}
+.admin-new[hidden] { display: none; }
+
+.admin-new-toggle {
+  padding: 6px 14px;
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--accent);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.admin-new-msg { margin-left: 10px; color: var(--text-muted); font-size: 12.5px; }
+.admin-new-msg.ok { color: var(--accent); }
+.admin-new-msg.bad { color: #d97706; }
+
+.admin-new-form { margin-top: 12px; display: grid; gap: 10px; max-width: 620px; }
+.admin-new-form[hidden] { display: none; }
+
+/* 勾选框那行不该把 label 撑成两行 */
+.admin-field-inline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.admin-field-inline input { width: auto; }
+
+.admin-field select {
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+}
+.admin-field select:disabled { opacity: 0.6; }
 
 /* ---------- 热门排行 ---------- */
 .stats-panel {

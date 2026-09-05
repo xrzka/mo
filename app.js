@@ -378,6 +378,8 @@
     items: [],
     // items.json 的原始数据。改完覆盖层要用它重建 items，不必重新发请求。
     rawItems: [],
+    // 后台新增的条目（来自 /api/items）。和 rawItems 拼起来才是完整数据源。
+    customItems: [],
     generatedAt: null,
     section: "all",
     sub: "all",
@@ -442,7 +444,8 @@
    *
    *  ov 是后台编辑的覆盖层（来自 /api/overrides）。站点是纯静态的，浏览器改不了
    *  items.json，所以后台编辑存在 D1 里，渲染前在这里合并进来。
-   *  只覆盖展示类字段 —— id / section 不在覆盖范围，见 worker 的 OVERRIDE_FIELDS。
+   *  **id 不在覆盖范围**（点击数与失效反馈都以它为键），但分区可以覆盖 ——
+   *  换区不动 id，统计和反馈都跟着走。见 worker 的 OVERRIDE_FIELDS。
    */
   function normalize(raw, index, ov) {
     // 覆盖值优先。用 in 判断而不是真值判断：空串是有意义的覆盖（显示为空），
@@ -450,20 +453,28 @@
     const pick = (field, fallback) =>
       ov && field in ov && typeof ov[field] === "string" ? ov[field] : fallback;
 
-    const section =
-      SECTION_MAP.has(raw.section) && raw.section !== "all" ? raw.section : FALLBACK_SECTION;
     const subOf = (secId, subId) => {
       const subs = (SECTION_MAP.get(secId) || {}).subs || [];
       return subs.some((s) => s.id === subId) ? subId : null;
     };
-    const sub = subOf(section, raw.subsection);
+
+    // 分区可被后台改。仍走白名单校验 —— 覆盖层里存的值理论上已由后端校验过，
+    // 但前端不该信任远端数据，未知值一律回落到兜底分区而不是丢卡片。
+    const rawSection = pick("section", raw.section);
+    const section =
+      SECTION_MAP.has(rawSection) && rawSection !== "all" ? rawSection : FALLBACK_SECTION;
+    const sub = subOf(section, pick("subsection", raw.subsection));
 
     // 一份资源可能同时属于多个分区：网盘包里既有小说又有漫画，
     // 只挂在小说区的话，逛漫画区的人根本看不见它。
     // 主分区仍是 section（卡片默认显示它的标签），also_in 是附加分区。
     // 不做成两条独立条目：那样点击数、失效反馈都会被拆成两半。
+    //
+    // 注意：后台改过分区时不带 also_in —— 用户明确指定了归属，
+    // 再把它挂回原来的附加分区会让「移走了却还在」，违背预期。
+    const movedBySection = !!(ov && "section" in ov);
     const sections = [{ id: section, sub }];
-    (Array.isArray(raw.also_in) ? raw.also_in : []).forEach((extra) => {
+    (movedBySection || !Array.isArray(raw.also_in) ? [] : raw.also_in).forEach((extra) => {
       const id = extra && extra.section;
       if (!SECTION_MAP.has(id) || id === "all") return;
       if (sections.some((s) => s.id === id)) return;
@@ -1190,10 +1201,39 @@
     }
   }
 
-  /** 覆盖层变了之后重建 state.items 并重渲染。改一条不必整页刷新。 */
-  async function refreshOverrides() {
-    overrides = await loadOverrides();
-    state.items = state.rawItems.map((r, i) => normalize(r, i, overrides[r && r.id]));
+  /** 拉后台新增的条目。和覆盖层一样：拿不到就当没有，别让整页加载失败。 */
+  async function loadCustomItems() {
+    const api = apiBase();
+    if (!api) return [];
+    try {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 8000);
+      let res;
+      try {
+        res = await fetch(`${api}/api/items`, { cache: "no-store", signal: ctrl.signal });
+      } finally {
+        clearTimeout(timer);
+      }
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      const data = await res.json();
+      return Array.isArray(data && data.items) ? data.items : [];
+    } catch {
+      return [];
+    }
+  }
+
+  /** items.json 的原始条目 + 后台新增的，合起来才是完整数据源。 */
+  const allRaw = () => state.rawItems.concat(state.customItems);
+
+  /** 覆盖层或新增条目变了之后重建 state.items 并重渲染。 */
+  async function refreshOverrides({ withItems = false } = {}) {
+    const [ov, custom] = await Promise.all([
+      loadOverrides(),
+      withItems ? loadCustomItems() : Promise.resolve(null),
+    ]);
+    overrides = ov;
+    if (custom) state.customItems = custom;
+    state.items = allRaw().map((r, i) => normalize(r, i, overrides[r && r.id]));
     render();
     refreshScrollDock();
   }
@@ -1251,6 +1291,19 @@
         ? "已登录。展开任意卡片，点里面的「编辑这条」即可修改；改动立刻对所有访客生效。"
         : "登录后可以直接在卡片上改标题、简介、链接和提取码。";
     }
+
+    // 新增资源那块只在登录后显示。退出时顺手收起表单，
+    // 否则下次登录会看到上次填了一半的内容。
+    const newWrap = $("[data-admin-new]");
+    if (newWrap) {
+      newWrap.hidden = !logged;
+      if (!logged) {
+        const box = $("[data-admin-new-form]");
+        const toggle = $("[data-admin-new-toggle]");
+        if (box) { box.hidden = true; box.textContent = ""; }
+        if (toggle) toggle.textContent = "+ 新增一条资源";
+      }
+    }
   }
 
   function bindAdmin() {
@@ -1295,6 +1348,113 @@
 
     // 支持直接改 hash 进出后台，不用刷新
     window.addEventListener("hashchange", renderAdmin);
+    bindAdminNew();
+  }
+
+  /* ---------- 后台新增资源 ---------- */
+
+  /** 新增表单的字段。与后端 createCustomItem 收的字段对应。 */
+  const ADMIN_NEW_FIELDS = [
+    { key: "name", label: "资源名", type: "text", required: true },
+    { key: "section", label: "所属分区", type: "section", required: true },
+    { key: "subsection", label: "小分区", type: "subsection" },
+    { key: "description", label: "简介", type: "textarea" },
+    { key: "url", label: "跳转链接", type: "text" },
+    { key: "password", label: "提取码", type: "text" },
+    { key: "tags", label: "标签（逗号分隔，最多 6 个）", type: "text" },
+    { key: "kind", label: "资源类型（如 网盘资源）", type: "text" },
+    { key: "note", label: "备注", type: "textarea" },
+    { key: "adult", label: "成人向（未成年模式下隐藏）", type: "checkbox" },
+  ];
+
+  function buildAdminNewForm(box, msg) {
+    box.textContent = "";
+    const inputs = {};
+
+    ADMIN_NEW_FIELDS.forEach((f) => {
+      const row = document.createElement("label");
+      row.className = "admin-field";
+
+      const name = document.createElement("span");
+      name.textContent = f.label + (f.required ? " *" : "");
+      row.appendChild(name);
+
+      let el;
+      if (f.type === "section" || f.type === "subsection") {
+        el = document.createElement("select");
+      } else if (f.type === "checkbox") {
+        el = document.createElement("input");
+        el.type = "checkbox";
+        row.classList.add("admin-field-inline");
+      } else {
+        el = document.createElement(f.type === "textarea" ? "textarea" : "input");
+        if (f.type === "textarea") el.rows = 2;
+        else el.type = "text";
+      }
+      row.appendChild(el);
+      inputs[f.key] = el;
+      box.appendChild(row);
+    });
+
+    // 默认落在小说区 —— 站里加得最多的是小说，省一次选择
+    fillOptions(inputs.section, realSections(), "novel");
+    const syncSubs = () => {
+      const subs = (SECTION_MAP.get(inputs.section.value) || {}).subs || [];
+      fillOptions(inputs.subsection, subs, "", subs.length ? "（不指定）" : "（该分区无小分区）");
+      inputs.subsection.disabled = subs.length === 0;
+    };
+    syncSubs();
+    inputs.section.addEventListener("change", syncSubs);
+
+    const actions = document.createElement("div");
+    actions.className = "admin-actions";
+    const submit = document.createElement("button");
+    submit.type = "button";
+    submit.className = "admin-save";
+    submit.textContent = "添加";
+    actions.appendChild(submit);
+    box.appendChild(actions);
+
+    const say = (t, kind = "") => {
+      msg.textContent = t;
+      msg.className = "admin-new-msg" + (kind ? " " + kind : "");
+    };
+
+    submit.addEventListener("click", async () => {
+      const body = {};
+      ADMIN_NEW_FIELDS.forEach((f) => {
+        body[f.key] = f.type === "checkbox" ? inputs[f.key].checked : inputs[f.key].value;
+      });
+      if (!String(body.name).trim()) return say("资源名不能为空", "bad");
+
+      submit.disabled = true;
+      say("添加中…");
+      const r = await adminFetch("/api/admin/item", body);
+      submit.disabled = false;
+      if (!r.ok) return say(r.error, "bad");
+
+      say("已添加，所有访客立即可见", "ok");
+      // 清空表单好接着加下一条，但保留分区选择 —— 连着加同类资源时省事
+      ADMIN_NEW_FIELDS.forEach((f) => {
+        if (f.type === "checkbox") inputs[f.key].checked = false;
+        else if (f.type !== "section" && f.type !== "subsection") inputs[f.key].value = "";
+      });
+      // 新增条目要重新拉 /api/items，withItems 才会带上它
+      await refreshOverrides({ withItems: true });
+    });
+  }
+
+  function bindAdminNew() {
+    const toggle = $("[data-admin-new-toggle]");
+    const box = $("[data-admin-new-form]");
+    const msg = $("[data-admin-new-msg]");
+    if (!toggle || !box || !msg) return;
+    toggle.addEventListener("click", () => {
+      const open = !box.hidden;
+      box.hidden = open;
+      toggle.textContent = open ? "+ 新增一条资源" : "收起";
+      if (!open) buildAdminNewForm(box, msg);
+    });
   }
 
   function initAdmin() {
@@ -1302,14 +1462,39 @@
     renderAdmin();
   }
 
-  /** 卡片里的编辑表单。只在已登录时构建。 */
+  /** 卡片里的编辑表单。只在已登录时构建。
+   *  section/subsection 用下拉而不是文本框 —— 手打分区 id 极易拼错，
+   *  而后端对未知分区会 400，用户得靠猜。 */
   const ADMIN_EDIT_FIELDS = [
     { key: "name", label: "标题", type: "text" },
     { key: "description", label: "简介", type: "textarea" },
     { key: "url", label: "跳转链接", type: "text" },
     { key: "password", label: "提取码", type: "text" },
     { key: "note", label: "备注", type: "textarea" },
+    { key: "section", label: "所属分区", type: "section" },
+    { key: "subsection", label: "小分区", type: "subsection" },
   ];
+
+  /** 可选分区列表（去掉「全部」这个伪分区）。 */
+  const realSections = () => SECTIONS.filter((s) => s.id !== "all");
+
+  /** 往 select 里填选项。空值那项表示「不指定小分区」。 */
+  function fillOptions(sel, list, current, emptyLabel) {
+    sel.textContent = "";
+    if (emptyLabel !== undefined) {
+      const o = document.createElement("option");
+      o.value = "";
+      o.textContent = emptyLabel;
+      sel.appendChild(o);
+    }
+    list.forEach((it) => {
+      const o = document.createElement("option");
+      o.value = it.id;
+      o.textContent = it.label;
+      sel.appendChild(o);
+    });
+    sel.value = current || "";
+  }
 
   function buildAdminEditor(item, wrap, box, msg) {
     box.textContent = "";
@@ -1330,14 +1515,35 @@
       }
       row.appendChild(name);
 
-      const el = document.createElement(f.type === "textarea" ? "textarea" : "input");
-      if (f.type === "textarea") el.rows = 3;
-      else el.type = "text";
-      el.value = item[f.key] || "";
+      let el;
+      if (f.type === "section" || f.type === "subsection") {
+        el = document.createElement("select");
+      } else {
+        el = document.createElement(f.type === "textarea" ? "textarea" : "input");
+        if (f.type === "textarea") el.rows = 3;
+        else el.type = "text";
+        el.value = item[f.key] || "";
+      }
       row.appendChild(el);
       inputs[f.key] = el;
       box.appendChild(row);
     });
+
+    // 分区下拉：选中当前主分区。注意用 item.section 而不是当前浏览的分区 ——
+    // 跨区资源（also_in）在别的分区里也能看到，但它的归属只有一个。
+    fillOptions(inputs.section, realSections(), item.section);
+
+    // 小分区跟着分区联动。换分区时旧的小分区往往不存在（漫画的「公众号」
+    // 放到小说下就是无效值），所以要重建选项。
+    const syncSubs = (keep) => {
+      const secId = inputs.section.value;
+      const subs = (SECTION_MAP.get(secId) || {}).subs || [];
+      const cur = keep && subs.some((s) => s.id === keep) ? keep : "";
+      fillOptions(inputs.subsection, subs, cur, subs.length ? "（不指定）" : "（该分区无小分区）");
+      inputs.subsection.disabled = subs.length === 0;
+    };
+    syncSubs(subInSection(item, item.section));
+    inputs.section.addEventListener("change", () => syncSubs(""));
 
     const actions = document.createElement("div");
     actions.className = "admin-actions";
@@ -1368,8 +1574,19 @@
       const fields = {};
       ADMIN_EDIT_FIELDS.forEach((f) => {
         const v = inputs[f.key].value;
-        if (v !== (item[f.key] || "")) fields[f.key] = v;
+        // 分区两项要跟「当前生效值」比：subsection 得取这条在它主分区下的归属，
+        // 直接读 item.subsection 拿不到（normalize 后叫 sub）。
+        const now =
+          f.key === "subsection"
+            ? subInSection(item, item.section) || ""
+            : item[f.key] || "";
+        if (v !== now) fields[f.key] = v;
       });
+      // 换了分区但没动小分区时，也要把小分区一起提交 —— 否则后端只收到
+      // section，旧小分区在新分区里不合法，会被静默清空，用户以为自己选的丢了。
+      if ("section" in fields && !("subsection" in fields)) {
+        fields.subsection = inputs.subsection.value;
+      }
       if (!Object.keys(fields).length) return say("没有改动", "");
       save.disabled = true;
       say("保存中…");
@@ -1377,7 +1594,12 @@
       save.disabled = false;
       if (!r.ok) return say(r.error, "bad");
       // 重渲染会把这张卡换成新节点，所以提示得交给新卡片去显示
-      adminFlash = { id: item.id, text: "已保存，所有访客立即可见", kind: "ok" };
+      const moved = "section" in fields;
+      adminFlash = {
+        id: item.id,
+        text: moved ? "已保存，条目已移动到新分区" : "已保存，所有访客立即可见",
+        kind: "ok",
+      };
       await refreshOverrides();
       adminFlash = null;
     });
@@ -1396,6 +1618,34 @@
       await refreshOverrides();
       adminFlash = null;
     });
+
+    // 后台新增的条目可以直接删掉。items.json 里的条目不给删 ——
+    // 它们不在 custom_items 表里，删除得改仓库文件。
+    if (String(item.id).startsWith("custom-")) {
+      const del = document.createElement("button");
+      del.type = "button";
+      del.className = "admin-delete";
+      del.textContent = "删除这条";
+      actions.appendChild(del);
+
+      del.addEventListener("click", async (e) => {
+        e.stopPropagation();
+        // 删除不可撤销，问一句。误删一条得重新填一遍表单。
+        if (!window.confirm(`确定删除「${item.name}」？此操作不可撤销。`)) return;
+        del.disabled = true;
+        say("删除中…");
+        const r = await adminFetch("/api/admin/item/delete", { id: item.id });
+        del.disabled = false;
+        if (!r.ok) return say(r.error, "bad");
+        // 这张卡会消失，flash 没有落点，提示改放到后台面板那行
+        const panelMsg = $("[data-admin-new-msg]");
+        if (panelMsg) {
+          panelMsg.textContent = `已删除「${item.name}」`;
+          panelMsg.className = "admin-new-msg ok";
+        }
+        await refreshOverrides({ withItems: true });
+      });
+    }
   }
 
   /** 本机记下已反馈过的条目，避免同一个人反复点同一张卡。
@@ -2064,16 +2314,20 @@
     try {
       // 覆盖层与 items.json 并行拉。覆盖层失败不影响主流程 ——
       // 顶多显示原值，比整页加载失败好。
-      const [res, ovMap] = await Promise.all([
+      // 覆盖层、后台新增条目与 items.json 并行拉。后两者失败不影响主流程 ——
+      // 顶多少几条 / 显示原值，比整页加载失败好。
+      const [res, ovMap, customs] = await Promise.all([
         fetch(DATA_URL, { cache: "no-cache" }),
         loadOverrides(),
+        loadCustomItems(),
       ]);
       if (!res.ok) throw new Error("HTTP " + res.status);
       const payload = await res.json();
       const raw = Array.isArray(payload) ? payload : payload.items || [];
       overrides = ovMap;
       state.rawItems = raw;
-      state.items = raw.map((r, i) => normalize(r, i, overrides[r && r.id]));
+      state.customItems = customs;
+      state.items = allRaw().map((r, i) => normalize(r, i, overrides[r && r.id]));
       state.generatedAt = payload.generated_at || null;
       $("[data-footer-updated]").textContent = fmtDate(state.generatedAt);
       renderModeUI();

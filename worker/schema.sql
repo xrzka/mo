@@ -85,8 +85,10 @@ CREATE INDEX IF NOT EXISTS idx_request_votes_day ON request_votes (day);
 -- 那五百多条，直接改 items.json 的话下次重跑导入就全被冲掉了，覆盖层不会。
 --
 -- item_id 对应 items.json 里的条目 id，也是主键 —— 一条资源只有一份覆盖。
--- 只允许覆盖展示类字段：id / section 不在其中，因为点击数与失效反馈都以
--- id 为键，改了会把已有统计和反馈丢掉。
+-- **id 不可覆盖**：点击数（clicks.item）与失效反馈（requests.item_id）都以它
+-- 为键，改了等于把这条已有的统计和反馈全丢掉。
+-- section / subsection 可以覆盖：换分区只影响它出现在哪个标签页下，id 不变，
+-- 所以统计和反馈都跟着走。
 -- 值为 NULL 表示该字段不覆盖，用原值；空字符串是有意义的覆盖（清空该字段）。
 CREATE TABLE IF NOT EXISTS overrides (
   item_id  TEXT PRIMARY KEY,
@@ -95,11 +97,42 @@ CREATE TABLE IF NOT EXISTS overrides (
   url      TEXT,
   password TEXT,
   note     TEXT,
+  section     TEXT,
+  subsection  TEXT,
   updated  TEXT NOT NULL,
   by_who   TEXT NOT NULL DEFAULT ''
 );
 
 CREATE INDEX IF NOT EXISTS idx_overrides_updated ON overrides (updated);
+
+-- ---------------------------------------------------------------
+-- 管理员新增：后台加的条目
+-- ---------------------------------------------------------------
+
+-- 后台新增的资源存这里，前端加载时接在 items.json 后面一起渲染。
+-- 和覆盖层同一个理由：纯静态站改不了仓库文件，而且重跑导入会冲掉手改。
+--
+-- id 由后端生成（custom-<时间戳>-<随机>），不让前端指定 —— 前端能指定 id 的话，
+-- 撞上 items.json 里已有的 id 会让那条被顶掉。
+-- 字段与 items.json 的结构对齐，tags 存逗号分隔的字符串（D1 没有数组类型）。
+CREATE TABLE IF NOT EXISTS custom_items (
+  id       TEXT PRIMARY KEY,
+  name     TEXT NOT NULL,
+  description TEXT NOT NULL DEFAULT '',
+  url      TEXT NOT NULL DEFAULT '',
+  password TEXT NOT NULL DEFAULT '',
+  note     TEXT NOT NULL DEFAULT '',
+  section  TEXT NOT NULL,
+  subsection TEXT NOT NULL DEFAULT '',
+  tags     TEXT NOT NULL DEFAULT '',
+  kind     TEXT NOT NULL DEFAULT '',
+  adult    INTEGER NOT NULL DEFAULT 0,
+  created  TEXT NOT NULL,
+  updated  TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_custom_items_created ON custom_items (created);
+CREATE INDEX IF NOT EXISTS idx_custom_items_section ON custom_items (section, subsection);
 
 -- 管理员会话。密码只以 PBKDF2 哈希形式存在 Cloudflare secret 里，不进这张表。
 -- token 是随机 32 字节的 hex，expires 是 ISO 时间串，过期由 cron 清理。

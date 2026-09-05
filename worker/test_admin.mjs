@@ -187,18 +187,18 @@ const save = (env, token, item_id, fields) =>
   const { data } = await login(env, PASSWORD);
   const token = data.token;
 
-  // id 与 section 绝不能改：点击数、失效反馈都以 id 为键
-  for (const [f, v] of [["id", "别的id"], ["section", "game"], ["adult", "true"], ["links", "x"]]) {
+  // id 绝不能改：点击数（clicks.item）与失效反馈（requests.item_id）都以它为键
+  for (const [f, v] of [["id", "another-id"], ["adult", "true"], ["links", "x"]]) {
     const r = await save(env, token, "manual-manga-1", { [f]: v });
     check(`改 ${f} 被 400`, r.status === 400, JSON.stringify(r.data));
   }
 
-  // 白名单里的五项都能改
+  // 白名单里的七项都能改（含分区两项）
   const r = await save(env, token, "manual-manga-1", {
     name: "新标题", description: "新简介", url: "https://example.com/",
-    password: "abcd", note: "新备注",
+    password: "abcd", note: "新备注", section: "novel", subsection: "jp",
   });
-  check("五个字段一起改成功", r.status === 200, JSON.stringify(r.data));
+  check("七个字段一起改成功", r.status === 200, JSON.stringify(r.data));
 
   const got = (await call(env, "/api/overrides")).data.overrides["manual-manga-1"];
   check("读回标题", got.name === "新标题", got.name);
@@ -206,6 +206,56 @@ const save = (env, token, item_id, fields) =>
   check("读回链接", got.url === "https://example.com/", got.url);
   check("读回提取码", got.password === "abcd", got.password);
   check("读回备注", got.note === "新备注", got.note);
+  check("读回分区", got.section === "novel", got.section);
+  check("读回小分区", got.subsection === "jp", got.subsection);
+}
+
+/* ---------- 6b. 移动分区 ---------- */
+{
+  console.log("\n--- 移动分区 ---");
+  const env = newEnv();
+  const { data } = await login(env, PASSWORD);
+  const token = data.token;
+  const read = async (id) => (await call(env, "/api/overrides")).data.overrides[id] || {};
+
+  // 漫画/公众号 -> 小说/日轻，正是用户要的那个场景
+  let r = await save(env, token, "manual-manga-5", { section: "novel", subsection: "jp" });
+  check("漫画搬到小说/日轻", r.status === 200, JSON.stringify(r.data));
+  let got = await read("manual-manga-5");
+  check("分区与小分区都记下了", got.section === "novel" && got.subsection === "jp",
+        JSON.stringify(got));
+
+  // 未知分区必须挡住 —— 放行的话前端 normalize 会丢弃它，
+  // 表现为「保存成功但分区没变」，比报错难查得多
+  for (const bad of ["nonsense", "NOVEL", "all"]) {
+    r = await save(env, token, "manual-manga-5", { section: bad });
+    check(`未知分区 ${bad} 被 400`, r.status === 400, JSON.stringify(r.data));
+  }
+
+  // 小分区必须属于目标分区。gal 只在 game 下有
+  r = await save(env, token, "manual-manga-5", { section: "novel", subsection: "gal" });
+  check("小分区不属于该分区被 400", r.status === 400, JSON.stringify(r.data));
+
+  // 只改 section、旧小分区在新分区里不存在时静默清空 ——
+  // 报错更严格但很烦：用户就是想换个大区，不该被逼着先想好小分区
+  await save(env, token, "manual-manga-6", { section: "manga", subsection: "wechat" });
+  r = await save(env, token, "manual-manga-6", { section: "novel" });
+  check("只换大区也能成功", r.status === 200, JSON.stringify(r.data));
+  got = await read("manual-manga-6");
+  check("不合法的旧小分区被清空", got.section === "novel" && !got.subsection,
+        JSON.stringify(got));
+
+  // 两边都有的小分区（site/app/download）在换区时应保留
+  await save(env, token, "manual-manga-7", { section: "manga", subsection: "download" });
+  r = await save(env, token, "manual-manga-7", { section: "novel" });
+  got = await read("manual-manga-7");
+  check("两边都有的小分区保留", got.section === "novel" && got.subsection === "download",
+        JSON.stringify(got));
+
+  // 分区可以撤销，回到 items.json 里的原始分区
+  r = await save(env, token, "manual-manga-5", { section: null, subsection: null });
+  got = await read("manual-manga-5");
+  check("撤销分区覆盖", !("section" in got) && !("subsection" in got), JSON.stringify(got));
 }
 
 /* ---------- 7. 链接与文本校验 ---------- */
@@ -307,6 +357,122 @@ const save = (env, token, item_id, fields) =>
   const blob = JSON.stringify(r.data);
   check("不含 token 字样", !/token/i.test(blob));
   check("不含 by_who", !blob.includes("by_who"));
+}
+
+/* ---------- 10. 新增条目 ---------- */
+{
+  console.log("\n--- 新增条目 ---");
+  const env = newEnv();
+  const { data } = await login(env, PASSWORD);
+  const token = data.token;
+  const add = (body) => call(env, "/api/admin/item", { method: "POST", token, body });
+  const list = async () => (await call(env, "/api/items")).data;
+
+  let r = await add({ name: "" });
+  check("空资源名被 400", r.status === 400, JSON.stringify(r.data));
+
+  r = await add({ name: "无分区的条目" });
+  check("缺分区被 400", r.status === 400, JSON.stringify(r.data));
+
+  r = await add({ name: "分区不存在", section: "nonsense" });
+  check("未知分区被 400", r.status === 400, JSON.stringify(r.data));
+
+  r = await add({ name: "小分区不匹配", section: "novel", subsection: "gal" });
+  check("小分区不属于该分区被 400", r.status === 400, JSON.stringify(r.data));
+
+  r = await add({ name: "伪协议链接", section: "novel", url: "javascript:alert(1)" });
+  check("伪协议被 400", r.status === 400, JSON.stringify(r.data));
+
+  // 不带 token 不能新增
+  r = await call(env, "/api/admin/item", { method: "POST", body: { name: "x", section: "novel" } });
+  check("未登录被 401", r.status === 401, String(r.status));
+
+  // 正常新增
+  r = await add({
+    name: "后台加的小说", section: "novel", subsection: "jp",
+    description: "简介", url: "https://example.com/x", password: "1234",
+    tags: "日轻, 网盘 ,测试", kind: "网盘资源", note: "备注", adult: true,
+  });
+  check("正常新增成功", r.status === 200, JSON.stringify(r.data));
+  const id = r.data.id;
+  check("id 带 custom- 前缀", String(id).startsWith(_internal.CUSTOM_PREFIX), String(id));
+  check("id 符合 ID_RE", _internal.ID_RE.test(id), String(id));
+
+  let d = await list();
+  check("公开读能拿到（不带 token）", d.count === 1, JSON.stringify(d.count));
+  const it = d.items[0];
+  check("字段齐全", it.name === "后台加的小说" && it.section === "novel"
+        && it.subsection === "jp" && it.url === "https://example.com/x",
+        JSON.stringify(it).slice(0, 120));
+  check("tags 拆成数组并去空白",
+        JSON.stringify(it.tags) === JSON.stringify(["日轻", "网盘", "测试"]),
+        JSON.stringify(it.tags));
+  check("adult 转成布尔", it.adult === true, String(it.adult));
+  check("标了来源", it.update_info === "后台添加", String(it.update_info));
+
+  // tags 最多 6 个 —— 前端也只显示 6 个
+  r = await add({ name: "标签很多", section: "tool", tags: "a,b,c,d,e,f,g,h,i" });
+  d = await list();
+  const many = d.items.find((x) => x.name === "标签很多");
+  check("tags 截到 6 个", many.tags.length === 6, JSON.stringify(many.tags));
+
+  // 没有小分区的分区（tool）不该被要求填
+  check("无小分区的分区能新增", many.section === "tool" && !many.subsection,
+        JSON.stringify({ s: many.section, sub: many.subsection }));
+
+  // 两次新增的 id 不能撞
+  const a = (await add({ name: "同名条目", section: "novel" })).data.id;
+  const b = (await add({ name: "同名条目", section: "novel" })).data.id;
+  check("同名也生成不同 id", a !== b, `${a} vs ${b}`);
+  d = await list();
+  check("同名两条都在", d.items.filter((x) => x.name === "同名条目").length === 2);
+}
+
+/* ---------- 11. 删除条目 ---------- */
+{
+  console.log("\n--- 删除条目 ---");
+  const env = newEnv();
+  const { data } = await login(env, PASSWORD);
+  const token = data.token;
+  // tok 显式传 null 表示「不带 token」。用 ?? 而不是默认参数：
+  // 默认参数只在 undefined 时生效，传 null 反而会变成 Authorization: Bearer null
+  const del = (id, tok) =>
+    call(env, "/api/admin/item/delete",
+      { method: "POST", token: tok === undefined ? token : (tok || undefined), body: { id } });
+
+  const { data: made } = await call(env, "/api/admin/item",
+    { method: "POST", token, body: { name: "待删除", section: "tool" } });
+  const id = made.id;
+
+  // 注意传 null 而不是 undefined：默认参数 tok = token 只在 undefined 时生效，
+  // 传 undefined 等于带上了 token，那条断言就测不到未登录的情况（还会真把条目删掉）
+  let r = await del(id, null);
+  check("未登录不能删", r.status === 401, String(r.status));
+
+  // items.json 里的条目不在 custom_items 表里，不该从这里删
+  r = await del("manual-manga-1");
+  check("拒绝删非 custom 条目", r.status === 400, JSON.stringify(r.data));
+  r = await del("x; DROP TABLE custom_items");
+  check("注入串被 400", r.status === 400, String(r.status));
+
+  r = await del(id);
+  check("删除成功", r.status === 200, JSON.stringify(r.data));
+  const d = (await call(env, "/api/items")).data;
+  check("列表里没了", d.count === 0, JSON.stringify(d.count));
+
+  r = await del(id);
+  check("重复删除返回 404", r.status === 404, String(r.status));
+
+  // 删条目要连带清掉它的覆盖，否则留下一行孤儿数据
+  const { data: made2 } = await call(env, "/api/admin/item",
+    { method: "POST", token, body: { name: "带覆盖的条目", section: "tool" } });
+  await save(env, token, made2.id, { name: "改过的名字" });
+  let ov = (await call(env, "/api/overrides")).data;
+  check("先确认覆盖存在", made2.id in ov.overrides, JSON.stringify(Object.keys(ov.overrides)));
+  await del(made2.id);
+  ov = (await call(env, "/api/overrides")).data;
+  check("删条目连带清覆盖", !(made2.id in ov.overrides),
+        JSON.stringify(Object.keys(ov.overrides)));
 }
 
 console.log(fail ? `\n${fail} 项失败` : "\n全部通过");
