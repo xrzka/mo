@@ -131,18 +131,22 @@ class StatsStub(http.server.BaseHTTPRequestHandler):
 
     @classmethod
     def parse_placements(cls, raw):
-        """解析 'novel:jp,manga:download'。与 Worker 的 parsePlacements 同规则。
+        """解析 'novel:jp,novel:download,manga:kr'。与 Worker 的 parsePlacements 同规则。
 
-        返回 (ok, value_or_error)。同一分区只留第一次出现 ——
-        同区两个小分区没有意义（卡片只有一个标签），还会让计数翻倍。
+        返回 (ok, value_or_error)。
+
+        同一分区可以出现多次，只要小分区不同 —— 一个网盘包既算「下载」又算
+        「日轻」是真实需求。去重的是完整的「分区:小分区」对。
+        但同区「留空」与「具体小分区」并存时丢掉留空那条：留空意味着
+        「该区全部」，已被具体那条涵盖，两个都留会让条目在该区出现两次。
         """
         text = str(raw or "").strip()
         if not text:
             return True, ""
         parts = [p.strip() for p in text.split(",") if p.strip()]
         if len(parts) > cls.placement_max:
-            return False, f"最多只能挂 {cls.placement_max} 个分区"
-        out, seen = [], set()
+            return False, f"最多只能挂 {cls.placement_max} 个位置"
+        out, seen, with_sub, bare = [], set(), set(), set()
         for part in parts:
             sec, _, sub = part.partition(":")
             sec, sub = sec.strip(), sub.strip()
@@ -150,10 +154,15 @@ class StatsStub(http.server.BaseHTTPRequestHandler):
                 return False, f"未知分区：{sec}"
             if sub and sub not in cls.section_subs[sec]:
                 return False, f"「{sec}」下没有小分区「{sub}」"
-            if sec in seen:
+            key = f"{sec}:{sub}" if sub else sec
+            if key in seen:
                 continue
-            seen.add(sec)
-            out.append(f"{sec}:{sub}" if sub else sec)
+            seen.add(key)
+            (with_sub if sub else bare).add(sec)
+            out.append(key)
+        redundant = [s for s in bare if s in with_sub]
+        if redundant:
+            out = [k for k in out if k not in redundant]
         if not out:
             return False, "至少要选一个分区"
         return True, ",".join(out)
@@ -1789,8 +1798,8 @@ def test_admin_move_section(page, base, stub_port):
     sec = rows.nth(0).locator(".placement-sec")
     sub = rows.nth(0).locator(".placement-sub")
     check("分区下拉选中当前分区", sec.input_value() == "manga", sec.input_value())
-    check("第一行标为主分区",
-          rows.nth(0).locator(".placement-index").text_content().strip() == "主分区")
+    check("第一行标为主位置",
+          rows.nth(0).locator(".placement-index").text_content().strip() == "主位置")
     # 小分区选项应是漫画的那套
     opts = sub.locator("option").all_text_contents()
     check("小分区列的是漫画的", any("公众号" in o for o in opts), ",".join(opts))
@@ -1955,38 +1964,131 @@ def test_admin_multi_placement(page, base, stub_port):
           page.locator(f'.feed-card[data-item-id="{ITEM}"]').count() == 0)
 
 
-def test_admin_placement_dedupe(page, base, stub_port):
-    """同一个分区选两次时给出提醒，保存只留第一次。"""
-    print("\n--- 后台：重复分区去重 ---")
+def test_admin_same_section_multi_sub(page, base, stub_port):
+    """同一个大区下挂多个小分区 —— 用户的原话「下载、日轻」。
+
+    这条早先是错的：把同区第二个小分区当重复丢掉了。一个网盘包既算「下载」
+    又算「日轻」是真实需求，去重键应该是完整的「分区:小分区」对。
+    """
+    print("\n--- 后台：同区多个小分区 ---")
     StatsStub.reset_admin()
     stub_config(page, f"http://127.0.0.1:{stub_port}")
     page.goto(base, wait_until="networkidle")
     page.wait_for_timeout(1300)
     admin_login(page)
 
-    ITEM = "manual-manga-1"
+    ITEM = "manual-novel-dl-1"       # 主分区 novel/download
+    page.fill('[data-filter="q"]', "破坏爱情喜剧")
+    page.wait_for_timeout(500)
+    # 这条标了 adult，未成年模式下搜不到，先切到成年模式
+    if page.locator(f'.feed-card[data-item-id="{ITEM}"]').count() == 0:
+        page.click("[data-mode-toggle]")
+        page.click("[data-age-confirm]")
+        page.wait_for_timeout(500)
+    card = card_editor(page, ITEM)
+
+    rows = card.locator(".placement-row")
+    check("初始一行", rows.count() == 1, str(rows.count()))
+    check("主位置是小说/下载",
+          rows.nth(0).locator(".placement-sec").input_value() == "novel"
+          and rows.nth(0).locator(".placement-sub").input_value() == "download",
+          f'{rows.nth(0).locator(".placement-sec").input_value()}/'
+          f'{rows.nth(0).locator(".placement-sub").input_value()}')
+
+    # 加一行，同样选小说，但小分区选日轻
+    card.locator(".placement-add").click()
+    page.wait_for_timeout(300)
+    rows = card.locator(".placement-row")
+    rows.nth(1).locator(".placement-sec").select_option("novel")
+    page.wait_for_timeout(300)
+    rows.nth(1).locator(".placement-sub").select_option("jp")
+    page.wait_for_timeout(300)
+
+    # 同区不同小分区是合法组合，不该报重复
+    hint = card.locator(".placement-hint").text_content()
+    check("不当成重复", "相同" not in hint and "丢掉" not in hint, hint.strip()[:50])
+
+    card.locator(".admin-save").click()
+    page.wait_for_timeout(1000)
+
+    ov = StatsStub.overrides.get(ITEM) or {}
+    check("两个小分区都存下来", ov.get("placements") == "novel:download,novel:jp",
+          str(ov.get("placements")))
+
+    # 小说区的「下载」和「日轻」里都要能找到
+    page.click('[data-tabs] button:has-text("小说")')
+    page.wait_for_timeout(400)
+    for sub_label in ("下载", "日轻"):
+        page.click(f'[data-subtabs] button:has-text("{sub_label}")')
+        page.wait_for_timeout(400)
+        check(f"小说/{sub_label} 里能找到",
+              page.locator(f'.feed-card[data-item-id="{ITEM}"]').count() == 1)
+
+    # 小说区的「全部」里只出现一次 —— 一条数据两个位置，不是两条
+    page.click('[data-subtabs] button:has-text("全部")')
+    page.wait_for_timeout(400)
+    check("小说/全部 里不重复",
+          page.locator(f'.feed-card[data-item-id="{ITEM}"]').count() == 1)
+
+    # 卡片标签跟着当前看的小分区走
+    page.click('[data-subtabs] button:has-text("日轻")')
+    page.wait_for_timeout(400)
+    card = page.locator(f'.feed-card[data-item-id="{ITEM}"]')
+    check("在日轻页显示日轻",
+          card.locator(".section-pill").nth(0).text_content().strip() == "日轻",
+          card.locator(".section-pill").nth(0).text_content().strip())
+    alt = card.locator(".section-pill.also-in")
+    check("「也在」写另一个小分区", alt.count() == 1 and "下载" in alt.text_content(),
+          alt.text_content().strip() if alt.count() else "-")
+
+    page.click('[data-subtabs] button:has-text("下载")')
+    page.wait_for_timeout(400)
+    card = page.locator(f'.feed-card[data-item-id="{ITEM}"]')
+    check("在下载页显示下载",
+          card.locator(".section-pill").nth(0).text_content().strip() == "下载",
+          card.locator(".section-pill").nth(0).text_content().strip())
+
+
+def test_admin_placement_dedupe(page, base, stub_port):
+    """完全相同的位置才算重复；同区「不指定」被具体小分区顶掉。"""
+    print("\n--- 后台：重复位置去重 ---")
+    StatsStub.reset_admin()
+    stub_config(page, f"http://127.0.0.1:{stub_port}")
+    page.goto(base, wait_until="networkidle")
+    page.wait_for_timeout(1300)
+    admin_login(page)
+
+    ITEM = "manual-manga-1"          # 主位置 manga/site
     page.fill('[data-filter="q"]', "MangaRead")
     page.wait_for_timeout(500)
     card = card_editor(page, ITEM)
 
+    # 两行完全一样：manga/site + manga/site
     card.locator(".placement-add").click()
     page.wait_for_timeout(300)
     rows = card.locator(".placement-row")
-    # 两行都选漫画 —— 同区两个小分区没有意义，卡片只有一个标签
     rows.nth(1).locator(".placement-sec").select_option("manga")
     page.wait_for_timeout(300)
-    rows.nth(1).locator(".placement-sub").select_option("kr")
+    rows.nth(1).locator(".placement-sub").select_option("site")
+    page.wait_for_timeout(300)
 
     hint = card.locator(".placement-hint").text_content()
-    check("提醒选了重复分区", "只会保留第一次" in hint, hint.strip())
+    check("提醒有完全相同的位置", "相同" in hint, hint.strip()[:50])
 
     card.locator(".admin-save").click()
     page.wait_for_timeout(1000)
-    # 只提交了一个归属，等于没变，所以不该写覆盖
+    # 去重后只剩一个归属，与原值相同，所以不该写覆盖
     ov = StatsStub.overrides.get(ITEM) or {}
     check("重复项被丢掉（等于没改）", not ov.get("placements"), str(ov.get("placements")))
     check("提示为没有改动", "没有改动" in card.locator(".card-admin-msg").text_content(),
           card.locator(".card-admin-msg").text_content().strip())
+
+    # 同区「不指定」+ 具体小分区：前者是后者的超集，保存时丢掉
+    rows = card.locator(".placement-row")
+    rows.nth(1).locator(".placement-sub").select_option("")   # manga（不指定）
+    page.wait_for_timeout(300)
+    hint = card.locator(".placement-hint").text_content()
+    check("提醒会丢掉「不指定」", "不指定" in hint and "丢掉" in hint, hint.strip()[:60])
 
 
 def test_admin_new_item(page, base, stub_port):
@@ -2374,6 +2476,10 @@ def main():
 
             ctx = browser.new_context()
             test_admin_multi_placement(ctx.new_page(), base, stub_port)
+            ctx.close()
+
+            ctx = browser.new_context()
+            test_admin_same_section_multi_sub(ctx.new_page(), base, stub_port)
             ctx.close()
 
             ctx = browser.new_context()

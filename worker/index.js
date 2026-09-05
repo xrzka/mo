@@ -107,15 +107,19 @@ const SECTION_SUBS = {
 const PLACEMENT_MAX = 8;
 
 /**
- * 解析分区归属串。格式 `novel:jp,manga:download,tool`，逗号分隔，
+ * 解析分区归属串。格式 `novel:jp,novel:download,manga:kr,tool`，逗号分隔，
  * 冒号后是小分区（可省略表示只落在该分区的「全部」里）。
  *
- * 为什么用一个字符串而不是几列：一条资源可以挂在任意多个分区，
+ * 为什么用一个字符串而不是几列：一条资源可以挂在任意多个位置，
  * 列数固定的表存不下；存 JSON 又要额外防注入和形状校验。
  * 这个格式扁平、好校验、出问题时肉眼能读。
  *
- * 同一分区只保留第一次出现 —— 同区两个小分区没有意义（卡片只有一个标签），
- * 而且会让计数重复。第一个是主归属，决定卡片默认显示哪个标签。
+ * **同一分区可以出现多次，只要小分区不同** —— 一个网盘包既算「下载」又算
+ * 「日轻」是真实需求。去重的是完整的「分区:小分区」对，不是分区本身。
+ * 但同一分区不能既指定小分区又留空（`novel,novel:jp`）：留空意味着
+ * 「落在该区的全部里」，已经被具体小分区那条涵盖了，留着只会让计数翻倍。
+ *
+ * 第一个是主归属，决定卡片默认显示哪个标签。
  *
  * 返回 { ok: true, value } 或 { ok: false, error }。
  */
@@ -125,11 +129,13 @@ function parsePlacements(raw) {
 
   const parts = text.split(",").map((s) => s.trim()).filter(Boolean);
   if (parts.length > PLACEMENT_MAX) {
-    return { ok: false, error: `最多只能挂 ${PLACEMENT_MAX} 个分区` };
+    return { ok: false, error: `最多只能挂 ${PLACEMENT_MAX} 个位置` };
   }
 
   const out = [];
-  const seen = new Set();
+  const seen = new Set();        // 完整的 'sec:sub' 对
+  const bareSections = new Set(); // 只写了分区、没指定小分区的
+  const withSub = new Set();      // 指定过小分区的分区
   for (const part of parts) {
     const [rawSec, rawSub = ""] = part.split(":");
     const sec = rawSec.trim();
@@ -139,12 +145,23 @@ function parsePlacements(raw) {
     if (sub && !SECTION_SUBS[sec].includes(sub)) {
       return { ok: false, error: `「${sec}」下没有小分区「${sub}」` };
     }
-    if (seen.has(sec)) continue;   // 同区重复，静默取第一个
-    seen.add(sec);
-    out.push(sub ? `${sec}:${sub}` : sec);
+    const key = sub ? `${sec}:${sub}` : sec;
+    if (seen.has(key)) continue;   // 完全相同的一对，静默取第一个
+    seen.add(key);
+    if (sub) withSub.add(sec);
+    else bareSections.add(sec);
+    out.push(key);
   }
-  if (!out.length) return { ok: false, error: "至少要选一个分区" };
-  return { ok: true, value: out.join(",") };
+
+  // 同区「留空」与「具体小分区」并存时，丢掉留空那条 —— 它是前者的超集，
+  // 同时留着会让这条资源在该区的列表里出现两次。
+  const redundant = [...bareSections].filter((s) => withSub.has(s));
+  const final = redundant.length
+    ? out.filter((k) => !redundant.includes(k))
+    : out;
+
+  if (!final.length) return { ok: false, error: "至少要选一个分区" };
+  return { ok: true, value: final.join(",") };
 }
 
 /** 新增条目的 id 前缀。挑 custom- 是因为现有 id 都是

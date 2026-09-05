@@ -458,11 +458,15 @@
       return subs.some((s) => s.id === subId) ? subId : null;
     };
 
-    /** 解析 'novel:jp,manga:download' 这种归属串成 [{id, sub}]。
+    /** 解析 'novel:download,novel:jp,manga:kr' 这种归属串成 [{id, sub}]。
      *  未知分区丢掉而不是回落 —— 回落会把它塞进兜底区，一条资源莫名出现在
-     *  「收录 / 杂类」里比少一个归属更难解释。 */
+     *  「收录 / 杂类」里比少一个归属更难解释。
+     *
+     *  去重键是完整的「分区:小分区」对，不是分区本身 —— 同一分区挂多个小分区
+     *  （小说/下载 + 小说/日轻）是合法组合，按分区去重会把第二个吃掉。 */
     const parsePlacements = (text) => {
       const out = [];
+      const seen = new Set();
       String(text || "")
         .split(",")
         .map((s) => s.trim())
@@ -470,10 +474,16 @@
         .forEach((part) => {
           const [secId, subId = ""] = part.split(":").map((s) => s.trim());
           if (!SECTION_MAP.has(secId) || secId === "all") return;
-          if (out.some((s) => s.id === secId)) return;   // 同区只留第一个
-          out.push({ id: secId, sub: subOf(secId, subId) });
+          const sub = subOf(secId, subId);
+          const key = `${secId}:${sub || ""}`;
+          if (seen.has(key)) return;
+          seen.add(key);
+          out.push({ id: secId, sub });
         });
-      return out;
+      // 同区「不指定小分区」与具体小分区并存时丢掉前者：它是后者的超集，
+      // 两个都留会让这条资源在该区列表里出现两次。后端也做同样处理。
+      const withSub = new Set(out.filter((p) => p.sub).map((p) => p.id));
+      return out.filter((p) => p.sub || !withSub.has(p.id));
     };
 
     // 分区归属。优先级：后台的 placements > 后台的 section > items.json 的
@@ -652,9 +662,10 @@
     const options = [{ id: "all", label: "全部" }, ...subs];
 
     options.forEach((o) => {
-      const n = inCurrent.filter(
-        (it) => o.id === "all" || subInSection(it, state.section) === o.id
-      ).length;
+      // 一条资源可能在同一分区下挂了多个小分区（如「小说/下载」+「小说/日轻」），
+      // 所以要看它在这个区的所有归属里有没有命中，不能只看第一个。
+      const n = inCurrent.filter((it) => o.id === "all" || inSection(it, state.section, o.id))
+        .length;
       const btn = document.createElement("button");
       btn.type = "button";
       btn.className = "subtab-btn";
@@ -690,16 +701,33 @@
       ? state.section
       : item.section;
     const secDef = SECTION_MAP.get(shownSec);
-    const subDef = (secDef.subs || []).find((s) => s.id === subInSection(item, shownSec));
+    // 当前区的小分区标签。一条资源可能在同一区挂了多个小分区
+    // （「小说/下载」+「小说/日轻」），此刻正在看哪个小分区就显示哪个。
+    const shownSub =
+      state.section === shownSec && state.sub !== "all" &&
+      inSection(item, shownSec, state.sub)
+        ? state.sub
+        : subInSection(item, shownSec);
+    const subDef = (secDef.subs || []).find((s) => s.id === shownSub);
     // 有小分区就显示小分区名，更具体
     field("section").textContent = subDef ? subDef.label : secDef.label;
 
-    // 跨区资源额外标一下另外那些区，让人知道这一份里还有别的内容
+    // 挂在多处的资源额外标一下其余位置，让人知道这一份里还有别的内容。
+    // 同区的另一个小分区也算 —— 「也在 日轻」和「也在 漫画」同样有用。
     if ((item.sections || []).length > 1) {
-      const others = item.sections
-        .filter((s) => s.id !== shownSec)
-        .map((s) => (SECTION_MAP.get(s.id) || {}).label)
-        .filter(Boolean);
+      const others = [];
+      item.sections.forEach((s) => {
+        if (s.id === shownSec && s.sub === shownSub) return;   // 当前这个位置
+        const secLabel = (SECTION_MAP.get(s.id) || {}).label;
+        if (!secLabel) return;
+        const subLabel = ((SECTION_MAP.get(s.id) || {}).subs || [])
+          .find((x) => x.id === s.sub);
+        // 同区内的另一个小分区只写小分区名，不必重复大区名
+        const text = s.id === shownSec
+          ? (subLabel ? subLabel.label : secLabel)
+          : (subLabel ? `${secLabel} · ${subLabel.label}` : secLabel);
+        if (!others.includes(text)) others.push(text);
+      });
       if (others.length) {
         const pill = document.createElement("span");
         // also-in 这个类是给测试与样式用的：「后台已改」标记长得一样，
@@ -1388,7 +1416,7 @@
   /** 新增表单的字段。与后端 createCustomItem 收的字段对应。 */
   const ADMIN_NEW_FIELDS = [
     { key: "name", label: "资源名", type: "text", required: true },
-    { key: "placements", label: "所属分区（可加多个）", type: "placements", required: true },
+    { key: "placements", label: "所属位置（分区 + 小分区，可加多个）", type: "placements", required: true },
     { key: "description", label: "简介", type: "textarea" },
     { key: "url", label: "跳转链接", type: "text" },
     { key: "password", label: "提取码", type: "text" },
@@ -1502,10 +1530,10 @@
     { key: "url", label: "跳转链接", type: "text" },
     { key: "password", label: "提取码", type: "text" },
     { key: "note", label: "备注", type: "textarea" },
-    { key: "placements", label: "所属分区（可加多个）", type: "placements" },
+    { key: "placements", label: "所属位置（分区 + 小分区，可加多个）", type: "placements" },
   ];
 
-  /** 一条资源最多挂几个分区。与后端 PLACEMENT_MAX 保持一致。 */
+  /** 一条资源最多挂几个位置。与后端 PLACEMENT_MAX 保持一致。 */
   const PLACEMENT_MAX = 8;
 
   /** 可选分区列表（去掉「全部」这个伪分区）。 */
@@ -1530,11 +1558,13 @@
   }
 
   /**
-   * 多分区归属选择器。渲染成若干「分区 + 小分区 + 删除」行，末尾一个「+ 再加一个分区」。
+   * 多分区归属选择器。渲染成若干「分区 + 小分区 + 删除」行，末尾一个「+ 再加一个位置」。
    *
-   * 返回 { read() } —— read 拼出后端要的 'novel:jp,manga:download' 串。
+   * 返回 { read() } —— read 拼出后端要的 'novel:jp,novel:download,manga:kr' 串。
    * 不用 <select multiple>：那个只能选分区、带不上各自的小分区，而
-   * 「小说/日轻 + 漫画/下载」这种组合正是要表达的东西。
+   * 「小说/下载 + 小说/日轻」这种组合正是要表达的东西。
+   *
+   * 同一分区可以出现多次，只要小分区不同；完全相同的一对才算重复。
    *
    * @param initial [{id, sub}] 现有归属
    */
@@ -1546,7 +1576,7 @@
     const addBtn = document.createElement("button");
     addBtn.type = "button";
     addBtn.className = "placement-add";
-    addBtn.textContent = "+ 再加一个分区";
+    addBtn.textContent = "+ 再加一个位置";
     box.appendChild(addBtn);
 
     const hint = document.createElement("p");
@@ -1556,24 +1586,39 @@
     const state = [];   // [{ row, sec, sub }]
 
     const refresh = () => {
-      // 第一行是主归属，卡片默认显示它的标签；同区重复没有意义（计数会翻倍）
+      // 第一行是主归属，卡片默认显示它的标签
       state.forEach((r, i) => {
-        r.row.querySelector(".placement-index").textContent = i === 0 ? "主分区" : `分区 ${i + 1}`;
+        r.row.querySelector(".placement-index").textContent = i === 0 ? "主位置" : `位置 ${i + 1}`;
         // 只剩一行时不给删 —— 一条资源总得有个归属
         r.row.querySelector(".placement-del").hidden = state.length <= 1;
       });
       addBtn.hidden = state.length >= PLACEMENT_MAX;
-      const dup = new Set();
-      const repeated = state.some((r) => {
-        const v = r.sec.value;
-        if (dup.has(v)) return true;
-        dup.add(v);
-        return false;
+
+      // 重复判定看完整的「分区:小分区」对。同区不同小分区是合法组合，
+      // 不该报重复；同区一个留空一个具体则是冗余（留空已涵盖具体那个）。
+      const seen = new Set();
+      const withSub = new Set();
+      const bare = new Set();
+      let repeated = false;
+      state.forEach((r) => {
+        const sec = r.sec.value;
+        const sub = r.sub.disabled ? "" : r.sub.value;
+        const key = sub ? `${sec}:${sub}` : sec;
+        if (seen.has(key)) repeated = true;
+        seen.add(key);
+        (sub ? withSub : bare).add(sec);
       });
-      hint.textContent = repeated
-        ? "同一个分区选了多次，保存时只会保留第一次"
-        : "第一个是主分区，卡片上的标签按它显示。";
-      hint.className = "placement-hint" + (repeated ? " warn" : "");
+      const redundant = [...bare].some((s) => withSub.has(s));
+
+      if (repeated) {
+        hint.textContent = "有完全相同的位置，保存时只会保留一个";
+      } else if (redundant) {
+        hint.textContent = "同一分区里既选了「不指定」又选了具体小分区，保存时会丢掉「不指定」那条";
+      } else {
+        hint.textContent =
+          "同一个分区可以选多个小分区（如小说/下载 + 小说/日轻）。第一个位置决定卡片默认显示的标签。";
+      }
+      hint.className = "placement-hint" + (repeated || redundant ? " warn" : "");
     };
 
     const addRow = (secId, subId) => {
@@ -1598,7 +1643,7 @@
       del.type = "button";
       del.className = "placement-del";
       del.textContent = "×";
-      del.title = "移除这个分区";
+      del.title = "移除这个位置";
       row.appendChild(del);
 
       // 小分区跟着分区联动。换分区时旧的小分区往往不存在（漫画的「公众号」
@@ -1614,6 +1659,9 @@
         syncSub("");
         refresh();
       });
+      // 小分区也要触发 refresh：重复判定看的是完整的「分区:小分区」对，
+      // 只监听分区的话，改小分区后提示还是旧的（同区不同小分区已经合法了）。
+      sub.addEventListener("change", refresh);
 
       del.addEventListener("click", (e) => {
         e.stopPropagation();
@@ -1639,15 +1687,25 @@
 
     return {
       read() {
+        // 去重键是完整的「分区:小分区」对 —— 同区不同小分区是合法组合。
         const seen = new Set();
-        return state
-          .map((r) => ({ sec: r.sec.value, sub: r.sub.disabled ? "" : r.sub.value }))
-          .filter((p) => {
-            if (!p.sec || seen.has(p.sec)) return false;
-            seen.add(p.sec);
-            return true;
-          })
-          .map((p) => (p.sub ? `${p.sec}:${p.sub}` : p.sec))
+        const picked = [];
+        state.forEach((r) => {
+          const sec = r.sec.value;
+          if (!sec) return;
+          const sub = r.sub.disabled ? "" : r.sub.value;
+          const key = sub ? `${sec}:${sub}` : sec;
+          if (seen.has(key)) return;
+          seen.add(key);
+          picked.push({ sec, sub, key });
+        });
+
+        // 同区既有「不指定」又有具体小分区时丢掉前者：它是后者的超集，
+        // 两个都留会让这条资源在该区列表里出现两次。后端也做同样处理。
+        const withSub = new Set(picked.filter((p) => p.sub).map((p) => p.sec));
+        return picked
+          .filter((p) => p.sub || !withSub.has(p.sec))
+          .map((p) => p.key)
           .join(",");
       },
     };

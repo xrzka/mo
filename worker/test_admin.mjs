@@ -272,8 +272,22 @@ const save = (env, token, item_id, fields) =>
   check("分区带小分区", P("novel:jp").value === "novel:jp");
   check("多个归属", P("novel:download,manga:kr").value === "novel:download,manga:kr");
   check("首尾空白裁掉", P(" novel:jp , manga ").value === "novel:jp,manga");
-  // 同区重复：卡片只有一个标签，留两个会让计数翻倍，所以取第一次
-  check("同区重复只留第一个", P("novel:jp,novel:kr").value === "novel:jp");
+
+  // 同一分区可以挂多个小分区 —— 一个网盘包既算「下载」又算「日轻」是真实需求。
+  // 去重的是完整的「分区:小分区」对，不是分区本身。
+  check("同区多个小分区都保留",
+        P("novel:download,novel:jp").value === "novel:download,novel:jp",
+        P("novel:download,novel:jp").value);
+  check("同区多小分区 + 跨区混用",
+        P("novel:jp,novel:download,manga:kr").value === "novel:jp,novel:download,manga:kr",
+        P("novel:jp,novel:download,manga:kr").value);
+  check("完全相同的一对才去重", P("novel:jp,novel:jp").value === "novel:jp");
+  // 「不指定」是「该区全部」的意思，已被具体小分区涵盖，留着会让条目在该区出现两次
+  check("同区留空被具体小分区顶掉", P("novel,novel:jp").value === "novel:jp",
+        P("novel,novel:jp").value);
+  check("顺序反了也一样", P("novel:jp,novel").value === "novel:jp",
+        P("novel:jp,novel").value);
+
   check("空串合法（表示不指定）", P("").ok && P("").value === "");
   check("未知分区报错", !P("bogus").ok, P("bogus").error);
   check("小分区不属于该分区报错", !P("novel:gal").ok, P("novel:gal").error);
@@ -283,13 +297,22 @@ const save = (env, token, item_id, fields) =>
   ).join(",");
   check(`超过 ${_internal.PLACEMENT_MAX} 个报错`, !P(over).ok, P(over).error);
 
-  // 走接口：一条挂三个分区，正是「几个大区都有资源」的场景
+  // 走接口：一条挂三个位置，正是「几个大区都有资源」的场景
   let r = await save(env, token, "manual-manga-1", {
     placements: "manga:site,novel:jp,game:gal",
   });
-  check("挂三个分区成功", r.status === 200, JSON.stringify(r.data));
+  check("挂三个位置成功", r.status === 200, JSON.stringify(r.data));
   let got = await read("manual-manga-1");
   check("读回归属串", got.placements === "manga:site,novel:jp,game:gal", got.placements);
+
+  // 同一分区下挂两个小分区：用户的原话「下载、日轻」
+  r = await save(env, token, "manual-novel-1", {
+    placements: "novel:download,novel:jp",
+  });
+  check("同区两个小分区成功", r.status === 200, JSON.stringify(r.data));
+  got = await read("manual-novel-1");
+  check("同区两个小分区都存下来", got.placements === "novel:download,novel:jp",
+        got.placements);
 
   // placements 一给值就该清掉单值旧形式，否则前端得猜听谁的
   await save(env, token, "manual-manga-2", { section: "novel", subsection: "kr" });
