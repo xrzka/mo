@@ -213,8 +213,11 @@ curl --proxy http://127.0.0.1:7890 https://mo-stats.werneruszcb71.workers.dev/ap
 | GET | `/api/admin/session` | 查 token 还有效没有 |
 | POST | `/api/admin/override` | `{"item_id":"...","fields":{...}}`，需 `Authorization: Bearer <token>` |
 | GET | `/api/items` | 后台新增的条目，公开读（访客也要看到这些资源） |
-| POST | `/api/admin/item` | 新增一条，`{"name":"...","section":"novel",...}`，id 由后端生成 |
+| POST | `/api/admin/item` | 新增一条，`{"name":"...","placements":"novel:jp",...}`，id 由后端生成 |
 | POST | `/api/admin/item/delete` | `{"id":"custom-..."}`，只能删 `custom-` 前缀的 |
+| POST | `/api/admin/request` | `{"id":7,"status":"found","reply":"..."}` 改一条反馈的状态与回复 |
+| POST | `/api/admin/request/delete` | `{"id":7}` 删一条反馈（连带清它的投票去重键） |
+| POST | `/api/admin/requests/purge` | `{"kind":"broken","statuses":["found","closed"]}` 批量清理 |
 
 写接口只接受 `ALLOWED_ORIGINS`（`index.js` 顶部）里的来源，默认只有
 `https://xrzka.github.io`。换域名要改这里，改完两个入口都要重新部署。
@@ -389,7 +392,23 @@ printf '%s' '你的密码' | node ../gen_admin_hash.mjs | ../wr.sh pages secret 
 
 ## 资源帮找 / 失效反馈怎么运维
 
-访客只能提交和投票，**改状态、写回复要你自己在 D1 里做**。常用几条：
+**登录后台后可以直接在页面上处理**，不必再进 D1。展开「资源帮找 / 失效反馈」，
+每条下面会多一排按钮：
+
+- **已补上 / 已找到**：标成 `found`，待处理计数立刻降下来
+- **已关闭**：标成 `closed`（找不到、不再需要）
+- **放回待处理**：标错了能撤回
+- **写回复**：弹窗输入一句处理说明，会显示在访客看到的卡片上
+- **删除**：彻底删掉这条，带二次确认
+
+面板上方还有「清空已处理的（N）」，一次清掉当前类型下所有 `found` + `closed`。
+**待处理的不在范围内** —— 还没看过的东西不该被一键抹掉。想清 `open` 得显式传
+`statuses: ["open"]` 调接口，前端不提供这个按钮。
+
+删除与清理都会**连带删掉那些反馈的投票去重键**（`request_votes`）。不删的话，
+同一个访客以后再报同一条资源会被当成「已投过」而静默失败。
+
+也可以继续走 D1，适合批量或排查：
 
 ```bash
 # 看待处理的求资源（按票数排）
@@ -400,15 +419,7 @@ printf '%s' '你的密码' | node ../gen_admin_hash.mjs | ../wr.sh pages secret 
 ./wr.sh d1 execute mo-stats --remote --command \
   "SELECT id, item_id, display, votes, created FROM requests WHERE kind='broken' AND status='open' ORDER BY votes DESC"
 
-# 找到了 / 补好了：标成 found 并写回复，回复会显示在卡片上
-./wr.sh d1 execute mo-stats --remote --command \
-  "UPDATE requests SET status='found', reply='已加到漫画区' WHERE id=3"
-
-# 找不到或不合适：标成 closed
-./wr.sh d1 execute mo-stats --remote --command \
-  "UPDATE requests SET status='closed', reply='暂时找不到资源' WHERE id=7"
-
-# 清垃圾留言（连带删掉它的投票去重键）
+# 清垃圾留言（记得连带删投票去重键，否则那个访客以后报同一条会静默失败）
 ./wr.sh d1 execute mo-stats --remote --command \
   "DELETE FROM request_votes WHERE k LIKE '9|%'; DELETE FROM requests WHERE id=9"
 ```
@@ -535,6 +546,13 @@ python test_live.py --api https://mo-stats.werneruszcb71.workers.dev --proxy htt
 小分区 400、只换大区时旧小分区静默清空、`parsePlacements` 的各种输入
 （同区多小分区保留、完全相同才去重、「不指定」被顶掉、超上限、空串合法）、
 `placements` 顶掉单值旧形式、`custom-` 之外的 id 不许删、删条目连带清覆盖。
+
+反馈运维那两节盯的是：未登录一律 401、未知状态与不存在的 id 分别 400/404、
+改状态后 summary 计数跟着变、回复走 `sanitizeText`（零宽与换行被清）、
+删除与清理都连带清掉 `request_votes`、`purge` 默认只碰 `found`/`closed`
+且带 `kind` 时不误伤另一类。端到端那几组（`test_browser.py` 的「反馈运维」）
+另外盯：访客看不到任何运维入口、`confirm`/`prompt` 取消时不写、
+一键清理后按钮自动禁用、会话失效后整排按钮消失而不是留着报错。
 
 **「也在 X」标记要用 `.section-pill.also-in` 定位。** 「后台已改」标记也带
 `.alt`，两者都用 `after()` 插在分区标签后面，只按 `.alt` 找会拿到先插入的那个。

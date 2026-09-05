@@ -63,6 +63,13 @@ const login = (env, password, opts) =>
 const save = (env, token, item_id, fields) =>
   call(env, "/api/admin/override", { method: "POST", token, body: { item_id, fields } });
 
+/** 访客侧的提交接口。反馈运维那几节要先造出数据来才有东西可改。
+ *  不同 ip 模拟不同访客 —— 同一指纹每天有条数上限。 */
+const post = (env, path, body, opts) =>
+  call(env, path, { method: "POST", body, ...opts });
+const create = (env, title, note = "", opts) =>
+  post(env, "/api/requests", { title, note }, opts);
+
 /* ---------- 1. 登录 ---------- */
 {
   console.log("\n--- 登录 ---");
@@ -568,6 +575,141 @@ const save = (env, token, item_id, fields) =>
   ov = (await call(env, "/api/overrides")).data;
   check("删条目连带清覆盖", !(made2.id in ov.overrides),
         JSON.stringify(Object.keys(ov.overrides)));
+}
+
+/* ---------- 12. 反馈运维：改状态 / 写回复 ---------- */
+{
+  console.log("\n--- 反馈运维：改状态与回复 ---");
+  const env = newEnv();
+  const { data } = await login(env, PASSWORD);
+  const token = data.token;
+
+  // 造一条失效反馈
+  await post(env, "/api/requests", { kind: "broken", item_id: "manual-manga-1", title: "失效资源" });
+  let list = (await call(env, "/api/requests")).data;
+  const id = list.items[0].id;
+  check("初始是 open", list.items[0].status === "open", list.items[0].status);
+
+  const upd = (body, tok = token) =>
+    call(env, "/api/admin/request", { method: "POST", token: tok, body });
+
+  let r = await upd({ id, status: "found" }, null);
+  check("未登录不能改", r.status === 401, String(r.status));
+
+  r = await upd({ id: 99999, status: "found" });
+  check("不存在的 id 返回 404", r.status === 404, String(r.status));
+  r = await upd({ id, status: "bogus" });
+  check("未知状态被 400", r.status === 400, JSON.stringify(r.data));
+  r = await upd({ id });
+  check("什么都不改被 400", r.status === 400, JSON.stringify(r.data));
+
+  r = await upd({ id, status: "found" });
+  check("标成 found", r.status === 200, JSON.stringify(r.data));
+  list = (await call(env, "/api/requests")).data;
+  check("状态已变", list.items[0].status === "found", list.items[0].status);
+  // 待补档计数要跟着降，站长看的就是这个数字
+  check("broken.open 归零", list.summary.broken.open === 0,
+        JSON.stringify(list.summary.broken));
+  check("broken.found 变 1", list.summary.broken.found === 1,
+        JSON.stringify(list.summary.broken));
+
+  r = await upd({ id, reply: "  已换新链接  " });
+  check("写回复成功", r.status === 200, JSON.stringify(r.data));
+  list = (await call(env, "/api/requests")).data;
+  check("回复被清洗（裁掉首尾空白）", list.items[0].reply === "已换新链接",
+        JSON.stringify(list.items[0].reply));
+
+  // 回复走 sanitizeText，控制字符与零宽字符要清掉
+  await upd({ id, reply: "补​好了\n换行" });
+  list = (await call(env, "/api/requests")).data;
+  check("回复里的零宽与换行被清理", list.items[0].reply === "补好了 换行",
+        JSON.stringify(list.items[0].reply));
+
+  // 能放回 open
+  await upd({ id, status: "open" });
+  list = (await call(env, "/api/requests")).data;
+  check("能放回 open", list.items[0].status === "open", list.items[0].status);
+}
+
+/* ---------- 13. 反馈运维：删除与批量清理 ---------- */
+{
+  console.log("\n--- 反馈运维：删除与清理 ---");
+  const env = newEnv();
+  const { data } = await login(env, PASSWORD);
+  const token = data.token;
+
+  const upd = (body) => call(env, "/api/admin/request", { method: "POST", token, body });
+  const delReq = (id, tok = token) =>
+    call(env, "/api/admin/request/delete",
+      { method: "POST", token: tok === null ? undefined : tok, body: { id } });
+  const purge = (body, tok = token) =>
+    call(env, "/api/admin/requests/purge",
+      { method: "POST", token: tok === null ? undefined : tok, body });
+  const listAll = async () => (await call(env, "/api/requests?limit=100")).data;
+
+  // 造 5 条：broken 三种状态各一，want 两条
+  await post(env, "/api/requests", { kind: "broken", item_id: "aa", title: "待补档" });
+  await post(env, "/api/requests", { kind: "broken", item_id: "bb", title: "已补上" }, { ip: "2.2.2.2" });
+  await post(env, "/api/requests", { kind: "broken", item_id: "cc", title: "已关闭" }, { ip: "3.3.3.3" });
+  await create(env, "想要的还没找", "", { ip: "4.4.4.4" });
+  await create(env, "想要的已找到", "", { ip: "5.5.5.5" });
+
+  let all = await listAll();
+  const byTitle = {};
+  all.items.forEach((x) => (byTitle[x.title] = x.id));
+  await upd({ id: byTitle["已补上"], status: "found" });
+  await upd({ id: byTitle["已关闭"], status: "closed" });
+  await upd({ id: byTitle["想要的已找到"], status: "found" });
+
+  /* --- 单条删除 --- */
+  let r = await delReq(byTitle["待补档"], null);
+  check("未登录不能删", r.status === 401, String(r.status));
+  r = await delReq(99999);
+  check("删不存在的返回 404", r.status === 404, String(r.status));
+  r = await delReq("abc");
+  check("非法 id 被 400", r.status === 400, String(r.status));
+
+  // 删掉后它的投票去重键也要清 —— 不清的话同一访客以后再报会被当成已投过
+  const before = env.DB._db.prepare("SELECT COUNT(*) c FROM request_votes").get().c;
+  r = await delReq(byTitle["待补档"]);
+  check("删除成功", r.status === 200, JSON.stringify(r.data));
+  const after = env.DB._db.prepare("SELECT COUNT(*) c FROM request_votes").get().c;
+  check("连带清掉投票去重键", after === before - 1, `${before} -> ${after}`);
+  all = await listAll();
+  check("列表里少了一条", all.items.length === 4, String(all.items.length));
+
+  /* --- 批量清理 --- */
+  r = await purge({ kind: "broken" }, null);
+  check("未登录不能清理", r.status === 401, String(r.status));
+  r = await purge({ kind: "broken", statuses: ["bogus"] });
+  check("状态全非法被 400", r.status === 400, JSON.stringify(r.data));
+
+  // 只清 broken 的 found/closed；want 那两条不该被带走
+  r = await purge({ kind: "broken" });
+  check("清掉 2 条", r.status === 200 && r.data.deleted === 2, JSON.stringify(r.data));
+  all = await listAll();
+  const left = all.items.map((x) => x.title).sort();
+  check("只剩 want 两条", JSON.stringify(left) === JSON.stringify(["想要的已找到", "想要的还没找"]),
+        JSON.stringify(left, null, 0));
+
+  // 不带 kind 时两类都清，但仍只清 found/closed
+  r = await purge({});
+  check("再清掉 want 的 found", r.data.deleted === 1, JSON.stringify(r.data));
+  all = await listAll();
+  check("待处理的那条留着", all.items.length === 1 && all.items[0].title === "想要的还没找",
+        JSON.stringify(all.items.map((x) => x.title), null, 0));
+
+  // 没有可清的时候返回 0 而不是报错
+  r = await purge({});
+  check("没得清返回 deleted:0", r.status === 200 && r.data.deleted === 0, JSON.stringify(r.data));
+
+  // 显式指定 open 也能清 —— 接口允许，但前端不会这么调
+  r = await purge({ statuses: ["open"] });
+  check("显式清 open 也可以", r.data.deleted === 1, JSON.stringify(r.data));
+  all = await listAll();
+  check("全空了", all.items.length === 0, String(all.items.length));
+  const votes = env.DB._db.prepare("SELECT COUNT(*) c FROM request_votes").get().c;
+  check("投票去重键也清干净", votes === 0, String(votes));
 }
 
 console.log(fail ? `\n${fail} 项失败` : "\n全部通过");

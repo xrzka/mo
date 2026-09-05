@@ -1318,6 +1318,9 @@
         adminToken = "";
         renderAdmin();
         render();
+        // 帮找那块的运维入口同样只在登录态下存在，会话失效后也得撤掉 ——
+        // 否则按钮还留在页面上，点了只会一直报「登录已过期」。
+        if (state.wantedLoaded) renderWanted();
         return { ok: false, error: "登录已过期，请重新登录" };
       }
       return res.ok ? { ok: true, data } : { ok: false, error: data.error || "操作失败" };
@@ -1393,6 +1396,8 @@
       say("登录成功，展开卡片即可编辑", "ok");
       renderAdmin();
       render(); // 重渲染让卡片长出编辑按钮
+      // 帮找那块的运维按钮也只在登录后显示，一并刷新
+      if (state.wantedLoaded) renderWanted();
     });
 
     const logout = $("[data-admin-logout]");
@@ -1403,6 +1408,7 @@
         say("已退出", "ok");
         renderAdmin();
         render();
+        if (state.wantedLoaded) renderWanted();
       });
     }
 
@@ -2153,8 +2159,139 @@
       pill.textContent = labels[item.status] || item.status;
       side.appendChild(pill);
 
+      // 站长登录后每条多一排操作：标已处理 / 关闭 / 放回待处理 / 删除。
+      // 之前只能在 D1 里手敲 UPDATE，看到「已补档」也没法在页面上标掉，
+      // 待补档那个数字会一直挂着。
+      if (adminToken) {
+        const ops = document.createElement("div");
+        ops.className = "wanted-ops";
+
+        const mk = (label, title, onClick, cls = "") => {
+          const b = document.createElement("button");
+          b.type = "button";
+          b.className = "wanted-op" + (cls ? " " + cls : "");
+          b.textContent = label;
+          b.title = title;
+          b.addEventListener("click", onClick);
+          ops.appendChild(b);
+          return b;
+        };
+
+        // 只显示能流转过去的状态，别给一个「把已补上标成已补上」的按钮
+        if (item.status !== "found") {
+          mk(labels.found, `标为${labels.found}`, () =>
+            setRequestStatus(item, "found", ops)
+          );
+        }
+        if (item.status !== "closed") {
+          mk(labels.closed, `标为${labels.closed}`, () =>
+            setRequestStatus(item, "closed", ops)
+          );
+        }
+        if (item.status !== "open") {
+          mk("放回" + labels.open, `标回${labels.open}`, () =>
+            setRequestStatus(item, "open", ops)
+          );
+        }
+        mk("写回复", "写一句处理说明，访客能看到", () => promptReply(item, ops));
+        mk("删除", "彻底删掉这条反馈，不可撤销", () => removeRequest(item, ops), "danger");
+
+        li.appendChild(ops);
+      }
+
       li.appendChild(side);
       box.appendChild(li);
+    });
+  }
+
+  /* ---------- 反馈运维（站长登录后可用） ---------- */
+
+  /** 操作行里的临时提示。整块会在 loadWanted 后重建，所以不必还原。 */
+  function opsSay(ops, text, kind = "") {
+    let msg = ops.querySelector(".wanted-op-msg");
+    if (!msg) {
+      msg = document.createElement("span");
+      msg.className = "wanted-op-msg";
+      ops.appendChild(msg);
+    }
+    msg.textContent = text;
+    msg.className = "wanted-op-msg" + (kind ? " " + kind : "");
+  }
+
+  const setOpsBusy = (ops, busy) =>
+    ops.querySelectorAll("button").forEach((b) => (b.disabled = busy));
+
+  /** 改状态后重新拉列表 —— 汇总数字也变了，本地改一条盖不住。 */
+  async function setRequestStatus(item, status, ops) {
+    setOpsBusy(ops, true);
+    opsSay(ops, "处理中…");
+    const r = await adminFetch("/api/admin/request", { id: item.id, status });
+    setOpsBusy(ops, false);
+    if (!r.ok) return opsSay(ops, r.error, "bad");
+    await loadWanted();
+    renderWanted();
+  }
+
+  async function promptReply(item, ops) {
+    // 用 prompt 而不是内嵌输入框：写回复是偶发操作，为它在每行塞一个
+    // textarea 会把列表撑得很乱。
+    const text = window.prompt("写一句处理说明（访客能看到）：", item.reply || "");
+    if (text === null) return;   // 取消
+    setOpsBusy(ops, true);
+    opsSay(ops, "保存中…");
+    const r = await adminFetch("/api/admin/request", { id: item.id, reply: text });
+    setOpsBusy(ops, false);
+    if (!r.ok) return opsSay(ops, r.error, "bad");
+    await loadWanted();
+    renderWanted();
+  }
+
+  async function removeRequest(item, ops) {
+    if (!window.confirm(`彻底删除「${item.title}」这条反馈？不可撤销。`)) return;
+    setOpsBusy(ops, true);
+    opsSay(ops, "删除中…");
+    const r = await adminFetch("/api/admin/request/delete", { id: item.id });
+    setOpsBusy(ops, false);
+    if (!r.ok) return opsSay(ops, r.error, "bad");
+    await loadWanted();
+    renderWanted();
+  }
+
+  /** 一键清空当前类型下已处理完的（已找到/已补上 + 已关闭）。
+   *  待处理的不在范围里 —— 还没看过的东西不该被一键抹掉。 */
+  function bindWantedPurge() {
+    const btn = $("[data-wanted-purge]");
+    const msg = $("[data-wanted-admin-msg]");
+    if (!btn || !msg) return;
+    const say = (t, kind = "") => {
+      msg.textContent = t;
+      msg.className = "wanted-admin-msg" + (kind ? " " + kind : "");
+    };
+
+    btn.addEventListener("click", async () => {
+      const labels = kindStatusLabel(state.wantedKind);
+      const counts = state.wantedSummary[state.wantedKind] || {};
+      const n = (counts.found || 0) + (counts.closed || 0);
+      if (!n) return say("当前没有已处理的记录", "");
+      const kindLabel = state.wantedKind === "broken" ? "失效反馈" : "想要资源";
+      if (
+        !window.confirm(
+          `清空「${kindLabel}」里 ${n} 条${labels.found}/${labels.closed}的记录？不可撤销。`
+        )
+      ) {
+        return;
+      }
+      btn.disabled = true;
+      say("清理中…");
+      const r = await adminFetch("/api/admin/requests/purge", {
+        kind: state.wantedKind,
+        statuses: ["found", "closed"],
+      });
+      btn.disabled = false;
+      if (!r.ok) return say(r.error, "bad");
+      say(`已清掉 ${r.data.deleted} 条`, "ok");
+      await loadWanted();
+      renderWanted();
     });
   }
 
@@ -2186,6 +2323,25 @@
     if (form) form.hidden = state.wantedKind !== "want";
     const hint = $("[data-wanted-broken-hint]");
     if (hint) hint.hidden = state.wantedKind !== "broken";
+
+    // 站长操作那一排只在登录后显示，按钮上带上待清条数
+    const adminBar = $("[data-wanted-admin]");
+    if (adminBar) {
+      adminBar.hidden = !adminToken;
+      if (adminToken) {
+        const labels = kindStatusLabel(state.wantedKind);
+        const counts = state.wantedSummary[state.wantedKind] || {};
+        const n = (counts.found || 0) + (counts.closed || 0);
+        const btn = $("[data-wanted-purge]");
+        if (btn) {
+          btn.textContent = n
+            ? `清空已处理的（${n}）`
+            : "清空已处理的";
+          btn.disabled = !n;
+          btn.title = `删掉当前类型下所有${labels.found}/${labels.closed}的记录`;
+        }
+      }
+    }
 
     renderNoticeBroken();
     renderWantedKindTabs();
@@ -2524,6 +2680,7 @@
     bindStatsPanel();
     bindWantedPanel();
     bindWantedForm();
+    bindWantedPurge();
     bindWantedJump();
     stats.init();
     // 卡片渲染时要读它来决定反馈按钮是否已完成态，所以得在首次 render 之前

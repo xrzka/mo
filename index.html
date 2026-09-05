@@ -9,9 +9,9 @@
       content="墨小说漫画 · 小说、漫画、动画、游戏、AI 资源导航，分区整理，点击直达。"
     />
     <title>墨小说漫画 · 资源导航</title>
-    <script src="config.js?v=20260905c"></script>
-    <link rel="stylesheet" href="styles.css?v=20260905c" />
-    <script src="app.js?v=20260905c" defer></script>
+    <script src="config.js?v=20260905d"></script>
+    <link rel="stylesheet" href="styles.css?v=20260905d" />
+    <script src="app.js?v=20260905d" defer></script>
   </head>
   <body>
     <a class="skip-link" href="#feed">跳到资源列表</a>
@@ -238,6 +238,16 @@
           </form>
 
           <div class="wanted-tabs" role="tablist" aria-label="求助状态" data-wanted-tabs></div>
+
+          <!-- 反馈运维：只有站长登录后才显示，内容由 app.js 生成 -->
+          <div class="wanted-admin" data-wanted-admin hidden>
+            <span class="wanted-admin-label">站长操作</span>
+            <button type="button" class="wanted-purge" data-wanted-purge>
+              清空已处理的
+            </button>
+            <span class="wanted-admin-msg" data-wanted-admin-msg aria-live="polite"></span>
+          </div>
+
           <ol class="wanted-list" data-wanted-list></ol>
           <p class="wanted-empty" data-wanted-empty hidden>还没有人留言。</p>
         </div>

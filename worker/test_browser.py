@@ -406,6 +406,57 @@ class StatsStub(http.server.BaseHTTPRequestHandler):
             StatsStub.overrides.pop(del_id, None)   # 连带清掉孤儿覆盖
             return self._send({"ok": True, "id": del_id})
 
+        # ---- 反馈运维 ----
+        if self.path == "/api/admin/request":
+            tok = self._bearer()
+            if not tok or tok not in StatsStub.sessions:
+                return self._send({"error": "未登录或登录已过期"}, 401)
+            rid = body.get("id")
+            it = StatsStub.requests.get(rid)
+            if not it:
+                return self._send({"error": "反馈不存在"}, 404)
+            touched = False
+            if "status" in body:
+                st = str(body.get("status") or "").strip()
+                if st not in ("open", "found", "closed"):
+                    return self._send({"error": f"未知状态：{st}"}, 400)
+                it["status"] = st
+                touched = True
+            if "reply" in body:
+                it["reply"] = str(body.get("reply") or "").strip()
+                touched = True
+            if not touched:
+                return self._send({"error": "没有要改的字段"}, 400)
+            return self._send({"ok": True, "id": rid})
+
+        if self.path == "/api/admin/request/delete":
+            tok = self._bearer()
+            if not tok or tok not in StatsStub.sessions:
+                return self._send({"error": "未登录或登录已过期"}, 401)
+            rid = body.get("id")
+            if rid not in StatsStub.requests:
+                return self._send({"error": "反馈不存在"}, 404)
+            StatsStub.requests.pop(rid)
+            return self._send({"ok": True, "id": rid})
+
+        if self.path == "/api/admin/requests/purge":
+            tok = self._bearer()
+            if not tok or tok not in StatsStub.sessions:
+                return self._send({"error": "未登录或登录已过期"}, 401)
+            kind = body.get("kind") if body.get("kind") in ("want", "broken") else ""
+            raw_st = body.get("statuses")
+            statuses = [s for s in (raw_st if isinstance(raw_st, list) else ["found", "closed"])
+                        if s in ("open", "found", "closed")]
+            if not statuses:
+                return self._send({"error": "没有有效的状态"}, 400)
+            doomed = [
+                k for k, v in StatsStub.requests.items()
+                if v["status"] in statuses and (not kind or v.get("kind", "want") == kind)
+            ]
+            for k in doomed:
+                StatsStub.requests.pop(k)
+            return self._send({"ok": True, "deleted": len(doomed)})
+
         if self.path == "/api/hit":
             item = body.get("id")
             if item:
@@ -2304,6 +2355,221 @@ def test_admin_session_expired(page, base, stub_port):
           or page.is_visible("[data-admin-submit]"))
 
 
+def wanted_ops(page, row_index=0):
+    """某条反馈下面那排站长操作按钮的文案。"""
+    return page.eval_on_selector_all(
+        "[data-wanted-list] .wanted-row",
+        """(els, i) => {
+            const r = els[i];
+            if (!r) return null;
+            return [...r.querySelectorAll('.wanted-op')].map(b => b.textContent.trim());
+        }""",
+        row_index,
+    )
+
+
+def seed_requests(**kw):
+    """造几条反馈。key 是 id，方便测试里直接引用。"""
+    StatsStub.reset_admin()
+    StatsStub.reset_requests()
+    base = {
+        "kind": "broken", "item_id": "manual-manga-1", "note": "",
+        "votes": 2, "reply": "", "created": "2026-09-05T00:00:00.000Z", "_norm": "x",
+    }
+    StatsStub.requests = {}
+    for i, (title, status, kind) in enumerate(kw["rows"], start=1):
+        StatsStub.requests[i] = dict(
+            base, id=i, title=title, status=status, kind=kind,
+            _norm=f"n{i}", item_id=f"manual-manga-{i}",
+        )
+    StatsStub.next_id = len(kw["rows"]) + 1
+
+
+def test_wanted_admin_hidden_for_visitors(page, base, stub_port):
+    """访客不该看到任何运维入口 —— 否则点了会被 401 挡，白让人困惑。"""
+    print("\n--- 反馈运维：访客看不到 ---")
+    seed_requests(rows=[("待补档的资源", "open", "broken")])
+    stub_config(page, f"http://127.0.0.1:{stub_port}")
+    page.goto(base, wait_until="networkidle")
+    page.wait_for_timeout(1300)
+    open_wanted(page)
+    switch_wanted_kind(page, "失效反馈")
+
+    check("有一条待补档", len(wanted_rows(page)) == 1, str(len(wanted_rows(page))))
+    check("没有站长操作栏", page.is_hidden("[data-wanted-admin]"))
+    check("每条下面没有操作按钮", page.locator(".wanted-op").count() == 0)
+
+
+def test_wanted_admin_status(page, base, stub_port):
+    """站长可以直接把「待补档」标成「已补上」，数字跟着变。
+
+    之前只能在 D1 里手敲 UPDATE，站长看到已经补好了也没法在页面上标掉，
+    待补档那个计数会一直挂着。
+    """
+    print("\n--- 反馈运维：改状态 ---")
+    seed_requests(rows=[("坏结局之后的世界小说", "open", "broken")])
+    stub_config(page, f"http://127.0.0.1:{stub_port}")
+    page.goto(base, wait_until="networkidle")
+    page.wait_for_timeout(1300)
+    admin_login(page)
+    open_wanted(page)
+    switch_wanted_kind(page, "失效反馈")
+
+    check("出现站长操作栏", page.is_visible("[data-wanted-admin]"))
+    ops = wanted_ops(page)
+    check("有已补上/已关闭/写回复/删除",
+          ops == ["已补上", "已关闭", "写回复", "删除"], json.dumps(ops, ensure_ascii=False))
+    check("待补档标签上是 1", "1" in page.text_content('[data-wanted-tabs] button:has-text("待补档")'),
+          page.text_content('[data-wanted-tabs] button:has-text("待补档")').strip())
+
+    page.click('[data-wanted-list] .wanted-op:has-text("已补上")')
+    page.wait_for_timeout(1000)
+
+    check("后端状态改成 found", StatsStub.requests[1]["status"] == "found",
+          StatsStub.requests[1]["status"])
+    check("待补档页空了", len(wanted_rows(page)) == 0, str(len(wanted_rows(page))))
+    sub = page.text_content("[data-wanted-sub]")
+    check("说明里的待补档归零", "0 条待补档" in sub, sub.strip())
+
+    # 「已补上」页里能看到它，且操作换成「已关闭/放回待补档」
+    page.click('[data-wanted-tabs] button:has-text("已补上")')
+    page.wait_for_timeout(500)
+    check("已补上页有这条", len(wanted_rows(page)) == 1)
+    ops = wanted_ops(page)
+    check("不给「标成已补上」（已经是了）", "已补上" not in ops, json.dumps(ops, ensure_ascii=False))
+    check("可以放回待补档", "放回待补档" in ops, json.dumps(ops, ensure_ascii=False))
+
+    page.click('[data-wanted-list] .wanted-op:has-text("放回待补档")')
+    page.wait_for_timeout(1000)
+    check("状态回到 open", StatsStub.requests[1]["status"] == "open",
+          StatsStub.requests[1]["status"])
+
+
+def test_wanted_admin_reply(page, base, stub_port):
+    """写回复会显示在访客能看到的卡片上。"""
+    print("\n--- 反馈运维：写回复 ---")
+    seed_requests(rows=[("某条失效资源", "found", "broken")])
+    stub_config(page, f"http://127.0.0.1:{stub_port}")
+    page.goto(base, wait_until="networkidle")
+    page.wait_for_timeout(1300)
+    admin_login(page)
+    open_wanted(page)
+    switch_wanted_kind(page, "失效反馈")
+    page.click('[data-wanted-tabs] button:has-text("已补上")')
+    page.wait_for_timeout(500)
+
+    # 取消 prompt 不该写任何东西
+    page.once("dialog", lambda d: d.dismiss())
+    page.click('[data-wanted-list] .wanted-op:has-text("写回复")')
+    page.wait_for_timeout(700)
+    check("取消时不写回复", StatsStub.requests[1]["reply"] == "",
+          repr(StatsStub.requests[1]["reply"]))
+
+    page.once("dialog", lambda d: d.accept("已换新链接，重新下载即可"))
+    page.click('[data-wanted-list] .wanted-op:has-text("写回复")')
+    page.wait_for_timeout(1000)
+    check("后端存了回复", StatsStub.requests[1]["reply"] == "已换新链接，重新下载即可",
+          StatsStub.requests[1]["reply"])
+    rows = wanted_rows(page)
+    check("卡片上显示回复", rows and "已换新链接" in rows[0]["reply"],
+          rows[0]["reply"] if rows else "-")
+
+
+def test_wanted_admin_delete(page, base, stub_port):
+    """单条删除，带二次确认。"""
+    print("\n--- 反馈运维：删除单条 ---")
+    seed_requests(rows=[("要删掉的反馈", "open", "broken")])
+    stub_config(page, f"http://127.0.0.1:{stub_port}")
+    page.goto(base, wait_until="networkidle")
+    page.wait_for_timeout(1300)
+    admin_login(page)
+    open_wanted(page)
+    switch_wanted_kind(page, "失效反馈")
+
+    page.once("dialog", lambda d: d.dismiss())
+    page.click('[data-wanted-list] .wanted-op:has-text("删除")')
+    page.wait_for_timeout(700)
+    check("取消确认时不删", 1 in StatsStub.requests)
+
+    page.once("dialog", lambda d: d.accept())
+    page.click('[data-wanted-list] .wanted-op:has-text("删除")')
+    page.wait_for_timeout(1000)
+    check("确认后删掉", 1 not in StatsStub.requests, json.dumps(list(StatsStub.requests)))
+    check("列表空了", len(wanted_rows(page)) == 0)
+
+
+def test_wanted_admin_purge(page, base, stub_port):
+    """一键清空已处理的：只清 found/closed，待处理的留着。"""
+    print("\n--- 反馈运维：批量清理 ---")
+    seed_requests(rows=[
+        ("还没处理的失效", "open", "broken"),
+        ("已经补好的", "found", "broken"),
+        ("不再需要的", "closed", "broken"),
+        ("想要的资源还没找", "open", "want"),
+        ("想要的资源已找到", "found", "want"),
+    ])
+    stub_config(page, f"http://127.0.0.1:{stub_port}")
+    page.goto(base, wait_until="networkidle")
+    page.wait_for_timeout(1300)
+    admin_login(page)
+    open_wanted(page)
+    switch_wanted_kind(page, "失效反馈")
+
+    btn = page.locator("[data-wanted-purge]")
+    check("按钮带上待清条数", "2" in btn.text_content(), btn.text_content().strip())
+
+    page.once("dialog", lambda d: d.dismiss())
+    btn.click()
+    page.wait_for_timeout(700)
+    check("取消时什么都不删", len(StatsStub.requests) == 5, str(len(StatsStub.requests)))
+
+    page.once("dialog", lambda d: d.accept())
+    btn.click()
+    page.wait_for_timeout(1200)
+
+    left = {v["title"] for v in StatsStub.requests.values()}
+    check("清掉了 broken 的 found/closed",
+          left == {"还没处理的失效", "想要的资源还没找", "想要的资源已找到"},
+          json.dumps(sorted(left), ensure_ascii=False))
+    check("待补档那条还在", "还没处理的失效" in left)
+    # 只清当前类型 —— 切到想要资源那边的已找到不该被顺手带走
+    check("没动想要资源那一类", "想要的资源已找到" in left)
+
+    msg = page.text_content("[data-wanted-admin-msg]")
+    check("给出清理条数", "2" in msg, msg.strip())
+
+    # 清完按钮该禁用（没有可清的了）
+    page.wait_for_timeout(300)
+    check("清完后按钮禁用", btn.is_disabled())
+
+    # 切到「想要资源」，那边仍有 1 条可清
+    switch_wanted_kind(page, "想要资源")
+    check("另一类的按钮仍可用", not btn.is_disabled())
+    check("按钮数字是 1", "1" in btn.text_content(), btn.text_content().strip())
+
+
+def test_wanted_admin_session_expired(page, base, stub_port):
+    """会话在服务端失效后，运维操作要提示而不是静默失败。"""
+    print("\n--- 反馈运维：会话失效 ---")
+    seed_requests(rows=[("某条反馈", "open", "broken")])
+    stub_config(page, f"http://127.0.0.1:{stub_port}")
+    page.goto(base, wait_until="networkidle")
+    page.wait_for_timeout(1300)
+    admin_login(page)
+    open_wanted(page)
+    switch_wanted_kind(page, "失效反馈")
+
+    StatsStub.sessions.clear()
+    page.click('[data-wanted-list] .wanted-op:has-text("已补上")')
+    page.wait_for_timeout(1000)
+
+    check("没改到后端", StatsStub.requests[1]["status"] == "open",
+          StatsStub.requests[1]["status"])
+    # 401 后前端清掉登录态，运维入口随之消失
+    check("操作按钮消失", page.locator(".wanted-op").count() == 0)
+    check("站长操作栏也隐藏", page.is_hidden("[data-wanted-admin]"))
+
+
 def test_admin_no_backend(page, base):
     """后端整体不可用时，后台面板不能假装能用。"""
     print("\n--- 后台：后端不可用 ---")
@@ -2504,6 +2770,31 @@ def main():
 
             ctx = browser.new_context()
             test_admin_no_backend(ctx.new_page(), base)
+            ctx.close()
+
+            # ---- 反馈运维 ----
+            ctx = browser.new_context()
+            test_wanted_admin_hidden_for_visitors(ctx.new_page(), base, stub_port)
+            ctx.close()
+
+            ctx = browser.new_context()
+            test_wanted_admin_status(ctx.new_page(), base, stub_port)
+            ctx.close()
+
+            ctx = browser.new_context()
+            test_wanted_admin_reply(ctx.new_page(), base, stub_port)
+            ctx.close()
+
+            ctx = browser.new_context()
+            test_wanted_admin_delete(ctx.new_page(), base, stub_port)
+            ctx.close()
+
+            ctx = browser.new_context()
+            test_wanted_admin_purge(ctx.new_page(), base, stub_port)
+            ctx.close()
+
+            ctx = browser.new_context()
+            test_wanted_admin_session_expired(ctx.new_page(), base, stub_port)
             ctx.close()
 
             ctx = browser.new_context()

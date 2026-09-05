@@ -81,6 +81,9 @@ const skip = new Set(["field", "filter", "stat", "card-template", "item-id"]);
   "goto-wanted",
   "notice-broken",
   "notice-broken-fallback",
+  "wanted-admin",
+  "wanted-purge",
+  "wanted-admin-msg",
 ].forEach((a) => check(`帮找节点 data-${a}`, htmlAttrs.has(a)));
 
 // 后台的关键节点。漏一个整块后台就静默失效（$() 拿不到就 return）

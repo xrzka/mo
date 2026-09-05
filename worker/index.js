@@ -495,6 +495,107 @@ async function voteRequest(env, request, rawId) {
   return { status: 200, body: { ok: true } };
 }
 
+/* ---------- 反馈运维（需要管理员登录） ---------- */
+
+/** 允许的状态流转目标。open 待处理 / found 已处理 / closed 关闭。 */
+const REQ_STATUSES = ["open", "found", "closed"];
+
+/**
+ * 改一条反馈的状态与回复。
+ *
+ * 之前只能在 D1 里手敲 UPDATE，站长看到「已补档」也没法在页面上标掉，
+ * 待补档那个数字会一直挂着。现在后台登录后可以直接点。
+ */
+async function updateRequest(env, body) {
+  const id = Number(body.id);
+  if (!Number.isInteger(id) || id <= 0) {
+    return { status: 400, body: { error: "缺少有效的反馈 id" } };
+  }
+
+  const row = await env.DB.prepare("SELECT id FROM requests WHERE id = ?").bind(id).first();
+  if (!row) return { status: 404, body: { error: "反馈不存在" } };
+
+  const sets = [];
+  const args = [];
+
+  if (body.status !== undefined) {
+    const status = String(body.status ?? "").trim();
+    if (!REQ_STATUSES.includes(status)) {
+      return { status: 400, body: { error: `未知状态：${status}` } };
+    }
+    sets.push("status = ?");
+    args.push(status);
+  }
+
+  if (body.reply !== undefined) {
+    // 回复会显示在访客能看到的卡片上，所以和访客提交的文本同样清洗
+    sets.push("reply = ?");
+    args.push(sanitizeText(body.reply, REQ_NOTE_MAX));
+  }
+
+  if (!sets.length) return { status: 400, body: { error: "没有要改的字段" } };
+
+  await env.DB
+    .prepare(`UPDATE requests SET ${sets.join(", ")} WHERE id = ?`)
+    .bind(...args, id)
+    .run();
+  return { status: 200, body: { ok: true, id } };
+}
+
+/**
+ * 删除一条反馈。连带删掉它的投票去重键 —— 不删的话，同一个访客以后
+ * 再报同一条资源会被当成「已投过」而静默失败。
+ */
+async function deleteRequest(env, rawId) {
+  const id = Number(rawId);
+  if (!Number.isInteger(id) || id <= 0) {
+    return { status: 400, body: { error: "缺少有效的反馈 id" } };
+  }
+  const res = await env.DB.prepare("DELETE FROM requests WHERE id = ?").bind(id).run();
+  if (!res.meta || res.meta.changes !== 1) {
+    return { status: 404, body: { error: "反馈不存在" } };
+  }
+  await env.DB.prepare("DELETE FROM request_votes WHERE k LIKE ?").bind(`${id}|%`).run();
+  return { status: 200, body: { ok: true, id } };
+}
+
+/**
+ * 批量清理已处理完的反馈。默认清 found + closed —— 那些是站长自己标过的，
+ * 留着只是占列表。open 不在默认范围里：还没处理的东西不该被一键抹掉。
+ *
+ * @param kind  只清某一类（want / broken），不传则两类都清
+ * @param statuses 要清的状态，默认 ['found','closed']
+ */
+async function purgeRequests(env, body) {
+  const kind = REQ_KINDS.includes(body.kind) ? body.kind : "";
+  const raw = Array.isArray(body.statuses) ? body.statuses : ["found", "closed"];
+  const statuses = raw.filter((s) => REQ_STATUSES.includes(s));
+  if (!statuses.length) return { status: 400, body: { error: "没有有效的状态" } };
+
+  const where = [`status IN (${statuses.map(() => "?").join(",")})`];
+  const args = [...statuses];
+  if (kind) {
+    where.push("kind = ?");
+    args.push(kind);
+  }
+  const clause = where.join(" AND ");
+
+  // 先取出要删的 id，才能连带清掉它们的投票去重键
+  const { results } = await env.DB
+    .prepare(`SELECT id FROM requests WHERE ${clause}`)
+    .bind(...args)
+    .all();
+  const ids = (results || []).map((r) => r.id);
+  if (!ids.length) return { status: 200, body: { ok: true, deleted: 0 } };
+
+  await env.DB.prepare(`DELETE FROM requests WHERE ${clause}`).bind(...args).run();
+  // LIKE 一条条删。id 数量是站长手动标出来的，不会多到需要优化
+  for (const id of ids) {
+    await env.DB.prepare("DELETE FROM request_votes WHERE k LIKE ?").bind(`${id}|%`).run();
+  }
+  return { status: 200, body: { ok: true, deleted: ids.length } };
+}
+
 /* ---------- 管理员编辑 ---------- */
 
 /** 随机 hex 串，用于 session token。crypto.getRandomValues 是 CSPRNG。 */
@@ -1006,6 +1107,35 @@ export default {
         return json(r.body, request, r.status);
       }
 
+      /* ---------- 反馈运维 ---------- */
+
+      if (url.pathname === "/api/admin/request" && request.method === "POST") {
+        const token = await adminAuth(env, request);
+        if (!token) return json({ error: "未登录或登录已过期" }, request, 401);
+        const body = await request.json().catch(() => null);
+        if (!body || typeof body !== "object") {
+          return json({ error: "bad request body" }, request, 400);
+        }
+        const r = await updateRequest(env, body);
+        return json(r.body, request, r.status);
+      }
+
+      if (url.pathname === "/api/admin/request/delete" && request.method === "POST") {
+        const token = await adminAuth(env, request);
+        if (!token) return json({ error: "未登录或登录已过期" }, request, 401);
+        const body = await request.json().catch(() => ({}));
+        const r = await deleteRequest(env, body.id);
+        return json(r.body, request, r.status);
+      }
+
+      if (url.pathname === "/api/admin/requests/purge" && request.method === "POST") {
+        const token = await adminAuth(env, request);
+        if (!token) return json({ error: "未登录或登录已过期" }, request, 401);
+        const body = await request.json().catch(() => ({}));
+        const r = await purgeRequests(env, body || {});
+        return json(r.body, request, r.status);
+      }
+
       return json({ error: "not found" }, request, 404);
     } catch (err) {
       // 不把内部堆栈回给前端
@@ -1033,6 +1163,7 @@ export const _internal = {
   REQ_PER_DAY,
   REQ_OPEN_MAX,
   REQ_KINDS,
+  REQ_STATUSES,
   OVERRIDE_FIELDS,
   OVERRIDE_MAX,
   SECTION_SUBS,

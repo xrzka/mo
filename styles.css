@@ -1093,6 +1093,66 @@ h1 {
 /* 选了重复分区时提醒一句 —— 保存只会留第一个 */
 .placement-hint.warn { color: #d97706; }
 
+/* ---------- 反馈运维（站长登录后可见） ---------- */
+.wanted-admin {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 0 0 12px;
+  padding: 9px 12px;
+  border: 1px dashed var(--border);
+  border-radius: 9px;
+  background: var(--bg);
+}
+.wanted-admin[hidden] { display: none; }
+.wanted-admin-label { color: var(--text-muted); font-size: 11.5px; }
+
+.wanted-purge {
+  padding: 5px 12px;
+  border: 1px solid #d97706;
+  border-radius: 8px;
+  background: transparent;
+  color: #d97706;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.wanted-purge:disabled { opacity: 0.5; cursor: default; }
+
+.wanted-admin-msg { color: var(--text-muted); font-size: 12px; }
+.wanted-admin-msg.ok { color: var(--accent); }
+.wanted-admin-msg.bad { color: #d97706; }
+
+/* 每条反馈下面那排操作按钮 */
+.wanted-ops {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  width: 100%;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border);
+}
+.wanted-op {
+  padding: 3px 9px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 11.5px;
+  cursor: pointer;
+}
+.wanted-op:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+/* 删除不可撤销，用警示色区分 */
+.wanted-op.danger:hover:not(:disabled) { border-color: #d97706; color: #d97706; }
+.wanted-op:disabled { opacity: 0.5; cursor: default; }
+
+.wanted-op-msg { color: var(--text-muted); font-size: 11.5px; }
+.wanted-op-msg.bad { color: #d97706; }
+
 /* ---------- 热门排行 ---------- */
 .stats-panel {
   margin: 0 0 18px;
