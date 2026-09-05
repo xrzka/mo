@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-05T04:07:52Z",
+  "generated_at": "2026-09-05T05:13:21Z",
   "note": "新增资源在 items 数组里加一项即可。section 取值：novel / manga / anime / game / music / tool / ai / forum / guide / collection。不确定归哪个分区就填 collection（收录 / 杂类），填错或留空也会落到那里。",
   "items": [
     {
@@ -13768,6 +13768,23 @@
       "need_login": true,
       "update_info": "每日可签到",
       "note": "需要论坛账号做任务（论坛注册需管理员邀请码）。 站内公告明写「禁止二次中转，发现封号封 ID」——不要把它的额度再转卖或搭成对外中转。 可用模型：gpt-6-astra、gpt-5.6-sol、deepseek-v4-pro-0813、glm-5.3-flash、glm-5.2、kimi-k3。 赚额度的主路径在论坛 bbs.kscsnkli.site（Flarum）：侧栏「每日任务」页先用 newAPI 用户名或用户 ID + 密码绑定账号，再领每日/每月/一次性奖励，奖励约 30 秒内到账；另有幸运抽奖。注意论坛注册需要管理员发放的邀请码，光注册中转站本身不用邀请码。中转站可用论坛账号登录（OIDC，站内显示为「论坛登录」）。公告称后续没余额时靠邀请他人获取。gpt-6-astra 因成本过高已临时下架，以站内公告为准。"
+    },
+    {
+      "id": "relay-motomoto",
+      "name": "MotoMoto 公益",
+      "section": "ai",
+      "subsection": "relay",
+      "description": "公益 API 网关，注册即送约 $30，每日签到约 $50。无需邮箱验证，填用户名密码即可注册。目前主力是 gpt-5.6-sol。",
+      "url": "https://motomoto.lol/sign-up?aff=CcUG",
+      "tags": [
+        "注册送$30",
+        "签到$50",
+        "禁止自动签到"
+      ],
+      "kind": "AI API 中转站",
+      "need_login": true,
+      "update_info": "每日可签到",
+      "note": "需要用户名 + 密码（无需邮箱验证）。 使用条款第 3、4 条明写「脚本签到视为滥用」「禁止自动签到」，违规会取消奖励、扣回额度或封禁 —— 这个站请手动签到，不要挂进自动签到工具。另有公告：长时间不使用的账号余额将被清零，所以别只签到不调用。 可用模型：gpt-5.6-sol。 Base URL 为 https://motomoto.lol/v1（OpenAI 兼容 /v1/chat/completions），令牌在控制台创建。签到与登录都挂着 Cloudflare Turnstile，需真人过一次验证。邀请奖励约 $40，需对方产生约 $2 真实消耗后结算，每天最多 3 笔、累计 20 笔。站点提供工单与 /appeal 申诉通道。额度是站内记账单位，不可提现，官方不承诺可用性。另可在「数据授权」页选择是否授权训练数据。"
     }
   ]
 }
