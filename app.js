@@ -458,28 +458,58 @@
       return subs.some((s) => s.id === subId) ? subId : null;
     };
 
-    // 分区可被后台改。仍走白名单校验 —— 覆盖层里存的值理论上已由后端校验过，
-    // 但前端不该信任远端数据，未知值一律回落到兜底分区而不是丢卡片。
-    const rawSection = pick("section", raw.section);
-    const section =
-      SECTION_MAP.has(rawSection) && rawSection !== "all" ? rawSection : FALLBACK_SECTION;
-    const sub = subOf(section, pick("subsection", raw.subsection));
+    /** 解析 'novel:jp,manga:download' 这种归属串成 [{id, sub}]。
+     *  未知分区丢掉而不是回落 —— 回落会把它塞进兜底区，一条资源莫名出现在
+     *  「收录 / 杂类」里比少一个归属更难解释。 */
+    const parsePlacements = (text) => {
+      const out = [];
+      String(text || "")
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .forEach((part) => {
+          const [secId, subId = ""] = part.split(":").map((s) => s.trim());
+          if (!SECTION_MAP.has(secId) || secId === "all") return;
+          if (out.some((s) => s.id === secId)) return;   // 同区只留第一个
+          out.push({ id: secId, sub: subOf(secId, subId) });
+        });
+      return out;
+    };
 
-    // 一份资源可能同时属于多个分区：网盘包里既有小说又有漫画，
-    // 只挂在小说区的话，逛漫画区的人根本看不见它。
-    // 主分区仍是 section（卡片默认显示它的标签），also_in 是附加分区。
-    // 不做成两条独立条目：那样点击数、失效反馈都会被拆成两半。
+    // 分区归属。优先级：后台的 placements > 后台的 section > items.json 的
+    // section + also_in。前端仍做白名单校验 —— 覆盖层的值理论上后端校验过，
+    // 但不该信任远端数据。
     //
-    // 注意：后台改过分区时不带 also_in —— 用户明确指定了归属，
-    // 再把它挂回原来的附加分区会让「移走了却还在」，违背预期。
-    const movedBySection = !!(ov && "section" in ov);
-    const sections = [{ id: section, sub }];
-    (movedBySection || !Array.isArray(raw.also_in) ? [] : raw.also_in).forEach((extra) => {
-      const id = extra && extra.section;
-      if (!SECTION_MAP.has(id) || id === "all") return;
-      if (sections.some((s) => s.id === id)) return;
-      sections.push({ id, sub: subOf(id, extra.subsection) });
-    });
+    // 一份资源可能同时属于多个分区：网盘包里既有小说又有漫画，只挂在小说区的话
+    // 逛漫画区的人根本看不见它。第一个归属是主分区（卡片默认显示它的标签）。
+    // 不做成多条独立条目：那样点击数、失效反馈都会被拆开。
+    let sections = [];
+    if (ov && typeof ov.placements === "string" && ov.placements) {
+      sections = parsePlacements(ov.placements);
+    } else if (ov && typeof ov.section === "string" && ov.section) {
+      // 老形式的单值覆盖。改过分区就不带 also_in ——
+      // 用户明确指定了归属，再挂回原来的附加分区会让「移走了却还在」。
+      const secId = SECTION_MAP.has(ov.section) ? ov.section : FALLBACK_SECTION;
+      sections = [{ id: secId, sub: subOf(secId, pick("subsection", raw.subsection)) }];
+    } else if (typeof raw.placements === "string" && raw.placements) {
+      // 后台新增的条目自带 placements
+      sections = parsePlacements(raw.placements);
+    } else {
+      const secId =
+        SECTION_MAP.has(raw.section) && raw.section !== "all" ? raw.section : FALLBACK_SECTION;
+      sections = [{ id: secId, sub: subOf(secId, raw.subsection) }];
+      (Array.isArray(raw.also_in) ? raw.also_in : []).forEach((extra) => {
+        const id = extra && extra.section;
+        if (!SECTION_MAP.has(id) || id === "all") return;
+        if (sections.some((s) => s.id === id)) return;
+        sections.push({ id, sub: subOf(id, extra.subsection) });
+      });
+    }
+    // 解析后一个都不剩（数据坏了）时兜一个，别让卡片没有归属而消失
+    if (!sections.length) sections = [{ id: FALLBACK_SECTION, sub: null }];
+
+    const section = sections[0].id;
+    const sub = sections[0].sub;
 
     const url = pick("url", raw.url || "");
     const password = pick("password", raw.password || "");
@@ -672,7 +702,9 @@
         .filter(Boolean);
       if (others.length) {
         const pill = document.createElement("span");
-        pill.className = "section-pill alt";
+        // also-in 这个类是给测试与样式用的：「后台已改」标记长得一样，
+        // 只按 .alt 找会拿到先插入的那个（after 插在参考节点紧后面）。
+        pill.className = "section-pill alt also-in";
         pill.textContent = "也在 " + others.join(" / ");
         field("section").after(pill);
       }
@@ -1356,8 +1388,7 @@
   /** 新增表单的字段。与后端 createCustomItem 收的字段对应。 */
   const ADMIN_NEW_FIELDS = [
     { key: "name", label: "资源名", type: "text", required: true },
-    { key: "section", label: "所属分区", type: "section", required: true },
-    { key: "subsection", label: "小分区", type: "subsection" },
+    { key: "placements", label: "所属分区（可加多个）", type: "placements", required: true },
     { key: "description", label: "简介", type: "textarea" },
     { key: "url", label: "跳转链接", type: "text" },
     { key: "password", label: "提取码", type: "text" },
@@ -1370,41 +1401,35 @@
   function buildAdminNewForm(box, msg) {
     box.textContent = "";
     const inputs = {};
+    let picker = null;
 
     ADMIN_NEW_FIELDS.forEach((f) => {
-      const row = document.createElement("label");
+      const row = document.createElement(f.type === "placements" ? "div" : "label");
       row.className = "admin-field";
 
       const name = document.createElement("span");
       name.textContent = f.label + (f.required ? " *" : "");
       row.appendChild(name);
 
-      let el;
-      if (f.type === "section" || f.type === "subsection") {
-        el = document.createElement("select");
-      } else if (f.type === "checkbox") {
-        el = document.createElement("input");
-        el.type = "checkbox";
-        row.classList.add("admin-field-inline");
+      if (f.type === "placements") {
+        // 默认落在小说区 —— 站里加得最多的是小说，省一次选择
+        picker = buildPlacementPicker(row, [{ id: "novel", sub: "" }]);
       } else {
-        el = document.createElement(f.type === "textarea" ? "textarea" : "input");
-        if (f.type === "textarea") el.rows = 2;
-        else el.type = "text";
+        let el;
+        if (f.type === "checkbox") {
+          el = document.createElement("input");
+          el.type = "checkbox";
+          row.classList.add("admin-field-inline");
+        } else {
+          el = document.createElement(f.type === "textarea" ? "textarea" : "input");
+          if (f.type === "textarea") el.rows = 2;
+          else el.type = "text";
+        }
+        row.appendChild(el);
+        inputs[f.key] = el;
       }
-      row.appendChild(el);
-      inputs[f.key] = el;
       box.appendChild(row);
     });
-
-    // 默认落在小说区 —— 站里加得最多的是小说，省一次选择
-    fillOptions(inputs.section, realSections(), "novel");
-    const syncSubs = () => {
-      const subs = (SECTION_MAP.get(inputs.section.value) || {}).subs || [];
-      fillOptions(inputs.subsection, subs, "", subs.length ? "（不指定）" : "（该分区无小分区）");
-      inputs.subsection.disabled = subs.length === 0;
-    };
-    syncSubs();
-    inputs.section.addEventListener("change", syncSubs);
 
     const actions = document.createElement("div");
     actions.className = "admin-actions";
@@ -1423,9 +1448,13 @@
     submit.addEventListener("click", async () => {
       const body = {};
       ADMIN_NEW_FIELDS.forEach((f) => {
+        if (f.type === "placements") return;   // 分区单独读，见下
         body[f.key] = f.type === "checkbox" ? inputs[f.key].checked : inputs[f.key].value;
       });
       if (!String(body.name).trim()) return say("资源名不能为空", "bad");
+
+      body.placements = picker ? picker.read() : "";
+      if (!body.placements) return say("至少要选一个分区", "bad");
 
       submit.disabled = true;
       say("添加中…");
@@ -1433,11 +1462,13 @@
       submit.disabled = false;
       if (!r.ok) return say(r.error, "bad");
 
-      say("已添加，所有访客立即可见", "ok");
-      // 清空表单好接着加下一条，但保留分区选择 —— 连着加同类资源时省事
+      const n = body.placements.split(",").length;
+      say(n > 1 ? `已添加，挂在 ${n} 个分区下` : "已添加，所有访客立即可见", "ok");
+      // 清空文本字段好接着加下一条，但保留分区选择 —— 连着加同类资源时省事
       ADMIN_NEW_FIELDS.forEach((f) => {
+        if (f.type === "placements") return;
         if (f.type === "checkbox") inputs[f.key].checked = false;
-        else if (f.type !== "section" && f.type !== "subsection") inputs[f.key].value = "";
+        else inputs[f.key].value = "";
       });
       // 新增条目要重新拉 /api/items，withItems 才会带上它
       await refreshOverrides({ withItems: true });
@@ -1463,7 +1494,7 @@
   }
 
   /** 卡片里的编辑表单。只在已登录时构建。
-   *  section/subsection 用下拉而不是文本框 —— 手打分区 id 极易拼错，
+   *  分区归属用「分区 + 小分区」成对的下拉，可以加多行 —— 手打分区 id 极易拼错，
    *  而后端对未知分区会 400，用户得靠猜。 */
   const ADMIN_EDIT_FIELDS = [
     { key: "name", label: "标题", type: "text" },
@@ -1471,9 +1502,11 @@
     { key: "url", label: "跳转链接", type: "text" },
     { key: "password", label: "提取码", type: "text" },
     { key: "note", label: "备注", type: "textarea" },
-    { key: "section", label: "所属分区", type: "section" },
-    { key: "subsection", label: "小分区", type: "subsection" },
+    { key: "placements", label: "所属分区（可加多个）", type: "placements" },
   ];
+
+  /** 一条资源最多挂几个分区。与后端 PLACEMENT_MAX 保持一致。 */
+  const PLACEMENT_MAX = 8;
 
   /** 可选分区列表（去掉「全部」这个伪分区）。 */
   const realSections = () => SECTIONS.filter((s) => s.id !== "all");
@@ -1496,54 +1529,172 @@
     sel.value = current || "";
   }
 
+  /**
+   * 多分区归属选择器。渲染成若干「分区 + 小分区 + 删除」行，末尾一个「+ 再加一个分区」。
+   *
+   * 返回 { read() } —— read 拼出后端要的 'novel:jp,manga:download' 串。
+   * 不用 <select multiple>：那个只能选分区、带不上各自的小分区，而
+   * 「小说/日轻 + 漫画/下载」这种组合正是要表达的东西。
+   *
+   * @param initial [{id, sub}] 现有归属
+   */
+  function buildPlacementPicker(box, initial) {
+    const rows = document.createElement("div");
+    rows.className = "placement-rows";
+    box.appendChild(rows);
+
+    const addBtn = document.createElement("button");
+    addBtn.type = "button";
+    addBtn.className = "placement-add";
+    addBtn.textContent = "+ 再加一个分区";
+    box.appendChild(addBtn);
+
+    const hint = document.createElement("p");
+    hint.className = "placement-hint";
+    box.appendChild(hint);
+
+    const state = [];   // [{ row, sec, sub }]
+
+    const refresh = () => {
+      // 第一行是主归属，卡片默认显示它的标签；同区重复没有意义（计数会翻倍）
+      state.forEach((r, i) => {
+        r.row.querySelector(".placement-index").textContent = i === 0 ? "主分区" : `分区 ${i + 1}`;
+        // 只剩一行时不给删 —— 一条资源总得有个归属
+        r.row.querySelector(".placement-del").hidden = state.length <= 1;
+      });
+      addBtn.hidden = state.length >= PLACEMENT_MAX;
+      const dup = new Set();
+      const repeated = state.some((r) => {
+        const v = r.sec.value;
+        if (dup.has(v)) return true;
+        dup.add(v);
+        return false;
+      });
+      hint.textContent = repeated
+        ? "同一个分区选了多次，保存时只会保留第一次"
+        : "第一个是主分区，卡片上的标签按它显示。";
+      hint.className = "placement-hint" + (repeated ? " warn" : "");
+    };
+
+    const addRow = (secId, subId) => {
+      if (state.length >= PLACEMENT_MAX) return;
+      const row = document.createElement("div");
+      row.className = "placement-row";
+
+      const idx = document.createElement("span");
+      idx.className = "placement-index";
+      row.appendChild(idx);
+
+      const sec = document.createElement("select");
+      sec.className = "placement-sec";
+      fillOptions(sec, realSections(), secId || "novel");
+      row.appendChild(sec);
+
+      const sub = document.createElement("select");
+      sub.className = "placement-sub";
+      row.appendChild(sub);
+
+      const del = document.createElement("button");
+      del.type = "button";
+      del.className = "placement-del";
+      del.textContent = "×";
+      del.title = "移除这个分区";
+      row.appendChild(del);
+
+      // 小分区跟着分区联动。换分区时旧的小分区往往不存在（漫画的「公众号」
+      // 放到小说下就是无效值），所以要重建选项。
+      const syncSub = (keep) => {
+        const subs = (SECTION_MAP.get(sec.value) || {}).subs || [];
+        const cur = keep && subs.some((s) => s.id === keep) ? keep : "";
+        fillOptions(sub, subs, cur, subs.length ? "（不指定）" : "（无小分区）");
+        sub.disabled = subs.length === 0;
+      };
+      syncSub(subId);
+      sec.addEventListener("change", () => {
+        syncSub("");
+        refresh();
+      });
+
+      del.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const i = state.findIndex((r) => r.row === row);
+        if (i >= 0) state.splice(i, 1);
+        row.remove();
+        refresh();
+      });
+
+      rows.appendChild(row);
+      state.push({ row, sec, sub });
+      refresh();
+    };
+
+    (initial && initial.length ? initial : [{ id: "novel", sub: "" }]).forEach((p) =>
+      addRow(p.id, p.sub || "")
+    );
+
+    addBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      addRow("", "");
+    });
+
+    return {
+      read() {
+        const seen = new Set();
+        return state
+          .map((r) => ({ sec: r.sec.value, sub: r.sub.disabled ? "" : r.sub.value }))
+          .filter((p) => {
+            if (!p.sec || seen.has(p.sec)) return false;
+            seen.add(p.sec);
+            return true;
+          })
+          .map((p) => (p.sub ? `${p.sec}:${p.sub}` : p.sec))
+          .join(",");
+      },
+    };
+  }
+
   function buildAdminEditor(item, wrap, box, msg) {
     box.textContent = "";
     const ov = overrides[item.id] || {};
     const inputs = {};
+    let picker = null;
 
     ADMIN_EDIT_FIELDS.forEach((f) => {
-      const row = document.createElement("label");
+      const row = document.createElement(f.type === "placements" ? "div" : "label");
       row.className = "admin-field";
 
       const name = document.createElement("span");
       name.textContent = f.label;
-      // 标出这一项是不是被覆盖过，方便判断当前看到的是原值还是改过的值
-      if (f.key in ov) {
+      // 标出这一项是不是被覆盖过，方便判断当前看到的是原值还是改过的值。
+      // placements 与老形式的 section 都算「分区改过」。
+      const changed =
+        f.key in ov || (f.type === "placements" && ("section" in ov || "placements" in ov));
+      if (changed) {
         const tag = document.createElement("em");
         tag.textContent = "已改";
         name.appendChild(tag);
       }
       row.appendChild(name);
 
-      let el;
-      if (f.type === "section" || f.type === "subsection") {
-        el = document.createElement("select");
+      if (f.type === "placements") {
+        // 当前归属直接取 normalize 后的 sections —— 它已经把覆盖层、
+        // items.json 的 also_in 都算进去了，比在这里重新解析一遍可靠。
+        picker = buildPlacementPicker(row, item.sections || []);
       } else {
-        el = document.createElement(f.type === "textarea" ? "textarea" : "input");
+        const el = document.createElement(f.type === "textarea" ? "textarea" : "input");
         if (f.type === "textarea") el.rows = 3;
         else el.type = "text";
         el.value = item[f.key] || "";
+        row.appendChild(el);
+        inputs[f.key] = el;
       }
-      row.appendChild(el);
-      inputs[f.key] = el;
       box.appendChild(row);
     });
 
-    // 分区下拉：选中当前主分区。注意用 item.section 而不是当前浏览的分区 ——
-    // 跨区资源（also_in）在别的分区里也能看到，但它的归属只有一个。
-    fillOptions(inputs.section, realSections(), item.section);
-
-    // 小分区跟着分区联动。换分区时旧的小分区往往不存在（漫画的「公众号」
-    // 放到小说下就是无效值），所以要重建选项。
-    const syncSubs = (keep) => {
-      const secId = inputs.section.value;
-      const subs = (SECTION_MAP.get(secId) || {}).subs || [];
-      const cur = keep && subs.some((s) => s.id === keep) ? keep : "";
-      fillOptions(inputs.subsection, subs, cur, subs.length ? "（不指定）" : "（该分区无小分区）");
-      inputs.subsection.disabled = subs.length === 0;
-    };
-    syncSubs(subInSection(item, item.section));
-    inputs.section.addEventListener("change", () => syncSubs(""));
+    // 保存时用它和当前值比对，判断分区有没有被动过
+    const placementsBefore = (item.sections || [])
+      .map((s) => (s.sub ? `${s.id}:${s.sub}` : s.id))
+      .join(",");
 
     const actions = document.createElement("div");
     actions.className = "admin-actions";
@@ -1573,20 +1724,23 @@
       // 全量提交会把「没覆盖」的字段也写成覆盖，之后想回落原值都难。
       const fields = {};
       ADMIN_EDIT_FIELDS.forEach((f) => {
+        if (f.type === "placements") return;   // 分区单独处理，见下
         const v = inputs[f.key].value;
-        // 分区两项要跟「当前生效值」比：subsection 得取这条在它主分区下的归属，
-        // 直接读 item.subsection 拿不到（normalize 后叫 sub）。
-        const now =
-          f.key === "subsection"
-            ? subInSection(item, item.section) || ""
-            : item[f.key] || "";
-        if (v !== now) fields[f.key] = v;
+        if (v !== (item[f.key] || "")) fields[f.key] = v;
       });
-      // 换了分区但没动小分区时，也要把小分区一起提交 —— 否则后端只收到
-      // section，旧小分区在新分区里不合法，会被静默清空，用户以为自己选的丢了。
-      if ("section" in fields && !("subsection" in fields)) {
-        fields.subsection = inputs.subsection.value;
+
+      // 分区归属：拼成 'novel:jp,manga:download' 与当前生效值比对。
+      const placementsNow = picker ? picker.read() : "";
+      if (!placementsNow) return say("至少要选一个分区", "bad");
+      const moved = placementsNow !== placementsBefore;
+      if (moved) {
+        fields.placements = placementsNow;
+        // 老形式的单值覆盖要显式撤销，否则库里两套并存，前端得猜听谁的。
+        // 后端也会做这一步，这里一并传是为了语义明确。
+        fields.section = null;
+        fields.subsection = null;
       }
+
       if (!Object.keys(fields).length) return say("没有改动", "");
       save.disabled = true;
       say("保存中…");
@@ -1594,10 +1748,14 @@
       save.disabled = false;
       if (!r.ok) return say(r.error, "bad");
       // 重渲染会把这张卡换成新节点，所以提示得交给新卡片去显示
-      const moved = "section" in fields;
+      const n = placementsNow.split(",").length;
       adminFlash = {
         id: item.id,
-        text: moved ? "已保存，条目已移动到新分区" : "已保存，所有访客立即可见",
+        text: moved
+          ? n > 1
+            ? `已保存，这条现在挂在 ${n} 个分区下`
+            : "已保存，条目已移动到新分区"
+          : "已保存，所有访客立即可见",
         kind: "ok",
       };
       await refreshOverrides();
@@ -1608,8 +1766,10 @@
       e.stopPropagation();
       reset.disabled = true;
       say("撤销中…");
-      // 每一项都置 null，后端会把整行删掉，条目回到 items.json 的原值
-      const fields = {};
+      // 每一项都置 null，后端会把整行删掉，条目回到 items.json 的原值。
+      // section/subsection 是老形式的分区覆盖，也得一起撤 —— 只撤 placements
+      // 的话，早期存的单值覆盖还留在库里，条目回不到原始分区。
+      const fields = { section: null, subsection: null };
       ADMIN_EDIT_FIELDS.forEach((f) => (fields[f.key] = null));
       const r = await adminFetch("/api/admin/override", { item_id: item.id, fields });
       reset.disabled = false;

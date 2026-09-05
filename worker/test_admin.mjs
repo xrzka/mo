@@ -258,6 +258,58 @@ const save = (env, token, item_id, fields) =>
   check("撤销分区覆盖", !("section" in got) && !("subsection" in got), JSON.stringify(got));
 }
 
+/* ---------- 6c. 多分区归属（placements） ---------- */
+{
+  console.log("\n--- 多分区归属 ---");
+  const env = newEnv();
+  const { data } = await login(env, PASSWORD);
+  const token = data.token;
+  const read = async (id) => (await call(env, "/api/overrides")).data.overrides[id] || {};
+  const P = _internal.parsePlacements;
+
+  // 先单独验 parsePlacements —— 它是这套语义的唯一来源
+  check("单个分区", P("tool").value === "tool");
+  check("分区带小分区", P("novel:jp").value === "novel:jp");
+  check("多个归属", P("novel:download,manga:kr").value === "novel:download,manga:kr");
+  check("首尾空白裁掉", P(" novel:jp , manga ").value === "novel:jp,manga");
+  // 同区重复：卡片只有一个标签，留两个会让计数翻倍，所以取第一次
+  check("同区重复只留第一个", P("novel:jp,novel:kr").value === "novel:jp");
+  check("空串合法（表示不指定）", P("").ok && P("").value === "");
+  check("未知分区报错", !P("bogus").ok, P("bogus").error);
+  check("小分区不属于该分区报错", !P("novel:gal").ok, P("novel:gal").error);
+
+  const over = Array.from({ length: _internal.PLACEMENT_MAX + 1 }, (_, i) =>
+    ["novel", "manga", "anime", "game", "music", "study", "tool", "ai", "forum"][i]
+  ).join(",");
+  check(`超过 ${_internal.PLACEMENT_MAX} 个报错`, !P(over).ok, P(over).error);
+
+  // 走接口：一条挂三个分区，正是「几个大区都有资源」的场景
+  let r = await save(env, token, "manual-manga-1", {
+    placements: "manga:site,novel:jp,game:gal",
+  });
+  check("挂三个分区成功", r.status === 200, JSON.stringify(r.data));
+  let got = await read("manual-manga-1");
+  check("读回归属串", got.placements === "manga:site,novel:jp,game:gal", got.placements);
+
+  // placements 一给值就该清掉单值旧形式，否则前端得猜听谁的
+  await save(env, token, "manual-manga-2", { section: "novel", subsection: "kr" });
+  r = await save(env, token, "manual-manga-2", { placements: "tool" });
+  got = await read("manual-manga-2");
+  check("placements 顶掉旧的 section", got.placements === "tool" && !got.section,
+        JSON.stringify(got));
+
+  // 非法值同样被挡
+  for (const bad of ["bogus", "novel:gal", "all"]) {
+    r = await save(env, token, "manual-manga-1", { placements: bad });
+    check(`非法归属 ${bad} 被 400`, r.status === 400, JSON.stringify(r.data));
+  }
+
+  // 撤销后回到 items.json 的原始分区
+  r = await save(env, token, "manual-manga-1", { placements: null });
+  got = await read("manual-manga-1");
+  check("撤销 placements", !("placements" in got), JSON.stringify(got));
+}
+
 /* ---------- 7. 链接与文本校验 ---------- */
 {
   console.log("\n--- 链接与文本校验 ---");
@@ -426,6 +478,26 @@ const save = (env, token, item_id, fields) =>
   check("同名也生成不同 id", a !== b, `${a} vs ${b}`);
   d = await list();
   check("同名两条都在", d.items.filter((x) => x.name === "同名条目").length === 2);
+
+  // 新增时也能一次挂多个分区
+  r = await add({ name: "挂三个区的资源", placements: "novel:jp,manga:kr,game:gal" });
+  check("多分区新增成功", r.status === 200, JSON.stringify(r.data));
+  d = await list();
+  const multi = d.items.find((x) => x.name === "挂三个区的资源");
+  check("归属串完整", multi.placements === "novel:jp,manga:kr,game:gal", multi.placements);
+  check("主分区取第一个", multi.section === "novel" && multi.subsection === "jp",
+        `${multi.section}/${multi.subsection}`);
+
+  // 老形式（section+subsection）仍然收，兼容还没更新的前端
+  r = await add({ name: "老形式新增", section: "tool" });
+  d = await list();
+  const legacy = d.items.find((x) => x.name === "老形式新增");
+  check("老形式补出 placements", legacy.placements === "tool", legacy.placements);
+
+  for (const bad of ["bogus", "novel:gal"]) {
+    r = await add({ name: "坏归属", placements: bad });
+    check(`非法归属 ${bad} 被 400`, r.status === 400, JSON.stringify(r.data));
+  }
 }
 
 /* ---------- 11. 删除条目 ---------- */

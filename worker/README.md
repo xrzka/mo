@@ -258,9 +258,24 @@ curl --proxy http://127.0.0.1:7890 https://mo-stats.werneruszcb71.workers.dev/ap
 静默会让人以为改了却没生效。
 
 `section` / `subsection` **可以改**（这就是「移动分区」）：换区只影响它出现在
-哪个标签页下，id 不变，所以统计和反馈都跟着走。两者都走
-`SECTION_SUBS` 白名单，未知值一律 400 —— 放行的话前端 `normalize()` 会把它
-当无效丢弃，表现为「保存成功但分区没变」，比直接报错难查得多。
+哪个标签页下，id 不变，所以统计和反馈都跟着走。
+
+**一条资源可以挂多个分区**，走 `placements` 字段，格式
+`novel:jp,manga:download`：逗号分隔，冒号后是小分区（可省略表示只落在该分区的
+「全部」里），**第一个是主归属**，决定卡片默认显示哪个标签。上限
+`PLACEMENT_MAX = 8`。
+
+为什么用一个扁平字符串而不是几列或 JSON：一条资源能挂任意多个分区，列数固定的
+表存不下；存 JSON 又要额外防注入和做形状校验。扁平串好校验、出问题时肉眼能读。
+
+同一分区出现两次时只留第一次 —— 同区两个小分区没有意义（卡片只有一个标签），
+还会让分区计数翻倍。前端在选重复时会提示一句。
+
+`section` / `subsection` 是 `placements` 的**单值旧形式**，保留只为兼容早期存的
+覆盖行。新的保存一律写 `placements`，并把这两列清空 —— 两套并存时前端得猜听谁的。
+
+三者都走 `SECTION_SUBS` 白名单，未知值一律 400 —— 放行的话前端 `normalize()`
+会把它当无效丢弃，表现为「保存成功但分区没变」，比直接报错难查得多。
 `SECTION_SUBS` 必须与 `app.js` 的 `SECTIONS` 保持一致，`test_sections.mjs`
 专门盯这件事（它从 app.js 源码里解析，因为 IIFE 没法 import）。
 
@@ -342,22 +357,30 @@ printf '%s' '你的密码' | node ../gen_admin_hash.mjs | ../wr.sh pages secret 
 没设 `ADMIN_PASSWORD_HASH` 时登录接口一律回 503，**不会退化成无密码放行** ——
 这条有测试盯着（`test_admin.mjs` 的「未配置 ADMIN_PASSWORD_HASH」）。
 
-### 给已有库补 overrides 的分区两列（已执行过一次）
+### 给已有库补分区相关的列（已执行过一次）
 
-`schema.sql` 全是 `CREATE TABLE IF NOT EXISTS`，对已经建好的 `overrides`
-不生效 —— 加「移动分区」时那张表已经存在，光跑 schema.sql 不会多出
-`section` / `subsection` 两列。已有库要显式迁移：
+`schema.sql` 全是 `CREATE TABLE IF NOT EXISTS`，对已经建好的表不生效 ——
+加「移动分区」和「多分区」时表已经存在，光跑 schema.sql 不会多出新列。
+已有库要显式迁移：
 
 ```bash
+# 移动分区（单值形式）
 ./wr.sh d1 execute mo-stats --remote --command \
   "ALTER TABLE overrides ADD COLUMN section TEXT"
 ./wr.sh d1 execute mo-stats --remote --command \
   "ALTER TABLE overrides ADD COLUMN subsection TEXT"
+
+# 多分区归属
+./wr.sh d1 execute mo-stats --remote --command \
+  "ALTER TABLE overrides ADD COLUMN placements TEXT"
+./wr.sh d1 execute mo-stats --remote --command \
+  "ALTER TABLE custom_items ADD COLUMN placements TEXT NOT NULL DEFAULT ''"
 ```
 
-两列都可为 NULL（表示不覆盖分区），老数据不用回填。
-`custom_items` 是新表，`IF NOT EXISTS` 就能建出来，不需要额外命令。
-线上已经跑过了，用 `PRAGMA table_info(overrides)` 可以复核。
+新列都可为空（表示不覆盖分区 / 用单值形式兜底），老数据不用回填 ——
+`listCustomItems()` 会用 `section`+`subsection` 现拼一个 `placements` 出来，
+所以前端只需要认一种形式。线上已经跑过了，用 `PRAGMA table_info(overrides)`
+和 `PRAGMA table_info(custom_items)` 可以复核。
 
 ## 资源帮找 / 失效反馈怎么运维
 
@@ -463,7 +486,7 @@ node test_frontend_parity.mjs    # 前后端桶名一致性、本机模式分桶
 node test_selectors.mjs          # app.js 用的选择器在 index.html 里都存在
 node test_worker.mjs             # 统计逻辑（真 SQL，node:sqlite 内存库当 D1）
 node test_requests.mjs           # 帮找与失效反馈逻辑（两类去重互不干扰、投票幂等、限流、注入拦截）
-node test_admin.mjs              # 后台鉴权与覆盖层（密码、限流、越权字段、伪协议、移动分区、新增/删除）
+node test_admin.mjs              # 后台鉴权与覆盖层（密码、限流、越权字段、伪协议、多分区归属、新增/删除）
 node test_sections.mjs           # 前后端分区白名单一致性 + items.json 里的取值都合法
 python test_browser.py           # 真 Chromium 端到端，含多地址回退、重试、降级、帮找与失效反馈全流程
 python test_live.py              # 打线上真接口（默认 pages.dev，可直连）
@@ -486,16 +509,26 @@ python test_live.py --api https://mo-stats.werneruszcb71.workers.dev --proxy htt
 撤销后回到 `items.json` 的原值、会话在服务端失效后提示重新登录而不是静默失败、
 在表单里点击打字不误触卡片折叠。
 
-移动分区那组盯的是：小分区下拉跟着大区联动重建、换区后计数两边都变
+分区归属那几组盯的是：小分区下拉跟着大区联动重建、换区后计数两边都变
 （原区 -1、目标区 +1）、原区里查不到、目标区的小分区里能查到、`id` 保持不变、
-刷新后仍在新分区。新增那组盯的是：未登录无入口、空资源名被前端挡住、
-填完当场出现在选定分区、刷新后仍在、访客也能看到；删除那组盯的是：
-`items.json` 的条目没有删除按钮、`confirm` 取消时不删、确认后卡片消失。
+刷新后仍在新分区。多分区那组：加到三个归属后三个区各自的小分区里都能找到、
+「全部」里只出现一次（一条数据多处露出，不是复制）、卡片标签跟着当前所在分区走
+且用「也在 X」列出其余、删掉一行后那个区里就查不到了、剩下的归属顺序不重排。
+重复分区那组：选两次同一分区会提示、保存只留第一次。
+
+新增那组盯的是：未登录无入口、空资源名被前端挡住、一次挂两个分区后两边都能找到、
+刷新后仍在、访客也能看到；删除那组盯的是：`items.json` 的条目没有删除按钮、
+`confirm` 取消时不删、确认后卡片消失。
 
 `test_admin.mjs` 用真 SQL 补齐后端侧：越权字段 400、伪协议 400、超长截断、
 空串与 `null` 的语义区别、登录限流、过期 token 自动清理、未知分区与不匹配的
-小分区 400、只换大区时旧小分区静默清空、`custom-` 之外的 id 不许删、
-删条目连带清覆盖。
+小分区 400、只换大区时旧小分区静默清空、`parsePlacements` 的各种输入
+（同区去重、超上限、空串合法）、`placements` 顶掉单值旧形式、
+`custom-` 之外的 id 不许删、删条目连带清覆盖。
+
+**「也在 X」标记要用 `.section-pill.also-in` 定位。** 「后台已改」标记也带
+`.alt`，两者都用 `after()` 插在分区标签后面，只按 `.alt` 找会拿到先插入的那个。
+这个坑踩过一次，测试因此挂在一个和功能无关的地方。
 
 **桩要和真后端一样严格。** `test_browser.py` 的 Worker 桩里抄了一份
 `section_subs` 与 `override_fields`，必须跟 `index.js` 同步 —— 桩比真后端宽容的话，

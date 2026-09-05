@@ -96,8 +96,11 @@ class StatsStub(http.server.BaseHTTPRequestHandler):
     admin_password = "correct-horse-battery"
     # 与 Worker 的 OVERRIDE_FIELDS 保持一致。多一项少一项都会让测试测不到实情。
     override_fields = (
-        "name", "description", "url", "password", "note", "section", "subsection",
+        "name", "description", "url", "password", "note",
+        "section", "subsection", "placements",
     )
+    # 一条资源最多挂几个分区。与 Worker 的 PLACEMENT_MAX 一致。
+    placement_max = 8
     # 与 Worker 的 SECTION_SUBS 保持一致。test_sections.mjs 盯前后端一致性，
     # 这里只需覆盖测试用到的分区。
     section_subs = {
@@ -125,6 +128,35 @@ class StatsStub(http.server.BaseHTTPRequestHandler):
         raw = self.headers.get("Authorization") or ""
         m = re.match(r"^Bearer\s+(\S+)$", raw)
         return m.group(1) if m else ""
+
+    @classmethod
+    def parse_placements(cls, raw):
+        """解析 'novel:jp,manga:download'。与 Worker 的 parsePlacements 同规则。
+
+        返回 (ok, value_or_error)。同一分区只留第一次出现 ——
+        同区两个小分区没有意义（卡片只有一个标签），还会让计数翻倍。
+        """
+        text = str(raw or "").strip()
+        if not text:
+            return True, ""
+        parts = [p.strip() for p in text.split(",") if p.strip()]
+        if len(parts) > cls.placement_max:
+            return False, f"最多只能挂 {cls.placement_max} 个分区"
+        out, seen = [], set()
+        for part in parts:
+            sec, _, sub = part.partition(":")
+            sec, sub = sec.strip(), sub.strip()
+            if sec not in cls.section_subs:
+                return False, f"未知分区：{sec}"
+            if sub and sub not in cls.section_subs[sec]:
+                return False, f"「{sec}」下没有小分区「{sub}」"
+            if sec in seen:
+                continue
+            seen.add(sec)
+            out.append(f"{sec}:{sub}" if sub else sec)
+        if not out:
+            return False, "至少要选一个分区"
+        return True, ",".join(out)
 
     def _cors(self):
         self.send_header("Access-Control-Allow-Origin", "*")
@@ -265,6 +297,12 @@ class StatsStub(http.server.BaseHTTPRequestHandler):
                         return self._send({"error": "链接必须以 http:// 或 https:// 开头"}, 400)
                     if k == "section" and v and v not in StatsStub.section_subs:
                         return self._send({"error": f"未知分区：{v}"}, 400)
+                    if k == "placements" and v:
+                        ok, res = StatsStub.parse_placements(v)
+                        if not ok:
+                            return self._send({"error": res}, 400)
+                        cur[k] = res
+                        continue
                     cur[k] = v
                 else:
                     return self._send({"error": f"{k} 必须是字符串或 null"}, 400)
@@ -279,6 +317,11 @@ class StatsStub(http.server.BaseHTTPRequestHandler):
                         return self._send(
                             {"error": f"「{final_sec}」下没有小分区「{cur['subsection']}」"}, 400)
                     cur["subsection"] = ""
+
+            # placements 一旦有值就清掉单值旧形式，两套并存前端得猜听谁的
+            if cur.get("placements"):
+                cur.pop("section", None)
+                cur.pop("subsection", None)
 
             if cur:
                 cur["updated"] = "2026-09-04T10:00:00.000Z"
@@ -295,13 +338,26 @@ class StatsStub(http.server.BaseHTTPRequestHandler):
             name = (body.get("name") or "").strip()
             if not name:
                 return self._send({"error": "资源名不能为空"}, 400)
-            section = (body.get("section") or "").strip()
-            if section not in StatsStub.section_subs:
-                return self._send({"error": "请选择有效的分区"}, 400)
-            subsection = (body.get("subsection") or "").strip()
-            if subsection and subsection not in StatsStub.section_subs[section]:
-                return self._send(
-                    {"error": f"「{section}」下没有小分区「{subsection}」"}, 400)
+
+            # 分区归属：新前端传 placements（可多选），老形式是 section+subsection
+            if body.get("placements"):
+                ok, res = StatsStub.parse_placements(body["placements"])
+                if not ok:
+                    return self._send({"error": res}, 400)
+                placements = res
+            else:
+                section = (body.get("section") or "").strip()
+                if section not in StatsStub.section_subs:
+                    return self._send({"error": "请选择有效的分区"}, 400)
+                subsection = (body.get("subsection") or "").strip()
+                if subsection and subsection not in StatsStub.section_subs[section]:
+                    return self._send(
+                        {"error": f"「{section}」下没有小分区「{subsection}」"}, 400)
+                placements = f"{section}:{subsection}" if subsection else section
+
+            # 第一个归属当主分区，与真 Worker 一致
+            first_sec, _, first_sub = placements.split(",")[0].partition(":")
+
             url = (body.get("url") or "").strip()
             if url and not re.match(r"^https?://", url, re.I):
                 return self._send({"error": "链接必须以 http:// 或 https:// 开头"}, 400)
@@ -317,8 +373,9 @@ class StatsStub(http.server.BaseHTTPRequestHandler):
                 "url": url,
                 "password": (body.get("password") or "").strip(),
                 "note": (body.get("note") or "").strip(),
-                "section": section,
-                "subsection": subsection or None,
+                "section": first_sec,
+                "subsection": first_sub or None,
+                "placements": placements,
                 "tags": tags[:6],
                 "kind": (body.get("kind") or "").strip() or None,
                 "adult": body.get("adult") is True,
@@ -641,9 +698,10 @@ def test_cross_section(page, base):
         if extra in SEC_LABEL:
             check(f"附加分区 {extra} 里也能找到", visible_in(SEC_LABEL[extra]) == 1)
 
-    # 卡片上要标出「也在 X」，让人知道这一份里还有别的内容
+    # 卡片上要标出「也在 X」，让人知道这一份里还有别的内容。
+    # 用 .also-in 而不是 .alt —— 「后台已改」标记也带 .alt，只按 .alt 找会串。
     card = page.locator(f'.feed-card[data-item-id="{target["id"]}"]')
-    alt = card.locator(".section-pill.alt")
+    alt = card.locator(".section-pill.also-in")
     check("卡片标出了另外那些区", alt.count() == 1 and "也在" in alt.text_content(),
           alt.text_content().strip() if alt.count() else "-")
 
@@ -1612,7 +1670,8 @@ def test_admin_edit(page, base, stub_port):
     item_id = page.locator(".feed-card").nth(0).get_attribute("data-item-id")
     card = card_editor(page, item_id)
     fields = card.locator(".card-admin-form .admin-field")
-    check("表单有 7 个字段", fields.count() == 7, str(fields.count()))
+    # 五个文本字段 + 一块分区归属选择器（分区从两个下拉合并成了一个多行控件）
+    check("表单有 6 个字段", fields.count() == 6, str(fields.count()))
 
     # 表单初值应是当前显示值，不是空的
     first_input = card.locator(".card-admin-form .admin-field input").nth(0)
@@ -1724,15 +1783,19 @@ def test_admin_move_section(page, base, stub_port):
     check("条目在漫画区", page.locator(f'.feed-card[data-item-id="{ITEM}"]').count() == 1)
 
     card = card_editor(page, ITEM)
-    selects = card.locator(".card-admin-form select")
-    check("分区两项是下拉框", selects.count() == 2, str(selects.count()))
+    rows = card.locator(".placement-row")
+    check("默认只有一行归属", rows.count() == 1, str(rows.count()))
 
-    sec = selects.nth(0)
-    sub = selects.nth(1)
+    sec = rows.nth(0).locator(".placement-sec")
+    sub = rows.nth(0).locator(".placement-sub")
     check("分区下拉选中当前分区", sec.input_value() == "manga", sec.input_value())
+    check("第一行标为主分区",
+          rows.nth(0).locator(".placement-index").text_content().strip() == "主分区")
     # 小分区选项应是漫画的那套
     opts = sub.locator("option").all_text_contents()
     check("小分区列的是漫画的", any("公众号" in o for o in opts), ",".join(opts))
+    # 只有一行时不给删 —— 一条资源总得有个归属
+    check("单行时隐藏删除按钮", rows.nth(0).locator(".placement-del").is_hidden())
 
     # 换成小说 -> 小分区选项要跟着重建
     sec.select_option("novel")
@@ -1747,8 +1810,10 @@ def test_admin_move_section(page, base, stub_port):
     page.wait_for_timeout(1000)
 
     ov = StatsStub.overrides.get(ITEM) or {}
-    check("后端记下新分区", ov.get("section") == "novel", str(ov.get("section")))
-    check("后端记下新小分区", ov.get("subsection") == "jp", str(ov.get("subsection")))
+    check("后端记下归属串", ov.get("placements") == "novel:jp", str(ov.get("placements")))
+    # placements 一旦有值就该清掉单值旧形式，否则前端得猜听谁的
+    check("单值旧形式已清空", not ov.get("section") and not ov.get("subsection"),
+          json.dumps({k: ov.get(k) for k in ("section", "subsection")}))
 
     # 计数两边都要变：漫画少一个，小说多一个。
     # 注意分区角标的计数**会跟着搜索词过滤**（renderTabs 里带了 matchesQuery，
@@ -1794,6 +1859,136 @@ def test_admin_move_section(page, base, stub_port):
     check("刷新后仍在小说/日轻", page.locator(f'.feed-card[data-item-id="{ITEM}"]').count() == 1)
 
 
+def test_admin_multi_placement(page, base, stub_port):
+    """一条资源同时挂多个分区 + 小分区。
+
+    用户的原话：「下载、日轻」，或者「那种网站几个大区都有资源的」。
+    所以是「分区 + 小分区」成对可加多行，不是只选几个大区。
+    """
+    print("\n--- 后台：一条挂多个分区 ---")
+    StatsStub.reset_admin()
+    stub_config(page, f"http://127.0.0.1:{stub_port}")
+    page.goto(base, wait_until="networkidle")
+    page.wait_for_timeout(1300)
+    admin_login(page)
+
+    ITEM = "manual-manga-1"      # MangaRead，主分区 manga/site
+    page.fill('[data-filter="q"]', "MangaRead")
+    page.wait_for_timeout(500)
+    card = card_editor(page, ITEM)
+
+    add = card.locator(".placement-add")
+    check("有「再加一个分区」按钮", add.count() == 1 and add.is_visible())
+
+    # 加到三个：漫画/网站（原有） + 小说/日轻 + 游戏/Galgame
+    add.click()
+    page.wait_for_timeout(300)
+    add.click()
+    page.wait_for_timeout(300)
+    rows = card.locator(".placement-row")
+    check("现在三行", rows.count() == 3, str(rows.count()))
+    check("非首行可删", rows.nth(1).locator(".placement-del").is_visible())
+
+    rows.nth(1).locator(".placement-sec").select_option("novel")
+    page.wait_for_timeout(250)
+    rows.nth(1).locator(".placement-sub").select_option("jp")
+    rows.nth(2).locator(".placement-sec").select_option("game")
+    page.wait_for_timeout(250)
+    rows.nth(2).locator(".placement-sub").select_option("gal")
+
+    card.locator(".admin-save").click()
+    page.wait_for_timeout(1000)
+
+    ov = StatsStub.overrides.get(ITEM) or {}
+    check("归属串含三个分区", ov.get("placements") == "manga:site,novel:jp,game:gal",
+          str(ov.get("placements")))
+    check("提示说明挂了几个分区",
+          "3 个分区" in card.locator(".card-admin-msg").text_content(),
+          card.locator(".card-admin-msg").text_content().strip())
+
+    # 三个分区各自的小分区里都要能找到
+    for sec_label, sub_label in [("漫画", "网站"), ("小说", "日轻"), ("游戏", "Galgame")]:
+        page.click(f'[data-tabs] button:has-text("{sec_label}")')
+        page.wait_for_timeout(400)
+        page.click(f'[data-subtabs] button:has-text("{sub_label}")')
+        page.wait_for_timeout(400)
+        check(f"{sec_label}/{sub_label} 里能找到",
+              page.locator(f'.feed-card[data-item-id="{ITEM}"]').count() == 1)
+
+    # 「全部」里只有一条
+    page.click('[data-tabs] button:has-text("全部")')
+    page.wait_for_timeout(400)
+    check("全部区里不重复", page.locator(f'.feed-card[data-item-id="{ITEM}"]').count() == 1)
+
+    # 卡片标签跟着当前所在分区走，另外两个用「也在」标出
+    page.click('[data-tabs] button:has-text("小说")')
+    page.wait_for_timeout(400)
+    card = page.locator(f'.feed-card[data-item-id="{ITEM}"]')
+    check("在小说区显示日轻",
+          card.locator(".section-pill").nth(0).text_content().strip() == "日轻",
+          card.locator(".section-pill").nth(0).text_content().strip())
+    alt = card.locator(".section-pill.also-in").nth(0).text_content()
+    check("「也在」列出另外两个区", "漫画" in alt and "游戏" in alt, alt.strip())
+
+    # 删掉一个归属：回到两个分区，被删的那个区里就找不到了
+    card = card_editor(page, ITEM)
+    rows = card.locator(".placement-row")
+    check("编辑器读回三行", rows.count() == 3, str(rows.count()))
+    # 删掉「游戏」那一行（顺序按归属串，游戏在最后）
+    rows.nth(2).locator(".placement-del").click()
+    page.wait_for_timeout(300)
+    check("删后剩两行", card.locator(".placement-row").count() == 2)
+    card.locator(".admin-save").click()
+    page.wait_for_timeout(1000)
+
+    ov = StatsStub.overrides.get(ITEM) or {}
+    # 归属顺序保持不变（主分区仍是 manga:site）—— 删掉一行不该重排剩下的
+    check("归属串少了游戏", ov.get("placements") == "manga:site,novel:jp",
+          str(ov.get("placements")))
+    page.click('[data-tabs] button:has-text("游戏")')
+    page.wait_for_timeout(400)
+    page.click('[data-subtabs] button:has-text("Galgame")')
+    page.wait_for_timeout(400)
+    page.fill('[data-filter="q"]', "MangaRead")
+    page.wait_for_timeout(500)
+    check("游戏区里已经没有了",
+          page.locator(f'.feed-card[data-item-id="{ITEM}"]').count() == 0)
+
+
+def test_admin_placement_dedupe(page, base, stub_port):
+    """同一个分区选两次时给出提醒，保存只留第一次。"""
+    print("\n--- 后台：重复分区去重 ---")
+    StatsStub.reset_admin()
+    stub_config(page, f"http://127.0.0.1:{stub_port}")
+    page.goto(base, wait_until="networkidle")
+    page.wait_for_timeout(1300)
+    admin_login(page)
+
+    ITEM = "manual-manga-1"
+    page.fill('[data-filter="q"]', "MangaRead")
+    page.wait_for_timeout(500)
+    card = card_editor(page, ITEM)
+
+    card.locator(".placement-add").click()
+    page.wait_for_timeout(300)
+    rows = card.locator(".placement-row")
+    # 两行都选漫画 —— 同区两个小分区没有意义，卡片只有一个标签
+    rows.nth(1).locator(".placement-sec").select_option("manga")
+    page.wait_for_timeout(300)
+    rows.nth(1).locator(".placement-sub").select_option("kr")
+
+    hint = card.locator(".placement-hint").text_content()
+    check("提醒选了重复分区", "只会保留第一次" in hint, hint.strip())
+
+    card.locator(".admin-save").click()
+    page.wait_for_timeout(1000)
+    # 只提交了一个归属，等于没变，所以不该写覆盖
+    ov = StatsStub.overrides.get(ITEM) or {}
+    check("重复项被丢掉（等于没改）", not ov.get("placements"), str(ov.get("placements")))
+    check("提示为没有改动", "没有改动" in card.locator(".card-admin-msg").text_content(),
+          card.locator(".card-admin-msg").text_content().strip())
+
+
 def test_admin_new_item(page, base, stub_port):
     """后台新增一条资源，当场出现在选定的分区里。"""
     print("\n--- 后台：新增资源 ---")
@@ -1825,11 +2020,23 @@ def test_admin_new_item(page, base, stub_port):
     check("给出提示", "不能为空" in page.text_content("[data-admin-new-msg]"),
           page.text_content("[data-admin-new-msg]").strip())
 
-    # 填一条完整的
+    # 填一条完整的，挂两个分区：漫画/韩漫 + 小说/下载。
+    # 这正是用户要的场景 —— 一个网盘包里既有漫画又有小说。
     form.locator(".admin-field").nth(0).locator("input").fill("后台新增的测试资源")
-    form.locator("select").nth(0).select_option("manga")
+    rows = form.locator(".placement-row")
+    check("默认一行归属", rows.count() == 1, str(rows.count()))
+    rows.nth(0).locator(".placement-sec").select_option("manga")
     page.wait_for_timeout(300)
-    form.locator("select").nth(1).select_option("kr")
+    rows.nth(0).locator(".placement-sub").select_option("kr")
+
+    form.locator(".placement-add").click()
+    page.wait_for_timeout(300)
+    rows = form.locator(".placement-row")
+    check("加出第二行", rows.count() == 2, str(rows.count()))
+    rows.nth(1).locator(".placement-sec").select_option("novel")
+    page.wait_for_timeout(300)
+    rows.nth(1).locator(".placement-sub").select_option("download")
+
     form.locator("textarea").nth(0).fill("这是简介")
     # 跳转链接是第 2 个 text input（第 1 个是资源名）
     form.locator(".admin-field input[type=text]").nth(1).fill("https://new.example.com/")
@@ -1841,17 +2048,19 @@ def test_admin_new_item(page, base, stub_port):
     check("后端收到一条", len(StatsStub.custom_items) == 1, str(len(StatsStub.custom_items)))
     it = list(StatsStub.custom_items.values())[0]
     check("名字正确", it["name"] == "后台新增的测试资源", it["name"])
-    check("分区正确", it["section"] == "manga" and it["subsection"] == "kr",
+    check("归属串带两个分区", it["placements"] == "manga:kr,novel:download", it["placements"])
+    check("主分区取第一个", it["section"] == "manga" and it["subsection"] == "kr",
           f'{it["section"]}/{it["subsection"]}')
     check("链接正确", it["url"] == "https://new.example.com/", it["url"])
     check("标签拆开了", it["tags"] == ["韩漫", "测试"], json.dumps(it["tags"], ensure_ascii=False))
-    check("成功提示", "已添加" in page.text_content("[data-admin-new-msg]"),
+    check("成功提示提到分区数", "2 个分区" in page.text_content("[data-admin-new-msg]"),
           page.text_content("[data-admin-new-msg]").strip())
     check("提交后清空名字框",
           form.locator(".admin-field").nth(0).locator("input").input_value() == "")
-    check("但保留分区选择", form.locator("select").nth(0).input_value() == "manga")
+    check("但保留分区选择",
+          form.locator(".placement-row").nth(0).locator(".placement-sec").input_value() == "manga")
 
-    # 当场出现在漫画/韩漫 里
+    # 两个分区里都要能找到 —— 这是多选的意义所在
     new_id = it["id"]
     page.click('[data-tabs] button:has-text("漫画")')
     page.wait_for_timeout(400)
@@ -1859,6 +2068,25 @@ def test_admin_new_item(page, base, stub_port):
     page.wait_for_timeout(400)
     check("新条目出现在漫画/韩漫", page.locator(f'.feed-card[data-item-id="{new_id}"]').count() == 1,
           new_id)
+
+    page.click('[data-tabs] button:has-text("小说")')
+    page.wait_for_timeout(400)
+    page.click('[data-subtabs] button:has-text("下载")')
+    page.wait_for_timeout(400)
+    check("同时出现在小说/下载", page.locator(f'.feed-card[data-item-id="{new_id}"]').count() == 1)
+
+    # 但「全部」里只有一条，不是两条 —— 一条数据多处露出，不是复制
+    page.click('[data-tabs] button:has-text("全部")')
+    page.wait_for_timeout(400)
+    page.fill('[data-filter="q"]', "后台新增的测试资源")
+    page.wait_for_timeout(500)
+    check("全部区里不重复", page.locator(f'.feed-card[data-item-id="{new_id}"]').count() == 1)
+
+    # 卡片上标出另外那个区。同上：用 .also-in 避免和「后台已改」标记串
+    card = page.locator(f'.feed-card[data-item-id="{new_id}"]')
+    alt = card.locator(".section-pill.also-in")
+    check("卡片标出「也在」", alt.count() >= 1 and "也在" in alt.nth(0).text_content(),
+          alt.nth(0).text_content().strip() if alt.count() else "-")
 
     # 刷新后还在（来自后端而非本地状态）
     page.reload(wait_until="networkidle")
@@ -2142,6 +2370,14 @@ def main():
 
             ctx = browser.new_context()
             test_admin_move_section(ctx.new_page(), base, stub_port)
+            ctx.close()
+
+            ctx = browser.new_context()
+            test_admin_multi_placement(ctx.new_page(), base, stub_port)
+            ctx.close()
+
+            ctx = browser.new_context()
+            test_admin_placement_dedupe(ctx.new_page(), base, stub_port)
             ctx.close()
 
             ctx = browser.new_context()

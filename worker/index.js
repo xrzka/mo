@@ -60,11 +60,13 @@ const REQ_KINDS = ["want", "broken"];
  * **故意不含 id** —— 点击数（clicks.item）与失效反馈（requests.item_id）都以
  * id 为键，改了等于把这条已有的统计和反馈全丢掉。
  *
- * section / subsection 可以改：换分区只影响它出现在哪个标签页下，
- * id 不变，所以统计和反馈都跟着走，不会丢。
+ * placements 是分区归属（可多选，见 parsePlacements）。
+ * section / subsection 是它的单值旧形式，保留是为了兼容已有的覆盖行 ——
+ * 新的保存一律走 placements。
  */
 const OVERRIDE_FIELDS = [
-  "name", "description", "url", "password", "note", "section", "subsection",
+  "name", "description", "url", "password", "note",
+  "section", "subsection", "placements",
 ];
 
 /** 各字段长度上限（按字符数，中文算 1）。 */
@@ -76,6 +78,7 @@ const OVERRIDE_MAX = {
   note: 1000,
   section: 32,
   subsection: 32,
+  placements: 300,
 };
 
 /**
@@ -98,6 +101,51 @@ const SECTION_SUBS = {
   guide: [],
   collection: ["site", "app", "cloud", "doc", "guide"],
 };
+
+/** 一条资源最多挂几个「分区/小分区」位置。够用且防手滑 ——
+ *  挂满十几个分区的资源等于没分类。 */
+const PLACEMENT_MAX = 8;
+
+/**
+ * 解析分区归属串。格式 `novel:jp,manga:download,tool`，逗号分隔，
+ * 冒号后是小分区（可省略表示只落在该分区的「全部」里）。
+ *
+ * 为什么用一个字符串而不是几列：一条资源可以挂在任意多个分区，
+ * 列数固定的表存不下；存 JSON 又要额外防注入和形状校验。
+ * 这个格式扁平、好校验、出问题时肉眼能读。
+ *
+ * 同一分区只保留第一次出现 —— 同区两个小分区没有意义（卡片只有一个标签），
+ * 而且会让计数重复。第一个是主归属，决定卡片默认显示哪个标签。
+ *
+ * 返回 { ok: true, value } 或 { ok: false, error }。
+ */
+function parsePlacements(raw) {
+  const text = String(raw ?? "").trim();
+  if (!text) return { ok: true, value: "" };   // 空串 = 不指定，用原值
+
+  const parts = text.split(",").map((s) => s.trim()).filter(Boolean);
+  if (parts.length > PLACEMENT_MAX) {
+    return { ok: false, error: `最多只能挂 ${PLACEMENT_MAX} 个分区` };
+  }
+
+  const out = [];
+  const seen = new Set();
+  for (const part of parts) {
+    const [rawSec, rawSub = ""] = part.split(":");
+    const sec = rawSec.trim();
+    const sub = rawSub.trim();
+
+    if (!(sec in SECTION_SUBS)) return { ok: false, error: `未知分区：${sec}` };
+    if (sub && !SECTION_SUBS[sec].includes(sub)) {
+      return { ok: false, error: `「${sec}」下没有小分区「${sub}」` };
+    }
+    if (seen.has(sec)) continue;   // 同区重复，静默取第一个
+    seen.add(sec);
+    out.push(sub ? `${sec}:${sub}` : sec);
+  }
+  if (!out.length) return { ok: false, error: "至少要选一个分区" };
+  return { ok: true, value: out.join(",") };
+}
 
 /** 新增条目的 id 前缀。挑 custom- 是因为现有 id 都是
  *  manual- / xlsx- / gal- / relay- 开头，不会撞，也便于一眼认出来源。
@@ -614,6 +662,13 @@ async function saveOverride(env, body) {
     if (f === "section" && clean && !(clean in SECTION_SUBS)) {
       return { status: 400, body: { error: `未知分区：${clean}` } };
     }
+    // placements 是多分区归属，格式与白名单都在 parsePlacements 里校验
+    if (f === "placements" && clean) {
+      const p = parsePlacements(clean);
+      if (!p.ok) return { status: 400, body: { error: p.error } };
+      next[f] = p.value;
+      continue;
+    }
     next[f] = clean;
   }
 
@@ -633,6 +688,13 @@ async function saveOverride(env, body) {
       }
       next.subsection = "";
     }
+  }
+
+  // placements 一旦给了值，就把单值的 section/subsection 清掉 ——
+  // 两套并存时前端得猜听谁的，留一套语义才清楚。
+  if (next.placements) {
+    next.section = null;
+    next.subsection = null;
   }
 
   // 全部字段都撤销了就删掉整行，别留一行空覆盖
@@ -663,7 +725,7 @@ async function listCustomItems(env) {
   const { results } = await env.DB
     .prepare(
       `SELECT id, name, description, url, password, note, section, subsection,
-              tags, kind, adult, created, updated
+              placements, tags, kind, adult, created, updated
        FROM custom_items ORDER BY created DESC`
     )
     .all();
@@ -676,6 +738,9 @@ async function listCustomItems(env) {
     note: r.note,
     section: r.section,
     subsection: r.subsection || undefined,
+    // 多分区归属。老行没有这一列，用 section/subsection 兜底拼一个出来，
+    // 前端就只需要认 placements 一种形式。
+    placements: r.placements || (r.subsection ? `${r.section}:${r.subsection}` : r.section),
     // D1 没有数组类型，tags 存的是逗号分隔串，这里拆回数组
     tags: r.tags ? r.tags.split(",").filter(Boolean) : [],
     kind: r.kind || undefined,
@@ -696,15 +761,28 @@ async function createCustomItem(env, body) {
   const name = sanitizeText(body.name, CUSTOM_MAX.name);
   if (!name) return { status: 400, body: { error: "资源名不能为空" } };
 
-  const section = sanitizeText(body.section, CUSTOM_MAX.section);
-  if (!section || !(section in SECTION_SUBS)) {
-    return { status: 400, body: { error: "请选择有效的分区" } };
+  // 分区归属：新前端传 placements（可多选），老形式是 section+subsection。
+  // 两种都收，统一成 placements 存库。
+  let placements = "";
+  if (body.placements !== undefined && body.placements !== null && body.placements !== "") {
+    const p = parsePlacements(sanitizeText(body.placements, CUSTOM_MAX.placements));
+    if (!p.ok) return { status: 400, body: { error: p.error } };
+    placements = p.value;
+  } else {
+    const section = sanitizeText(body.section, CUSTOM_MAX.section);
+    if (!section || !(section in SECTION_SUBS)) {
+      return { status: 400, body: { error: "请选择有效的分区" } };
+    }
+    const subsection = sanitizeText(body.subsection, CUSTOM_MAX.subsection);
+    if (subsection && !(SECTION_SUBS[section] || []).includes(subsection)) {
+      return { status: 400, body: { error: `「${section}」下没有小分区「${subsection}」` } };
+    }
+    placements = subsection ? `${section}:${subsection}` : section;
   }
 
-  const subsection = sanitizeText(body.subsection, CUSTOM_MAX.subsection);
-  if (subsection && !(SECTION_SUBS[section] || []).includes(subsection)) {
-    return { status: 400, body: { error: `「${section}」下没有小分区「${subsection}」` } };
-  }
+  // 第一个归属当主分区存进 section/subsection 两列，方便直接按分区查库；
+  // 完整归属存 placements。前端优先读 placements。
+  const [firstSec, firstSub = ""] = placements.split(",")[0].split(":");
 
   const url = sanitizeText(body.url, CUSTOM_MAX.url);
   if (url && !/^https?:\/\//i.test(url)) {
@@ -734,15 +812,15 @@ async function createCustomItem(env, body) {
   await env.DB.prepare(
     `INSERT INTO custom_items
        (id, name, description, url, password, note, section, subsection,
-        tags, kind, adult, created, updated)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        placements, tags, kind, adult, created, updated)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   ).bind(
     id, name,
     sanitizeText(body.description, CUSTOM_MAX.description),
     url,
     sanitizeText(body.password, CUSTOM_MAX.password),
     sanitizeText(body.note, CUSTOM_MAX.note),
-    section, subsection, tags,
+    firstSec, firstSub, placements, tags,
     sanitizeText(body.kind, CUSTOM_MAX.kind),
     body.adult === true ? 1 : 0,
     now, now
@@ -941,6 +1019,8 @@ export const _internal = {
   OVERRIDE_FIELDS,
   OVERRIDE_MAX,
   SECTION_SUBS,
+  PLACEMENT_MAX,
+  parsePlacements,
   CUSTOM_PREFIX,
   CUSTOM_MAX_ITEMS,
   SESSION_HOURS,

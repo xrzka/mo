@@ -87,8 +87,15 @@ CREATE INDEX IF NOT EXISTS idx_request_votes_day ON request_votes (day);
 -- item_id 对应 items.json 里的条目 id，也是主键 —— 一条资源只有一份覆盖。
 -- **id 不可覆盖**：点击数（clicks.item）与失效反馈（requests.item_id）都以它
 -- 为键，改了等于把这条已有的统计和反馈全丢掉。
--- section / subsection 可以覆盖：换分区只影响它出现在哪个标签页下，id 不变，
--- 所以统计和反馈都跟着走。
+--
+-- 分区归属可以覆盖（换区不动 id，统计和反馈都跟着走）。有两套形式：
+--   placements          多分区，格式 'novel:jp,manga:download'，逗号分隔，
+--                       冒号后是小分区（可省略）。第一个是主归属。
+--   section/subsection  单值旧形式，早期的覆盖行用它。新的保存一律写 placements，
+--                       并把这两列清空 —— 两套并存时前端得猜听谁的。
+-- 为什么 placements 用一个字符串而不是几列：一条资源可挂任意多个分区，
+-- 列数固定存不下；存 JSON 又要额外防注入和形状校验。扁平串好校验、肉眼能读。
+--
 -- 值为 NULL 表示该字段不覆盖，用原值；空字符串是有意义的覆盖（清空该字段）。
 CREATE TABLE IF NOT EXISTS overrides (
   item_id  TEXT PRIMARY KEY,
@@ -99,6 +106,7 @@ CREATE TABLE IF NOT EXISTS overrides (
   note     TEXT,
   section     TEXT,
   subsection  TEXT,
+  placements  TEXT,
   updated  TEXT NOT NULL,
   by_who   TEXT NOT NULL DEFAULT ''
 );
@@ -115,6 +123,9 @@ CREATE INDEX IF NOT EXISTS idx_overrides_updated ON overrides (updated);
 -- id 由后端生成（custom-<时间戳>-<随机>），不让前端指定 —— 前端能指定 id 的话，
 -- 撞上 items.json 里已有的 id 会让那条被顶掉。
 -- 字段与 items.json 的结构对齐，tags 存逗号分隔的字符串（D1 没有数组类型）。
+--
+-- 分区归属同样是两套：placements 存完整的多分区串，section/subsection 存它的
+-- 第一个（主归属），方便直接按分区查库。前端优先读 placements。
 CREATE TABLE IF NOT EXISTS custom_items (
   id       TEXT PRIMARY KEY,
   name     TEXT NOT NULL,
@@ -124,6 +135,7 @@ CREATE TABLE IF NOT EXISTS custom_items (
   note     TEXT NOT NULL DEFAULT '',
   section  TEXT NOT NULL,
   subsection TEXT NOT NULL DEFAULT '',
+  placements TEXT NOT NULL DEFAULT '',
   tags     TEXT NOT NULL DEFAULT '',
   kind     TEXT NOT NULL DEFAULT '',
   adult    INTEGER NOT NULL DEFAULT 0,
