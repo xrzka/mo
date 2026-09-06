@@ -99,6 +99,10 @@ const skip = new Set(["field", "filter", "stat", "card-template", "item-id"]);
   "admin-new-toggle",
   "admin-new-msg",
   "admin-new-form",
+  "tx",
+  "tx-toggle",
+  "tx-msg",
+  "tx-body",
 ].forEach((a) => check(`后台节点 data-${a}`, htmlAttrs.has(a)));
 
 // data-wanted-input 是带值的属性，单独核对

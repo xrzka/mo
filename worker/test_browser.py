@@ -2570,6 +2570,144 @@ def test_wanted_admin_session_expired(page, base, stub_port):
     check("站长操作栏也隐藏", page.is_hidden("[data-wanted-admin]"))
 
 
+def test_tx_hidden_for_visitors(page, base, stub_port):
+    """翻译工作区只给站长。访客那边 DOM 里压根不该有它的表单。"""
+    print("\n--- 翻译工作区：访客看不到 ---")
+    StatsStub.reset_admin()
+    stub_config(page, f"http://127.0.0.1:{stub_port}")
+    page.goto(base, wait_until="networkidle")
+    page.wait_for_timeout(1300)
+
+    page.evaluate("() => { location.hash = '#admin'; }")
+    page.wait_for_timeout(400)
+    check("未登录时整块隐藏", page.is_hidden("[data-tx]"))
+    check("没有展开按钮可点", page.locator("[data-tx-toggle]:visible").count() == 0)
+
+    admin_login(page)
+    check("登录后出现入口", page.is_visible("[data-tx-toggle]"))
+
+
+def test_tx_split_and_queue(page, base, stub_port):
+    """载入 txt 后按段落切块，队列长度与预期一致。
+
+    切块规则照搬本地工具的 split_text：按空行分段再累加到 1300 字上限，
+    所以每块都从段落开头起，不会把句子截断。
+    """
+    print("\n--- 翻译工作区：切块与队列 ---")
+    StatsStub.reset_admin()
+    stub_config(page, f"http://127.0.0.1:{stub_port}")
+    page.goto(base, wait_until="networkidle")
+    page.wait_for_timeout(1300)
+    admin_login(page)
+    page.click("[data-tx-toggle]")
+    page.wait_for_timeout(400)
+
+    check("展开后有说明", "原理" in page.text_content(".tx-intro"))
+    check("接口下拉预置了直连站",
+          "motomoto" in page.text_content("[data-tx-body] select"),
+          page.text_content("[data-tx-body] select").strip()[:40])
+    check("key 输入框是密码型",
+          page.eval_on_selector_all(
+              "[data-tx-body] input[type=password]", "els => els.length") == 1)
+
+    # 造一份 12 段、每段约 500 字的文件 —— 应切成多块
+    page.evaluate(
+        """() => {
+            const paras = [];
+            for (let i = 1; i <= 12; i++) paras.push(`第${i}段起头。` + 'あ'.repeat(490));
+            const text = paras.join('\\n\\n');
+            const file = new File([text], 'sample.txt', { type: 'text/plain' });
+            const dt = new DataTransfer();
+            dt.items.add(file);
+            const input = document.querySelector('[data-tx-body] input[type=file]');
+            input.files = dt.files;
+            input.dispatchEvent(new Event('change', { bubbles: true }));
+        }"""
+    )
+    page.wait_for_timeout(800)
+
+    msg = page.text_content("[data-tx-msg]")
+    check("提示里报了字数与块数", "切成" in msg and "块" in msg, msg.strip())
+    n = page.locator(".tx-item").count()
+    check("队列切成多块", n > 1, str(n))
+    check("初始都是待翻译",
+          page.locator(".tx-item.pending").count() == n, str(n))
+
+    # 每块都该从段落开头起（切在段落边界的证据）
+    heads = page.eval_on_selector_all(
+        ".tx-item .tx-prev", "els => els.map(e => e.textContent.slice(0, 4))"
+    )
+    check("每块都从段落头开始", all(h.startswith("第") for h in heads),
+          json.dumps(heads[:4], ensure_ascii=False))
+
+    check("没填 key 时开始按钮仍可点（点了才提示）",
+          not page.locator(".tx-btn.primary").is_disabled())
+    check("导出按钮此时禁用（还没译文）",
+          page.locator('.tx-btn:has-text("导出译文")').is_disabled())
+
+
+def test_tx_requires_key(page, base, stub_port):
+    """没填 key 就点开始，要明确说缺什么，而不是静默失败或直接发请求。"""
+    print("\n--- 翻译工作区：缺 key 时提示 ---")
+    StatsStub.reset_admin()
+    stub_config(page, f"http://127.0.0.1:{stub_port}")
+    page.goto(base, wait_until="networkidle")
+    page.wait_for_timeout(1300)
+    admin_login(page)
+    page.click("[data-tx-toggle]")
+    page.wait_for_timeout(400)
+
+    page.evaluate(
+        """() => {
+            const file = new File(['第一段。\\n\\n第二段。'], 'a.txt', { type: 'text/plain' });
+            const dt = new DataTransfer();
+            dt.items.add(file);
+            const input = document.querySelector('[data-tx-body] input[type=file]');
+            input.files = dt.files;
+            input.dispatchEvent(new Event('change', { bubbles: true }));
+        }"""
+    )
+    page.wait_for_timeout(600)
+
+    page.click(".tx-btn.primary")
+    page.wait_for_timeout(600)
+    msg = page.text_content("[data-tx-msg]")
+    check("提示先填 key", "key" in msg.lower(), msg.strip())
+    check("没有块被标成翻译中", page.locator(".tx-item.running").count() == 0)
+
+
+def test_tx_config_persists(page, base, stub_port):
+    """设置存本机 localStorage，刷新后还在；key 不会出现在任何请求里。"""
+    print("\n--- 翻译工作区：设置留在本机 ---")
+    StatsStub.reset_admin()
+    stub_config(page, f"http://127.0.0.1:{stub_port}")
+    page.goto(base, wait_until="networkidle")
+    page.wait_for_timeout(1300)
+    admin_login(page)
+    page.click("[data-tx-toggle]")
+    page.wait_for_timeout(400)
+
+    page.fill("[data-tx-body] input[type=password]", "sk-probe-not-real")
+    page.fill('[data-tx-body] input[placeholder="如 gpt-4o-mini"]', "some-model")
+    page.dispatch_event("[data-tx-body] input[type=password]", "change")
+    page.dispatch_event('[data-tx-body] input[placeholder="如 gpt-4o-mini"]', "change")
+    page.wait_for_timeout(400)
+
+    saved = page.evaluate("() => localStorage.getItem('mo-tx-cfg-v1')")
+    check("配置写进 localStorage", saved and "some-model" in saved, str(saved)[:70])
+
+    # 重新登录 + 展开，值要回填 —— 否则每次用都得重输一遍 key
+    page.reload(wait_until="networkidle")
+    page.wait_for_timeout(1300)
+    admin_login(page)
+    page.click("[data-tx-toggle]")
+    page.wait_for_timeout(500)
+    check("刷新后模型名回填",
+          page.input_value('[data-tx-body] input[placeholder="如 gpt-4o-mini"]') == "some-model")
+    check("刷新后 key 回填",
+          page.input_value("[data-tx-body] input[type=password]") == "sk-probe-not-real")
+
+
 def test_admin_no_backend(page, base):
     """后端整体不可用时，后台面板不能假装能用。"""
     print("\n--- 后台：后端不可用 ---")
@@ -2770,6 +2908,23 @@ def main():
 
             ctx = browser.new_context()
             test_admin_no_backend(ctx.new_page(), base)
+            ctx.close()
+
+            # ---- 翻译工作区 ----
+            ctx = browser.new_context()
+            test_tx_hidden_for_visitors(ctx.new_page(), base, stub_port)
+            ctx.close()
+
+            ctx = browser.new_context()
+            test_tx_split_and_queue(ctx.new_page(), base, stub_port)
+            ctx.close()
+
+            ctx = browser.new_context()
+            test_tx_requires_key(ctx.new_page(), base, stub_port)
+            ctx.close()
+
+            ctx = browser.new_context()
+            test_tx_config_persists(ctx.new_page(), base, stub_port)
             ctx.close()
 
             # ---- 反馈运维 ----

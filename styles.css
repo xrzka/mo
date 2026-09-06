@@ -1153,6 +1153,104 @@ h1 {
 .wanted-op-msg { color: var(--text-muted); font-size: 11.5px; }
 .wanted-op-msg.bad { color: #d97706; }
 
+/* ---------- 翻译工作区（站长登录后可见） ---------- */
+.admin-tx {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--border);
+}
+.admin-tx[hidden] { display: none; }
+
+.tx-body { margin-top: 12px; }
+.tx-body[hidden] { display: none; }
+
+/* 第一次用的人得先知道进度条在动什么 */
+.tx-intro {
+  margin: 0 0 12px;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 9px;
+  background: var(--bg);
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.65;
+}
+
+.tx-grid { display: grid; gap: 10px; max-width: 620px; margin-bottom: 12px; }
+.tx-grid input, .tx-grid select, .tx-grid textarea {
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  resize: vertical;
+}
+
+.tx-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+.tx-btn {
+  padding: 6px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.tx-btn.primary { border-color: var(--accent); background: var(--accent); color: #fff; }
+.tx-btn.danger { border-color: #d97706; color: #d97706; }
+.tx-btn:disabled { opacity: 0.5; cursor: default; }
+
+/* 队列。整本书可能上百块，给个上限自己滚，别把页面撑到几屏高 */
+.tx-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+  max-height: 380px;
+  overflow-y: auto;
+}
+.tx-item {
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+}
+/* 左边一道色条表示状态，扫一眼就知道卡在哪 */
+.tx-item.running { border-left: 3px solid var(--accent); }
+.tx-item.done { border-left: 3px solid #16a34a; }
+.tx-item.error { border-left: 3px solid #d97706; }
+
+.tx-item-head { display: flex; align-items: center; gap: 8px; }
+.tx-state {
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 10.5px;
+  font-weight: 600;
+}
+.tx-item.done .tx-state { background: rgba(22, 163, 74, 0.14); color: #16a34a; }
+.tx-item.error .tx-state { background: rgba(217, 119, 6, 0.14); color: #d97706; }
+
+.tx-size { color: var(--text-muted); font-size: 11px; }
+.tx-err { margin: 5px 0 0; color: #d97706; font-size: 11.5px; }
+.tx-prev {
+  margin: 5px 0 0;
+  color: var(--text-muted);
+  font-size: 11.5px;
+  line-height: 1.5;
+  /* 只留一行预览：整本书的正文铺开会把页面撑爆 */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* ---------- 热门排行 ---------- */
 .stats-panel {
   margin: 0 0 18px;

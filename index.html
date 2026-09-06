@@ -9,9 +9,9 @@
       content="墨小说漫画 · 小说、漫画、动画、游戏、AI 资源导航，分区整理，点击直达。"
     />
     <title>墨小说漫画 · 资源导航</title>
-    <script src="config.js?v=20260905d"></script>
-    <link rel="stylesheet" href="styles.css?v=20260905d" />
-    <script src="app.js?v=20260905d" defer></script>
+    <script src="config.js?v=20260906a"></script>
+    <link rel="stylesheet" href="styles.css?v=20260906a" />
+    <script src="app.js?v=20260906a" defer></script>
   </head>
   <body>
     <a class="skip-link" href="#feed">跳到资源列表</a>
@@ -131,6 +131,18 @@
           </button>
           <span class="admin-new-msg" data-admin-new-msg aria-live="polite"></span>
           <div class="admin-new-form" data-admin-new-form hidden></div>
+        </div>
+
+        <!--
+          翻译工作区：只在后台登录后显示。表单与队列由 app.js 生成。
+          API key 只存本机 localStorage，请求由浏览器直发中转站，不经过任何服务器。
+        -->
+        <div class="admin-tx" data-tx hidden>
+          <button type="button" class="admin-new-toggle" data-tx-toggle>
+            ⇄ 翻译工作区
+          </button>
+          <span class="admin-new-msg" data-tx-msg aria-live="polite"></span>
+          <div class="tx-body" data-tx-body hidden></div>
         </div>
       </section>
 

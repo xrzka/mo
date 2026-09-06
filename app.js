@@ -1367,6 +1367,21 @@
         if (toggle) toggle.textContent = "+ 新增一条资源";
       }
     }
+
+    // 翻译工作区同理。退出时收起并清空 —— 里面可能留着上次的文件与队列，
+    // 下次登录看到半截状态会以为出了问题。
+    const txWrap = $("[data-tx]");
+    if (txWrap) {
+      txWrap.hidden = !logged;
+      if (!logged) {
+        const body = $("[data-tx-body]");
+        const toggle = $("[data-tx-toggle]");
+        const msg = $("[data-tx-msg]");
+        if (body) { body.hidden = true; body.textContent = ""; }
+        if (toggle) toggle.textContent = "⇄ 翻译工作区";
+        if (msg) { msg.textContent = ""; msg.className = "admin-new-msg"; }
+      }
+    }
   }
 
   function bindAdmin() {
@@ -1415,6 +1430,443 @@
     // 支持直接改 hash 进出后台，不用刷新
     window.addEventListener("hashchange", renderAdmin);
     bindAdminNew();
+    bindTx();
+  }
+
+  /* ---------- 翻译工作区（仅站长登录后可见） ---------- */
+
+  /**
+   * 翻译原理就三步：切块 → 逐块调 API → 按原顺序拼回。
+   * 界面上的进度条走的是「块」，不是字数。
+   *
+   * 请求由浏览器直发中转站，不经过任何服务器 —— 所以只支持开了 CORS 的端点。
+   * 实测：motomoto.lol / api.yjs.im / ai.kscsnkli.site 三个放行了 `*`，
+   * 而 OpenAI、Gemini 官方端点以及 tabitoken/kktoken 等都没有 CORS 头，
+   * 浏览器直连会被拦（那类必须走服务端转发，这里不做）。
+   */
+  const TX_ENDPOINTS = [
+    { id: "https://motomoto.lol/v1/chat/completions", label: "motomoto.lol" },
+    { id: "https://api.yjs.im/v1/chat/completions", label: "api.yjs.im" },
+    { id: "https://ai.kscsnkli.site/v1/chat/completions", label: "ai.kscsnkli.site" },
+  ];
+
+  // 设置存本机，key 不上传。键名带 v1 便于以后改结构时作废旧值。
+  const TX_CFG_KEY = "mo-tx-cfg-v1";
+
+  /** 切块长度。1300 字是本地工具 split_text 用了很久的值：
+   *  再大容易触发上下文/超时，再小则请求次数暴增、更慢也更贵。 */
+  const TX_CHUNK = 1300;
+
+  /** 并发数上限。中转站对并发很敏感，开高了触发 429 反而更慢。 */
+  const TX_CONCURRENCY_MAX = 4;
+
+  const TX_PROMPT_DEFAULT =
+    "你是专业的文学翻译。把用户给出的文本翻译成简体中文，" +
+    "保持原有的分段与换行，不要添加解释、注释或任何额外内容，只输出译文。";
+
+  /** 运行时状态。不进 state：这块只有站长用，跟资源列表的渲染无关。 */
+  const tx = {
+    chunks: [],      // [{ i, src, out, status, error }]
+    fileName: "",
+    running: false,
+    stopping: false,
+  };
+
+  function txLoadCfg() {
+    const d = {
+      endpoint: TX_ENDPOINTS[0].id,
+      key: "",
+      model: "gpt-4o-mini",
+      concurrency: 2,
+      prompt: TX_PROMPT_DEFAULT,
+    };
+    try {
+      const raw = JSON.parse(localStorage.getItem(TX_CFG_KEY) || "{}");
+      return { ...d, ...(raw && typeof raw === "object" ? raw : {}) };
+    } catch {
+      return d;
+    }
+  }
+
+  function txSaveCfg(cfg) {
+    try {
+      localStorage.setItem(TX_CFG_KEY, JSON.stringify(cfg));
+    } catch {
+      /* 隐私模式下存不下，本次仍可用，只是下次要重填 */
+    }
+  }
+
+  /**
+   * 按段落切块。照搬本地工具 split_text 的规则：先按空行分段，
+   * 再累加到长度上限 —— 切在段落边界，不会把句子截断。
+   */
+  function txSplit(text, maxLen = TX_CHUNK) {
+    const t = String(text || "").trim();
+    if (!t) return [];
+    // 保留分隔符，拼回去时段间空行不丢
+    const parts = t.split(/(\n\s*\n)/);
+    const out = [];
+    let cur = "";
+    parts.forEach((p) => {
+      if (cur.length + p.length > maxLen && cur.trim()) {
+        out.push(cur.trim());
+        cur = p;
+      } else {
+        cur += p;
+      }
+    });
+    if (cur.trim()) out.push(cur.trim());
+    return out;
+  }
+
+  /** 调一次翻译。错误信息要能看出是哪一类问题，否则用户只能干瞪眼。 */
+  async function txCallOnce(cfg, text) {
+    let res;
+    try {
+      res = await fetch(cfg.endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(cfg.key ? { Authorization: "Bearer " + cfg.key } : {}),
+        },
+        body: JSON.stringify({
+          model: cfg.model,
+          messages: [
+            { role: "system", content: cfg.prompt || TX_PROMPT_DEFAULT },
+            { role: "user", content: text },
+          ],
+          temperature: 0,
+        }),
+      });
+    } catch (e) {
+      // fetch 直接抛多半是 CORS 被拦或网络不通，两者浏览器都不给细节
+      throw new Error("请求发不出去（该端点可能不允许浏览器直连，或网络不通）");
+    }
+
+    const raw = await res.text();
+    let data = null;
+    try {
+      data = JSON.parse(raw);
+    } catch {
+      /* 非 JSON，下面按状态码报 */
+    }
+
+    if (!res.ok) {
+      const msg = (data && data.error && (data.error.message || data.error.code)) || raw.slice(0, 160);
+      if (res.status === 401) throw new Error("key 无效或已过期（401）");
+      if (res.status === 404) throw new Error("端点或模型不存在（404）：" + msg);
+      if (res.status === 429) throw new Error("被限流（429），降低并发或稍后重试");
+      throw new Error(`HTTP ${res.status}：${msg}`);
+    }
+
+    const content = data && data.choices && data.choices[0]
+      && data.choices[0].message && data.choices[0].message.content;
+    if (typeof content !== "string" || !content.trim()) {
+      throw new Error("返回里没有译文：" + JSON.stringify(data || raw).slice(0, 160));
+    }
+    return content.trim();
+  }
+
+  /** 跑队列。失败的块只标红不中断其他块 —— 中转站偶发 429/超时很常见，
+   *  整任务作废会让人白等一场。 */
+  async function txRun(render, say) {
+    if (tx.running) return;
+    const cfg = txLoadCfg();
+    if (!cfg.key) return say("先填 API key", "bad");
+    if (!cfg.model) return say("先填模型名", "bad");
+    const todo = tx.chunks.filter((c) => c.status !== "done");
+    if (!todo.length) return say("没有待翻译的块", "");
+
+    tx.running = true;
+    tx.stopping = false;
+    render();
+
+    const n = Math.max(1, Math.min(TX_CONCURRENCY_MAX, Number(cfg.concurrency) || 2));
+    let cursor = 0;
+
+    const worker = async () => {
+      while (!tx.stopping) {
+        const c = todo[cursor++];
+        if (!c) return;
+        c.status = "running";
+        c.error = "";
+        render();
+        try {
+          c.out = await txCallOnce(cfg, c.src);
+          c.status = "done";
+        } catch (e) {
+          c.status = "error";
+          c.error = e.message || String(e);
+        }
+        render();
+      }
+    };
+
+    await Promise.all(Array.from({ length: n }, worker));
+
+    tx.running = false;
+    tx.stopping = false;
+    const done = tx.chunks.filter((c) => c.status === "done").length;
+    const bad = tx.chunks.filter((c) => c.status === "error").length;
+    render();
+    if (bad) say(`完成 ${done}/${tx.chunks.length}，${bad} 块失败，可重试失败项`, "bad");
+    else say(`全部完成（${done} 块），可以导出了`, "ok");
+  }
+
+  /** 导出。缺译文的块用原文占位并标注，避免导出一份中间夹空的文件却看不出来。 */
+  function txExport(say) {
+    if (!tx.chunks.length) return say("还没有内容", "bad");
+    const missing = tx.chunks.filter((c) => c.status !== "done").length;
+    const text = tx.chunks
+      .map((c) => (c.status === "done" ? c.out : `【未翻译】\n${c.src}`))
+      .join("\n\n");
+    const name = (tx.fileName || "translated.txt").replace(/\.txt$/i, "") + ".zh.txt";
+
+    const url = URL.createObjectURL(new Blob([text], { type: "text/plain;charset=utf-8" }));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = name;
+    a.click();
+    URL.revokeObjectURL(url);
+    say(missing ? `已导出（${missing} 块未翻译，已用原文占位）` : "已导出", missing ? "bad" : "ok");
+  }
+
+  function buildTxBody(box, msg) {
+    box.textContent = "";
+    const cfg = txLoadCfg();
+    const say = (t, kind = "") => {
+      msg.textContent = t;
+      msg.className = "admin-new-msg" + (kind ? " " + kind : "");
+    };
+
+    // 说明：第一次用的人得知道进度条在动什么
+    const intro = document.createElement("p");
+    intro.className = "tx-intro";
+    intro.textContent =
+      "原理：把文件按段落切成若干块 → 逐块调 API 翻译 → 按原顺序拼回导出。" +
+      "进度按「块」算。API key 只存在这台设备的浏览器里，请求由浏览器直发，不经过任何服务器。";
+    box.appendChild(intro);
+
+    /* --- 设置 --- */
+    const grid = document.createElement("div");
+    grid.className = "tx-grid";
+
+    const field = (label, el) => {
+      const w = document.createElement("label");
+      w.className = "admin-field";
+      const s = document.createElement("span");
+      s.textContent = label;
+      w.appendChild(s);
+      w.appendChild(el);
+      grid.appendChild(w);
+      return el;
+    };
+
+    const epSel = document.createElement("select");
+    TX_ENDPOINTS.forEach((e) => {
+      const o = document.createElement("option");
+      o.value = e.id;
+      o.textContent = e.label;
+      epSel.appendChild(o);
+    });
+    const custom = document.createElement("option");
+    custom.value = "__custom";
+    custom.textContent = "自己填…";
+    epSel.appendChild(custom);
+    const known = TX_ENDPOINTS.some((e) => e.id === cfg.endpoint);
+    epSel.value = known ? cfg.endpoint : "__custom";
+    field("接口（只能用允许浏览器直连的）", epSel);
+
+    const epInput = document.createElement("input");
+    epInput.type = "text";
+    epInput.placeholder = "https://……/v1/chat/completions";
+    epInput.value = known ? "" : cfg.endpoint;
+    const epRow = field("自定义接口地址", epInput);
+    epRow.parentElement.hidden = known;
+
+    const keyInput = document.createElement("input");
+    keyInput.type = "password";      // 别让 key 明晃晃显示在屏幕上
+    keyInput.autocomplete = "off";
+    keyInput.value = cfg.key || "";
+    field("API key（只存本机）", keyInput);
+
+    const modelInput = document.createElement("input");
+    modelInput.type = "text";
+    modelInput.value = cfg.model || "";
+    modelInput.placeholder = "如 gpt-4o-mini";
+    field("模型名（各站支持的不一样，填错会 404）", modelInput);
+
+    const concInput = document.createElement("input");
+    concInput.type = "number";
+    concInput.min = "1";
+    concInput.max = String(TX_CONCURRENCY_MAX);
+    concInput.value = String(cfg.concurrency || 2);
+    field(`并发（1-${TX_CONCURRENCY_MAX}，高了容易被限流）`, concInput);
+
+    const promptArea = document.createElement("textarea");
+    promptArea.rows = 2;
+    promptArea.value = cfg.prompt || TX_PROMPT_DEFAULT;
+    field("翻译指令", promptArea);
+
+    box.appendChild(grid);
+
+    const readCfg = () => ({
+      endpoint: epSel.value === "__custom" ? epInput.value.trim() : epSel.value,
+      key: keyInput.value.trim(),
+      model: modelInput.value.trim(),
+      concurrency: Number(concInput.value) || 2,
+      prompt: promptArea.value.trim() || TX_PROMPT_DEFAULT,
+    });
+    const persist = () => txSaveCfg(readCfg());
+
+    epSel.addEventListener("change", () => {
+      epRow.parentElement.hidden = epSel.value !== "__custom";
+      persist();
+    });
+    [epInput, keyInput, modelInput, concInput, promptArea].forEach((el) =>
+      el.addEventListener("change", persist)
+    );
+
+    /* --- 文件 --- */
+    const fileRow = document.createElement("div");
+    fileRow.className = "tx-actions";
+
+    const fileInput = document.createElement("input");
+    fileInput.type = "file";
+    fileInput.accept = ".txt,text/plain";
+    fileRow.appendChild(fileInput);
+    box.appendChild(fileRow);
+
+    /* --- 队列 --- */
+    const list = document.createElement("ol");
+    list.className = "tx-list";
+    const actions = document.createElement("div");
+    actions.className = "tx-actions";
+
+    const btn = (label, cls = "") => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "tx-btn" + (cls ? " " + cls : "");
+      b.textContent = label;
+      actions.appendChild(b);
+      return b;
+    };
+    const runBtn = btn("开始翻译", "primary");
+    const stopBtn = btn("停止");
+    const retryBtn = btn("重试失败项");
+    const expBtn = btn("导出译文");
+    const clearBtn = btn("清空", "danger");
+
+    box.appendChild(actions);
+    box.appendChild(list);
+
+    const render = () => {
+      const done = tx.chunks.filter((c) => c.status === "done").length;
+      const bad = tx.chunks.filter((c) => c.status === "error").length;
+
+      runBtn.disabled = tx.running || !tx.chunks.length;
+      stopBtn.disabled = !tx.running;
+      retryBtn.disabled = tx.running || !bad;
+      expBtn.disabled = !done;
+      clearBtn.disabled = tx.running || !tx.chunks.length;
+      runBtn.textContent = tx.running
+        ? `翻译中… ${done}/${tx.chunks.length}`
+        : done
+          ? `继续翻译（剩 ${tx.chunks.length - done} 块）`
+          : "开始翻译";
+
+      list.textContent = "";
+      tx.chunks.forEach((c) => {
+        const li = document.createElement("li");
+        li.className = "tx-item " + c.status;
+        const head = document.createElement("div");
+        head.className = "tx-item-head";
+        const tag = document.createElement("span");
+        tag.className = "tx-state";
+        tag.textContent =
+          { pending: "待翻译", running: "翻译中", done: "完成", error: "失败" }[c.status] || c.status;
+        head.appendChild(tag);
+        const size = document.createElement("span");
+        size.className = "tx-size";
+        size.textContent = `第 ${c.i + 1} 块 · ${c.src.length} 字`;
+        head.appendChild(size);
+        li.appendChild(head);
+
+        if (c.error) {
+          const err = document.createElement("p");
+          err.className = "tx-err";
+          err.textContent = c.error;
+          li.appendChild(err);
+        }
+        // 只给一小段预览，整本书的正文铺开会把页面撑爆
+        const prev = document.createElement("p");
+        prev.className = "tx-prev";
+        prev.textContent = (c.status === "done" ? c.out : c.src).slice(0, 90);
+        li.appendChild(prev);
+
+        list.appendChild(li);
+      });
+    };
+
+    fileInput.addEventListener("change", async () => {
+      const f = fileInput.files && fileInput.files[0];
+      if (!f) return;
+      if (tx.running) return say("正在翻译，先停止再换文件", "bad");
+      try {
+        const text = await f.text();
+        const parts = txSplit(text);
+        if (!parts.length) return say("文件是空的", "bad");
+        tx.fileName = f.name;
+        tx.chunks = parts.map((src, i) => ({ i, src, out: "", status: "pending", error: "" }));
+        say(`已载入《${f.name}》：${text.length} 字，切成 ${parts.length} 块`, "ok");
+        render();
+      } catch (e) {
+        say("读文件失败：" + (e.message || e), "bad");
+      }
+    });
+
+    runBtn.addEventListener("click", () => {
+      persist();
+      txRun(render, say);
+    });
+    stopBtn.addEventListener("click", () => {
+      tx.stopping = true;
+      say("停止中…（正在跑的块会跑完）", "");
+    });
+    retryBtn.addEventListener("click", () => {
+      tx.chunks.forEach((c) => {
+        if (c.status === "error") {
+          c.status = "pending";
+          c.error = "";
+        }
+      });
+      persist();
+      txRun(render, say);
+    });
+    expBtn.addEventListener("click", () => txExport(say));
+    clearBtn.addEventListener("click", () => {
+      if (!window.confirm("清空当前文件与已翻译内容？未导出的译文会丢。")) return;
+      tx.chunks = [];
+      tx.fileName = "";
+      fileInput.value = "";
+      say("已清空", "");
+      render();
+    });
+
+    render();
+  }
+
+  function bindTx() {
+    const toggle = $("[data-tx-toggle]");
+    const body = $("[data-tx-body]");
+    const msg = $("[data-tx-msg]");
+    if (!toggle || !body || !msg) return;
+    toggle.addEventListener("click", () => {
+      const open = !body.hidden;
+      body.hidden = open;
+      toggle.textContent = open ? "⇄ 翻译工作区" : "收起";
+      if (!open) buildTxBody(body, msg);
+    });
   }
 
   /* ---------- 后台新增资源 ---------- */

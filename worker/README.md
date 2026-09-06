@@ -231,6 +231,28 @@ curl --proxy http://127.0.0.1:7890 https://mo-stats.werneruszcb71.workers.dev/ap
 登录后展开任意卡片，底部会多一个「编辑这条」，可以改**标题 / 简介 / 跳转链接 /
 提取码 / 备注**五项。保存即对所有访客生效，不吃 CDN 缓存。
 
+### 翻译工作区（纯前端，不碰这个 Worker）
+
+后台面板底部还有「⇄ 翻译工作区」：上传 txt，浏览器按段落切块、逐块调翻译 API、
+拼回导出。**它和这个目录里的后端毫无关系** —— 请求由浏览器直发中转站，
+API key 只存在本机 localStorage。所以 Worker 不用为它加任何接口，也没有流量成本。
+
+代价是**只能用允许浏览器直连（开了 CORS）的端点**。实测：
+
+| 端点 | 浏览器可直连 |
+| --- | --- |
+| `motomoto.lol` / `api.yjs.im` / `ai.kscsnkli.site` | 是（`allow-origin: *`） |
+| `new.sharedchat.cc` | 预检 204 但无 ACAO 头 |
+| `tabitoken.com` / `kktoken.cc` / `api.justwoker.icu` / `gorouter.app` / `true-sota.com` | 预检 403 |
+| OpenAI / Gemini 官方端点 | 否，无 CORS 头 |
+
+想支持那些不开 CORS 的端点，就得让 Worker 当转发层，那样 key 会经过服务器 ——
+"只存本机"这个性质就没了，而且要为别人的调用承担流量。所以没做。
+
+切块规则照搬本地工具 `local_translate_web.py` 的 `split_text`：按空行分段再累加到
+1300 字上限。这个值用了很久 —— 再大容易触发上下文/超时，再小则请求次数暴增、
+更慢也更贵。
+
 ### 为什么是覆盖层而不是直接改 items.json
 
 站点是 GitHub Pages 纯静态的，浏览器改不了仓库里的文件。三条路里选了覆盖层：
@@ -540,6 +562,11 @@ python test_live.py --api https://mo-stats.werneruszcb71.workers.dev --proxy htt
 新增那组盯的是：未登录无入口、空资源名被前端挡住、一次挂两个分区后两边都能找到、
 刷新后仍在、访客也能看到；删除那组盯的是：`items.json` 的条目没有删除按钮、
 `confirm` 取消时不删、确认后卡片消失。
+
+翻译工作区那四组盯的是：未登录时整块隐藏、载入 txt 后按段落切成多块且每块都从
+段落开头起（切在边界的证据）、没填 key 就点开始会明确提示而不是静默失败或直接发
+请求、设置写进 localStorage 且刷新后回填。**这一块不碰后端**，请求由浏览器直发
+中转站，所以测试只验前端行为与本机存储，不需要桩。
 
 `test_admin.mjs` 用真 SQL 补齐后端侧：越权字段 400、伪协议 400、超长截断、
 空串与 `null` 的语义区别、登录限流、过期 token 自动清理、未知分区与不匹配的
