@@ -1,3 +1,5 @@
+import { handle as handleBoardAdmin } from "./board_admin.js";
+
 /**
  * 墨小说漫画 —— 点击 / 访问统计 + 资源帮找与失效反馈后端（Cloudflare Worker + D1）。
  *
@@ -975,6 +977,10 @@ async function cleanup(env) {
     .bind(new Date().toISOString()).run();
   await env.DB.prepare("DELETE FROM admin_throttle WHERE window < ?")
     .bind(String(Math.floor(Date.now() / 60000) - 60)).run();
+  await env.DB.prepare("DELETE FROM board_admin_sessions WHERE expires < ?")
+    .bind(new Date().toISOString()).run();
+  await env.DB.prepare("DELETE FROM board_admin_throttle WHERE window < ?")
+    .bind(String(Math.floor(Date.now() / 60000) - 60)).run();
 }
 
 export default {
@@ -994,6 +1000,11 @@ export default {
     }
 
     try {
+      if (url.pathname.startsWith("/api/board/")) {
+        const boardResponse = await handleBoardAdmin(request, env);
+        if (boardResponse) return boardResponse;
+      }
+
       if (url.pathname === "/api/stats" && request.method === "GET") {
         return json(await readStats(env), request);
       }

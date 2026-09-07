@@ -164,3 +164,39 @@ CREATE TABLE IF NOT EXISTS admin_throttle (
   window  TEXT NOT NULL
 );
 
+-- ---------------------------------------------------------------
+-- 第一站（中转站榜单）后台。与第二站共用 Worker/D1，数据表分开；密码默认复用，
+-- 也可以设置 BOARD_ADMIN_PASSWORD_HASH 单独覆盖。
+-- ---------------------------------------------------------------
+
+-- 静态 data/resources.json 的卡片修改存在覆盖层，值为 JSON 对象。
+CREATE TABLE IF NOT EXISTS board_overrides (
+  item_id     TEXT PRIMARY KEY,
+  fields_json TEXT NOT NULL DEFAULT '{}',
+  updated     TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_board_overrides_updated ON board_overrides (updated);
+
+-- 网页后台新增的卡片存在这里，id 由后端生成且固定为 custom- 前缀。
+CREATE TABLE IF NOT EXISTS board_custom_items (
+  id          TEXT PRIMARY KEY,
+  fields_json TEXT NOT NULL DEFAULT '{}',
+  created     TEXT NOT NULL,
+  updated     TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_board_custom_items_created ON board_custom_items (created);
+
+CREATE TABLE IF NOT EXISTS board_admin_sessions (
+  token   TEXT PRIMARY KEY,
+  created TEXT NOT NULL,
+  expires TEXT NOT NULL,
+  ip      TEXT NOT NULL DEFAULT ''
+);
+CREATE INDEX IF NOT EXISTS idx_board_admin_sessions_expires ON board_admin_sessions (expires);
+
+CREATE TABLE IF NOT EXISTS board_admin_throttle (
+  k       TEXT PRIMARY KEY,
+  n       INTEGER NOT NULL DEFAULT 0,
+  window  TEXT NOT NULL
+);
+

@@ -429,6 +429,37 @@ printf '%s' '你的密码' | node ../gen_admin_hash.mjs | ../wr.sh pages secret 
 所以前端只需要认一种形式。线上已经跑过了，用 `PRAGMA table_info(overrides)`
 和 `PRAGMA table_info(custom_items)` 可以复核。
 
+### 第一站（中转站榜单）共用后台
+
+第一站入口是 `https://xrzka.github.io/#admin`。实现方式沿用第二站：静态 JSON 只读，
+修改存在 D1 覆盖层，网页新增的卡片存在 D1 自定义条目表，保存后立即对访客生效。
+两个站共用这套 Worker / Pages 入口和 `mo-stats` D1，但使用独立表：
+`board_overrides`、`board_custom_items`、`board_admin_sessions`、
+`board_admin_throttle`，不会混入第二站数据。
+
+第一站默认直接复用第二站的 `ADMIN_PASSWORD_HASH`，因此现有管理员密码不用再设置一遍。
+如以后希望两个站使用不同密码，再单独设置 `BOARD_ADMIN_PASSWORD_HASH`，它会优先于
+`ADMIN_PASSWORD_HASH`。设置独立密码时运行：
+
+```bash
+cd worker
+./wr.sh d1 execute mo-stats --remote --file=schema.sql
+
+# 以下两条仅在第一站要使用独立密码时执行
+printf '%s' '第一站密码' | node gen_admin_hash.mjs | ./wr.sh secret put BOARD_ADMIN_PASSWORD_HASH
+cd pages
+printf '%s' '第一站密码' | node ../gen_admin_hash.mjs | ../wr.sh pages secret put BOARD_ADMIN_PASSWORD_HASH
+```
+
+首次上线无论是否分开密码，都要先执行 schema 建表。只有选择独立密码时才执行后两条
+`secret put`。Worker 与 Pages 的 Secret 彼此独立，分开密码时两边都要设置。
+后端新增或修改后也要同时部署两处。前端 token 仍只放内存，刷新需重新登录；
+静态卡片只能覆盖修改，网页新增卡片可删除。
+
+接口前缀均为 `/api/board`：公开读 `/overrides`、`/items`；登录与写接口在
+`/admin/login`、`/admin/override`、`/admin/item`、`/admin/item/delete`。
+本地后端验证运行 `node test_board_admin.mjs`。
+
 ## 资源帮找 / 失效反馈怎么运维
 
 **登录后台后可以直接在页面上处理**，不必再进 D1。展开「资源帮找 / 失效反馈」，
