@@ -1189,7 +1189,8 @@ h1 {
   resize: vertical;
 }
 
-.tx-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+.tx-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+.tx-file-hint { color: var(--text-muted); font-size: 11.5px; line-height: 1.5; }
 .tx-btn {
   padding: 6px 14px;
   border: 1px solid var(--border);

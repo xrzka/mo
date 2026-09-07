@@ -8,8 +8,9 @@
 | --- | --- |
 | `index.html` | 页面结构，卡片用 `<template>` 定义 |
 | `styles.css` | 样式，深浅色主题走 CSS 变量 |
-| `app.js` | 原生 JS，分区切换 + 搜索 + 翻页 + 点击统计 |
+| `app.js` | 原生 JS，分区切换、搜索、翻页、统计、后台与 TXT/EPUB 翻译工作区 |
 | `config.js` | 运行时配置，只有一项 `statsApi` |
+| `vendor/jszip.min.js` | 固定版本 JSZip 3.10.1，浏览器内解析与重新打包 EPUB |
 | `data/items.json` | 资源数据 |
 | `import_from_xlsx.py` | 导入「分享收录」表格，管 id 前缀 `xlsx-` |
 | `import_gal_xlsx.py` | 导入「gal 合集主」表格，管 id 前缀 `gal-` |
@@ -104,11 +105,16 @@
 - 访客看不到这排按钮，也调不动接口（未登录一律 401）
 
 **翻译工作区。** 后台面板底部有「⇄ 翻译工作区」，只有登录后才存在。
-上传 txt，浏览器把它按段落切成若干块，逐块调 API 翻译，完成后拼回导出。
+上传 TXT 或 EPUB，浏览器把正文切成若干块，逐块调 API 翻译，完成后拼回导出。
 
 - **原理就三步**：切块 → 逐块调 → 按原顺序拼回。进度条走的是「块」，不是字数
-- 切在段落边界（照搬本地工具 `local_translate_web.py` 的 `split_text` 规则，
-  上限 1300 字），不会把句子截断
+- TXT 优先在段落边界切块（照搬本地工具 `local_translate_web.py` 的 `split_text`
+  规则，上限 1300 字）；单段超过上限时再尽量按句末或空格切
+- EPUB 在浏览器里解包，只翻译 XHTML/HTML 的**可见文本节点**；图片、CSS、字体、
+  链接属性、图片 `alt`、脚本、代码块与 OPF 元数据都原样保留，导航页的可见目录文字会翻译
+- EPUB 用私用区节点标记保存 `<p>` / `<span>` 边界。模型删掉或打乱标记时该块直接
+  标为失败，不能导出坏书；全部块成功后才开放「导出 EPUB」
+- 导出的 `.zh.epub` 会保持 `mimetype` 为 ZIP 第一项且不压缩，这是 EPUB 阅读器要求
 - **API key 只存这台设备的 localStorage**，请求由浏览器直发中转站，
   不经过 Worker 也不经过 GitHub Pages
 - **只能用允许浏览器直连（开了 CORS）的端点**。实测 `motomoto.lol`、

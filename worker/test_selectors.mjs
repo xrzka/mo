@@ -5,6 +5,7 @@
  *
  * 跑法：node test_selectors.mjs
  */
+import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 
 const js = readFileSync(new URL("../app.js", import.meta.url), "utf-8");
@@ -121,6 +122,23 @@ check("index.html 引了 config.js", /src="config\.js/.test(html));
 const vers = [...html.matchAll(/(?:app\.js|styles\.css|config\.js)\?v=([A-Za-z0-9]+)/g)].map((m) => m[1]);
 check(`静态资源版本号一致 (${[...new Set(vers)].join(",")})`, new Set(vers).size === 1);
 check("三个静态资源都带版本号", vers.length === 3, String(vers.length));
+
+// EPUB 依赖固定在本地，避免运行时依赖第三方 CDN。文件哈希盯住版本，防止被误换成
+// 别的构建或下载到错误页（那种情况下浏览器只会报 window.JSZip 不存在）。
+const zipMatch = html.match(/src="vendor\/jszip\.min\.js\?v=([0-9.]+)"/);
+check("index.html 引了本地 JSZip", !!zipMatch);
+check("JSZip 固定为 3.10.1", zipMatch && zipMatch[1] === "3.10.1",
+      zipMatch ? zipMatch[1] : "未找到");
+try {
+  const zip = readFileSync(new URL("../vendor/jszip.min.js", import.meta.url));
+  const hash = createHash("sha256").update(zip).digest("hex");
+  check("JSZip 文件含版本与许可证", /JSZip v3\.10\.1/.test(zip.toString("utf-8", 0, 300))
+        && /MIT license/.test(zip.toString("utf-8", 0, 500)));
+  check("JSZip SHA256 固定", hash === "acc7e41455a80765b5fd9c7ee1b8078a6d160bbbca455aeae854de65c947d59e",
+        hash);
+} catch (e) {
+  check("能读取本地 JSZip", false, String(e));
+}
 
 console.log(fail ? `\n${fail} 项失败` : "\n全部通过");
 process.exit(fail ? 1 : 0);

@@ -7,13 +7,16 @@
 跑法（在 mo_site/worker 下）：
     python test_browser.py
 """
+import base64
 import http.server
+import io
 import json
 import re
 import socketserver
 import threading
 import time
 import urllib.parse
+import zipfile
 from pathlib import Path
 
 from playwright.sync_api import sync_playwright
@@ -31,6 +34,63 @@ def is_external(url):
 
 def block_external(page):
     page.route(is_external, lambda route: route.abort())
+
+
+def make_test_epub():
+    """生成一份最小但结构完整的 EPUB，用于真浏览器导入/导出测试。
+
+    含 mimetype、container.xml、OPF、导航、正文、CSS、图片。这样测试不只是
+    看「能生成 zip」，还会验证 EPUB 的关键结构和非正文资源没有被改坏。
+    """
+    out = io.BytesIO()
+    image = b"\x89PNG\r\n\x1a\nMO-EPUB-TEST-IMAGE"
+    container = """<?xml version="1.0"?>
+<container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
+  <rootfiles><rootfile full-path="OEBPS/content.opf"
+    media-type="application/oebps-package+xml"/></rootfiles>
+</container>"""
+    opf = """<?xml version="1.0" encoding="UTF-8"?>
+<package version="3.0" xmlns="http://www.idpf.org/2007/opf" unique-identifier="bookid">
+ <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <dc:identifier id="bookid">mo-epub-test</dc:identifier>
+  <dc:title>原始书名</dc:title><dc:language>ja</dc:language>
+ </metadata>
+ <manifest>
+  <item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/>
+  <item id="ch1" href="chapter.xhtml" media-type="application/xhtml+xml"/>
+  <item id="css" href="style.css" media-type="text/css"/>
+  <item id="img" href="image.png" media-type="image/png"/>
+ </manifest>
+ <spine><itemref idref="ch1"/></spine>
+</package>"""
+    nav = """<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"><head><title>导航</title></head><body>
+<nav epub:type="toc" xmlns:epub="http://www.idpf.org/2007/ops">
+ <ol><li><a href="chapter.xhtml">第一章</a></li></ol>
+</nav></body></html>"""
+    chapter = """<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"><head><title>不翻译的 head title</title>
+<link rel="stylesheet" href="style.css"/></head><body>
+<h1>第一章</h1><p>こんにちは、世界。</p><p>第二段です。</p>
+<p><span>行内文字</span> 后半部分</p>
+<pre>DO_NOT_TRANSLATE_PRE</pre><p><code>DO_NOT_TRANSLATE_CODE</code></p>
+<img src="image.png" alt="IMAGE_ALT_STAYS"/>
+</body></html>"""
+    css = "body { color: #123456; }"
+
+    with zipfile.ZipFile(out, "w") as z:
+        # EPUB 规范：mimetype 必须是第一个 entry 且不压缩
+        z.writestr("mimetype", "application/epub+zip", compress_type=zipfile.ZIP_STORED)
+        for name, data in [
+            ("META-INF/container.xml", container),
+            ("OEBPS/content.opf", opf),
+            ("OEBPS/nav.xhtml", nav),
+            ("OEBPS/chapter.xhtml", chapter),
+            ("OEBPS/style.css", css),
+            ("OEBPS/image.png", image),
+        ]:
+            z.writestr(name, data, compress_type=zipfile.ZIP_DEFLATED)
+    return out.getvalue(), {"image": image, "opf": opf, "css": css}
 
 
 def check(name, ok, extra=""):
@@ -2708,6 +2768,189 @@ def test_tx_config_persists(page, base, stub_port):
           page.input_value("[data-tx-body] input[type=password]") == "sk-probe-not-real")
 
 
+def test_tx_epub_load_and_export(page, base, stub_port):
+    """EPUB 真浏览器端到端：解析、模拟 API 翻译、导出、解包核对结构。"""
+    print("\n--- 翻译工作区：EPUB 解析与导出 ---")
+    StatsStub.reset_admin()
+    stub_config(page, f"http://127.0.0.1:{stub_port}")
+
+    # 模拟 OpenAI 兼容接口。保留节点标记，只替换已知文本。
+    def translate(route):
+        body = json.loads(route.request.post_data or "{}")
+        src = body["messages"][-1]["content"]
+        replacements = {
+            "导航": "目录", "第一章": "第一章（译）",
+            "こんにちは、世界。": "你好，世界。", "第二段です。": "这是第二段。",
+            "行内文字": "行内译文", "后半部分": "后半译文",
+        }
+        out = src
+        for old, new in replacements.items():
+            out = out.replace(old, new)
+        route.fulfill(
+            status=200,
+            content_type="application/json",
+            body=json.dumps({"choices": [{"message": {"content": out}}]}, ensure_ascii=False),
+        )
+
+    page.route("https://tx.example/**", translate)
+    page.goto(base, wait_until="networkidle")
+    page.wait_for_timeout(1200)
+    admin_login(page)
+    page.click("[data-tx-toggle]")
+    page.wait_for_timeout(300)
+
+    # 自定义端点 + 假 key。请求被本地 route 截获，不会出网。
+    page.locator("[data-tx-body] select").nth(0).select_option("__custom")
+    page.fill('[data-tx-body] input[placeholder*="chat/completions"]',
+              "https://tx.example/v1/chat/completions")
+    page.fill("[data-tx-body] input[type=password]", "sk-test-only")
+    page.fill('[data-tx-body] input[placeholder="如 gpt-4o-mini"]', "test-model")
+
+    epub, original = make_test_epub()
+    page.locator("[data-tx-body] input[type=file]").set_input_files({
+        "name": "sample.epub",
+        "mimeType": "application/epub+zip",
+        "buffer": epub,
+    })
+    page.wait_for_timeout(1000)
+
+    msg = page.text_content("[data-tx-msg]")
+    check("识别为 EPUB 并报告文档/节点/块",
+          "文档" in msg and "文本节点" in msg and "块" in msg,
+          msg.strip())
+    n = page.locator(".tx-item").count()
+    check("EPUB 生成了翻译队列", n >= 2, str(n))
+    check("队列显示文档路径", "OEBPS/" in page.locator(".tx-size").nth(0).text_content(),
+          page.locator(".tx-size").nth(0).text_content())
+    check("未完成时 EPUB 导出禁用",
+          page.locator('.tx-btn:has-text("导出 EPUB")').is_disabled())
+
+    page.click(".tx-btn.primary")
+    page.wait_for_function(
+        """() => {
+            const a = [...document.querySelectorAll('.tx-item')];
+            return a.length > 0 && a.every(e => e.classList.contains('done'));
+        }""",
+        timeout=15000,
+    )
+    check("所有 EPUB 块翻译完成",
+          page.locator(".tx-item.done").count() == n,
+          f'{page.locator(".tx-item.done").count()}/{n}')
+    check("完成后导出按钮启用",
+          not page.locator('.tx-btn:has-text("导出 EPUB")').is_disabled())
+
+    with page.expect_download(timeout=20000) as dl_info:
+        page.click('.tx-btn:has-text("导出 EPUB")')
+    dl = dl_info.value
+    check("导出文件名带 .zh.epub", dl.suggested_filename == "sample.zh.epub",
+          dl.suggested_filename)
+
+    with zipfile.ZipFile(dl.path()) as z:
+        names = z.namelist()
+        check("mimetype 是 zip 第一项", names[0] == "mimetype", names[0])
+        info = z.getinfo("mimetype")
+        check("mimetype 未压缩", info.compress_type == zipfile.ZIP_STORED,
+              str(info.compress_type))
+        check("mimetype 内容正确",
+              z.read("mimetype") == b"application/epub+zip")
+
+        chapter = z.read("OEBPS/chapter.xhtml").decode("utf-8")
+        nav = z.read("OEBPS/nav.xhtml").decode("utf-8")
+        check("正文已经替换成译文",
+              all(x in chapter for x in ("你好，世界。", "这是第二段。", "行内译文", "后半译文")),
+              chapter[:180])
+        check("正文原文不再残留",
+              "こんにちは、世界。" not in chapter and "第二段です。" not in chapter)
+        check("导航文字也翻译", "第一章（译）" in nav, nav[:150])
+        check("head title 不翻译", "不翻译的 head title" in chapter)
+        check("pre/code 不翻译",
+              "DO_NOT_TRANSLATE_PRE" in chapter and "DO_NOT_TRANSLATE_CODE" in chapter)
+        check("图片属性不翻译", "IMAGE_ALT_STAYS" in chapter)
+        check("图片字节原样保留", z.read("OEBPS/image.png") == original["image"])
+        check("CSS 原样保留", z.read("OEBPS/style.css").decode() == original["css"])
+        check("OPF 元数据原样保留", z.read("OEBPS/content.opf").decode() == original["opf"])
+
+
+def test_tx_epub_invalid_and_marker_guard(page, base, stub_port):
+    """坏 EPUB 要说清原因；模型破坏节点标记时块必须失败，不能导出坏书。"""
+    print("\n--- 翻译工作区：EPUB 错误保护 ---")
+    StatsStub.reset_admin()
+    stub_config(page, f"http://127.0.0.1:{stub_port}")
+
+    def corrupt(route):
+        body = json.loads(route.request.post_data or "{}")
+        src = body["messages"][-1]["content"]
+        # 故意删掉所有私用区节点标记，模拟模型没有遵守提示。
+        out = re.sub(r"MO_TX_\d+", "", src)
+        route.fulfill(
+            status=200, content_type="application/json",
+            body=json.dumps({"choices": [{"message": {"content": out}}]}, ensure_ascii=False),
+        )
+
+    page.route("https://tx-bad.example/**", corrupt)
+    page.goto(base, wait_until="networkidle")
+    page.wait_for_timeout(1200)
+    admin_login(page)
+    page.click("[data-tx-toggle]")
+    page.wait_for_timeout(300)
+
+    # 先传一个普通 zip（缺 mimetype），应明确说不是有效 EPUB。
+    bad_io = io.BytesIO()
+    with zipfile.ZipFile(bad_io, "w") as z:
+        z.writestr("chapter.xhtml", "<p>x</p>")
+    page.locator("[data-tx-body] input[type=file]").set_input_files({
+        "name": "broken.epub", "mimeType": "application/epub+zip", "buffer": bad_io.getvalue(),
+    })
+    page.wait_for_timeout(700)
+    msg = page.text_content("[data-tx-msg]")
+    check("坏 EPUB 明确提示缺 mimetype", "mimetype" in msg, msg.strip())
+    check("坏 EPUB 不生成队列", page.locator(".tx-item").count() == 0)
+
+    page.locator("[data-tx-body] select").nth(0).select_option("__custom")
+    page.fill('[data-tx-body] input[placeholder*="chat/completions"]',
+              "https://tx-bad.example/v1/chat/completions")
+    page.fill("[data-tx-body] input[type=password]", "sk-test-only")
+    page.fill('[data-tx-body] input[placeholder="如 gpt-4o-mini"]', "test-model")
+
+    epub, _ = make_test_epub()
+    page.locator("[data-tx-body] input[type=file]").set_input_files({
+        "name": "marker.epub", "mimeType": "application/epub+zip", "buffer": epub,
+    })
+    page.wait_for_timeout(800)
+    page.click(".tx-btn.primary")
+    page.wait_for_function(
+        """() => document.querySelectorAll('.tx-item.error').length > 0""",
+        timeout=15000,
+    )
+    check("标记被破坏的块会失败", page.locator(".tx-item.error").count() > 0)
+    err = page.locator(".tx-err").nth(0).text_content()
+    check("错误说明是节点标记损坏", "节点标记" in err, err)
+    check("有失败块时 EPUB 导出保持禁用",
+          page.locator('.tx-btn:has-text("导出 EPUB")').is_disabled())
+
+
+def test_tx_epub_requires_all_done(page, base, stub_port):
+    """EPUB 不允许像 TXT 一样用原文占位导出，必须每块都完成。"""
+    print("\n--- 翻译工作区：EPUB 必须全部完成 ---")
+    StatsStub.reset_admin()
+    stub_config(page, f"http://127.0.0.1:{stub_port}")
+    page.goto(base, wait_until="networkidle")
+    page.wait_for_timeout(1200)
+    admin_login(page)
+    page.click("[data-tx-toggle]")
+    page.wait_for_timeout(300)
+
+    epub, _ = make_test_epub()
+    page.locator("[data-tx-body] input[type=file]").set_input_files({
+        "name": "partial.epub", "mimeType": "application/epub+zip", "buffer": epub,
+    })
+    page.wait_for_timeout(800)
+    check("未翻译时按钮文案是导出 EPUB",
+          page.locator('.tx-btn:has-text("导出 EPUB")').count() == 1)
+    check("未翻译时不可导出",
+          page.locator('.tx-btn:has-text("导出 EPUB")').is_disabled())
+
+
 def test_admin_no_backend(page, base):
     """后端整体不可用时，后台面板不能假装能用。"""
     print("\n--- 后台：后端不可用 ---")
@@ -2925,6 +3168,18 @@ def main():
 
             ctx = browser.new_context()
             test_tx_config_persists(ctx.new_page(), base, stub_port)
+            ctx.close()
+
+            ctx = browser.new_context(accept_downloads=True)
+            test_tx_epub_load_and_export(ctx.new_page(), base, stub_port)
+            ctx.close()
+
+            ctx = browser.new_context()
+            test_tx_epub_invalid_and_marker_guard(ctx.new_page(), base, stub_port)
+            ctx.close()
+
+            ctx = browser.new_context()
+            test_tx_epub_requires_all_done(ctx.new_page(), base, stub_port)
             ctx.close()
 
             # ---- 反馈运维 ----

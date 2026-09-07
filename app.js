@@ -1377,6 +1377,12 @@
         const body = $("[data-tx-body]");
         const toggle = $("[data-tx-toggle]");
         const msg = $("[data-tx-msg]");
+        // 先通知正在跑的 worker 停在当前块之后；清空数组让它拿不到下一块。
+        tx.stopping = true;
+        tx.chunks = [];
+        tx.fileName = "";
+        tx.fileType = "txt";
+        tx.epub = null;
         if (body) { body.hidden = true; body.textContent = ""; }
         if (toggle) toggle.textContent = "⇄ 翻译工作区";
         if (msg) { msg.textContent = ""; msg.className = "admin-new-msg"; }
@@ -1466,8 +1472,10 @@
 
   /** 运行时状态。不进 state：这块只有站长用，跟资源列表的渲染无关。 */
   const tx = {
-    chunks: [],      // [{ i, src, out, status, error }]
+    chunks: [],      // [{ i, src, out, status, error, kind?, refs? }]
     fileName: "",
+    fileType: "txt", // txt | epub
+    epub: null,       // { entries, docs }，只在 EPUB 任务里有
     running: false,
     stopping: false,
   };
@@ -1500,6 +1508,32 @@
    * 按段落切块。照搬本地工具 split_text 的规则：先按空行分段，
    * 再累加到长度上限 —— 切在段落边界，不会把句子截断。
    */
+  /**
+   * 段落特别长、没有空行时，原 split_text 会整段超过 1300 字。
+   * 尽量在句号/问号/换行/空格处切；实在找不到才硬切。
+   */
+  function txSplitLong(text, maxLen = TX_CHUNK) {
+    const out = [];
+    let rest = String(text || "");
+    while (rest.length > maxLen) {
+      const head = rest.slice(0, maxLen + 1);
+      let cut = -1;
+      // 至少走到四成以后才找边界，避免切出大量几十字的小块
+      const floor = Math.floor(maxLen * 0.4);
+      for (let i = Math.min(maxLen, head.length - 1); i >= floor; i--) {
+        if (/[。！？!?；;\.\n\s]/.test(head[i])) {
+          cut = i + 1;
+          break;
+        }
+      }
+      if (cut < 1) cut = maxLen;
+      out.push(rest.slice(0, cut));
+      rest = rest.slice(cut);
+    }
+    if (rest) out.push(rest);
+    return out;
+  }
+
   function txSplit(text, maxLen = TX_CHUNK) {
     const t = String(text || "").trim();
     if (!t) return [];
@@ -1509,19 +1543,224 @@
     let cur = "";
     parts.forEach((p) => {
       if (cur.length + p.length > maxLen && cur.trim()) {
-        out.push(cur.trim());
+        // 单个段落也可能超过上限；再按句末/空格切，避免一块几千字。
+        txSplitLong(cur.trim(), maxLen).forEach((x) => out.push(x));
         cur = p;
       } else {
         cur += p;
       }
     });
-    if (cur.trim()) out.push(cur.trim());
+    if (cur.trim()) txSplitLong(cur.trim(), maxLen).forEach((x) => out.push(x));
     return out;
   }
 
+  /* ---------- EPUB 解析 / 回填 / 打包 ---------- */
+
+  const TX_EPUB_DOC_RE = /\.(xhtml?|html?)$/i;
+  const TX_EPUB_SKIP_TAGS = new Set([
+    "script", "style", "noscript", "svg", "math", "code", "pre",
+    "textarea", "select", "option", "title",
+  ]);
+  // 导航、页码、纯符号、URL、文件名不值得送去翻译。
+  const TX_EPUB_SKIP_CLASS = /(^|\s)(notranslate|pagebreak|page-break|pagenum|page-num)(\s|$)/i;
+
+  /** 这些节点一般是书名、标题与正文。只抓可见文本，不碰属性、CSS、图片或脚本。 */
+  function txEpubTextNodes(doc) {
+    const root = doc.body || doc.documentElement;
+    if (!root) return [];
+    const walker = doc.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    const out = [];
+    let node;
+    while ((node = walker.nextNode())) {
+      const parent = node.parentElement;
+      if (!parent) continue;
+      const tag = parent.localName && parent.localName.toLowerCase();
+      if (!tag || TX_EPUB_SKIP_TAGS.has(tag)) continue;
+      if (parent.closest("script,style,noscript,svg,math,code,pre,textarea,select")) continue;
+      if (TX_EPUB_SKIP_CLASS.test(parent.className || "")) continue;
+      if (parent.hasAttribute("data-notranslate") || parent.getAttribute("translate") === "no") continue;
+      const raw = node.nodeValue || "";
+      const text = raw.trim();
+      if (!text) continue;
+      if (/^(https?:\/\/|mailto:|#|\d+[\s./-]*$)/i.test(text)) continue;
+      if (!/[\p{L}\p{N}]/u.test(text)) continue;
+      out.push({ node, raw, text });
+    }
+    return out;
+  }
+
+  /**
+   * 一个 EPUB 文档中的文本节点要合并成 API 块，但不能丢节点边界。
+   * 用罕见的私用区标记 `MO_TX_n`；模型按提示原样保留它，
+   * 翻完按标记拆开再分别写回原节点。若模型破坏了标记，该块会报错而不写坏书。
+   */
+  function txEpubBuildChunks(refs, docPath, startIndex) {
+    const chunks = [];
+    let group = [];
+    let size = 0;
+    const flush = () => {
+      if (!group.length) return;
+      const marks = group.map((r, i) => `MO_TX_${i}`);
+      const src = group.map((r, i) => marks[i] + r.text).join("\n");
+      chunks.push({
+        i: startIndex + chunks.length,
+        src,
+        out: "",
+        status: "pending",
+        error: "",
+        kind: "epub",
+        docPath,
+        refs: group.slice(),
+        marks,
+      });
+      group = [];
+      size = 0;
+    };
+    refs.forEach((r) => {
+      // 节点自己超长也不切成多个 ref：切开再回填同一节点会把标记逻辑复杂化。
+      // 这种极少见的节点单独成块即可。
+      const add = r.text.length + 18;
+      if (group.length && size + add > TX_CHUNK) flush();
+      group.push(r);
+      size += add;
+    });
+    flush();
+    return chunks;
+  }
+
+  /** 解析 EPUB，保持原始 zip entries。只有 XHTML/HTML 文档会被解析。 */
+  async function txLoadEpub(file) {
+    if (!window.JSZip) throw new Error("EPUB 组件 JSZip 没加载，请强制刷新页面");
+    const buf = await file.arrayBuffer();
+    const zip = await window.JSZip.loadAsync(buf);
+
+    // EPUB 规范要求 mimetype 存在；缺了通常不是合法 EPUB，导出也难保证阅读器接受。
+    const mime = zip.file("mimetype");
+    if (!mime) throw new Error("不是有效 EPUB：缺少 mimetype");
+    const mimeText = (await mime.async("string")).trim();
+    if (mimeText !== "application/epub+zip") {
+      throw new Error("不是有效 EPUB：mimetype 不正确");
+    }
+
+    const parser = new DOMParser();
+    const docs = [];
+    const chunks = [];
+    let index = 0;
+    const names = Object.keys(zip.files)
+      .filter((name) => !zip.files[name].dir && TX_EPUB_DOC_RE.test(name));
+
+    for (const path of names) {
+      const source = await zip.file(path).async("string");
+      const doc = parser.parseFromString(source, "application/xhtml+xml");
+      // 有些 EPUB 的 HTML 不严格符合 XML；退回 text/html 解析。
+      const xmlBad = doc.querySelector("parsererror");
+      const parsed = xmlBad ? parser.parseFromString(source, "text/html") : doc;
+      const refs = txEpubTextNodes(parsed);
+      if (!refs.length) continue;
+      const made = txEpubBuildChunks(refs, path, index);
+      chunks.push(...made);
+      index += made.length;
+      docs.push({ path, doc: parsed, source, xml: !xmlBad });
+    }
+    if (!chunks.length) throw new Error("EPUB 里没有找到可翻译的正文文本");
+    return { zip, docs, chunks, bytes: buf.byteLength };
+  }
+
+  /** 将已经完成的块写回 DOM，并重新生成 EPUB。 */
+  async function txExportEpub(say) {
+    if (!tx.epub || !tx.chunks.length) return say("没有 EPUB 内容", "bad");
+    const missing = tx.chunks.filter((c) => c.status !== "done");
+    if (missing.length) {
+      return say(`还有 ${missing.length} 块未完成；EPUB 不会用原文混合导出，请先补完`, "bad");
+    }
+
+    // 先验证并解析所有块，再开始写节点，避免写到一半才发现后面一块坏了。
+    // 同时保证每个块只应用一次：如果导出过程中生成 zip 失败，再点导出不会把
+    // 已翻过的节点首尾空白重复叠加。
+    const parsed = [];
+    for (const c of tx.chunks) {
+      const marks = c.marks || [];
+      const text = String(c.out || "");
+      const positions = marks.map((m) => text.indexOf(m));
+      if (positions.some((p) => p < 0)) {
+        c.status = "error";
+        c.error = "译文破坏了 EPUB 节点标记，请重试这一块";
+        return say(`第 ${c.i + 1} 块节点标记损坏，已标为失败`, "bad");
+      }
+      for (let i = 1; i < positions.length; i++) {
+        if (positions[i] <= positions[i - 1]) {
+          c.status = "error";
+          c.error = "译文改变了 EPUB 节点标记顺序，请重试这一块";
+          return say(`第 ${c.i + 1} 块节点标记顺序错误，已标为失败`, "bad");
+        }
+      }
+      const values = [];
+      for (let i = 0; i < marks.length; i++) {
+        const from = positions[i] + marks[i].length;
+        const to = i + 1 < marks.length ? positions[i + 1] : text.length;
+        const value = text.slice(from, to).replace(/^\s+|\s+$/g, "");
+        if (!value) {
+          c.status = "error";
+          c.error = `第 ${i + 1} 个文本节点译文为空`;
+          return say(`第 ${c.i + 1} 块：${c.error}`, "bad");
+        }
+        values.push(value);
+      }
+      parsed.push({ c, values });
+    }
+
+    parsed.forEach(({ c, values }) => {
+      values.forEach((translated, i) => {
+        const ref = c.refs[i];
+        const lead = (ref.raw.match(/^\s*/) || [""])[0];
+        const trail = (ref.raw.match(/\s*$/) || [""])[0];
+        ref.node.nodeValue = lead + translated + trail;
+      });
+    });
+
+    const serializer = new XMLSerializer();
+    tx.epub.docs.forEach((d) => {
+      let output;
+      if (d.xml) {
+        output = serializer.serializeToString(d.doc);
+        if (!/^<\?xml/i.test(output) && /^<\?xml/i.test(d.source)) {
+          const decl = (d.source.match(/^<\?xml[^>]*>\s*/i) || [""])[0];
+          output = decl + output;
+        }
+      } else {
+        output = "<!doctype html>\n" + d.doc.documentElement.outerHTML;
+      }
+      tx.epub.zip.file(d.path, output);
+    });
+
+    // EPUB 要求 mimetype 为第一个且不压缩。JSZip 重建时显式覆盖它，其他 entry
+    // 保持原压缩方式由 JSZip 处理；图片、CSS、字体、OPF、NCX 都原样留在 zip 里。
+    tx.epub.zip.file("mimetype", "application/epub+zip", { compression: "STORE" });
+    const blob = await tx.epub.zip.generateAsync({
+      type: "blob",
+      mimeType: "application/epub+zip",
+      compression: "DEFLATE",
+      compressionOptions: { level: 6 },
+    });
+    const name = (tx.fileName || "translated.epub").replace(/\.epub$/i, "") + ".zh.epub";
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = name;
+    a.click();
+    URL.revokeObjectURL(url);
+    say(`已导出 ${name}（图片、CSS、目录与元数据保留）`, "ok");
+  }
+
   /** 调一次翻译。错误信息要能看出是哪一类问题，否则用户只能干瞪眼。 */
-  async function txCallOnce(cfg, text) {
+  async function txCallOnce(cfg, text, kind = "txt") {
     let res;
+    // EPUB 块用私用区标记保存文本节点边界。模型必须原样保留，
+    // 否则没法把译文准确写回每个 <p>/<span> 文本节点。
+    const epubRule = kind === "epub"
+      ? "\n输入含有形如 MO_TX_0 的节点标记。必须逐字原样保留每个标记及其顺序，" +
+        "只翻译标记后面的文字；不要增删、改写、合并标记。"
+      : "";
     try {
       res = await fetch(cfg.endpoint, {
         method: "POST",
@@ -1532,7 +1771,7 @@
         body: JSON.stringify({
           model: cfg.model,
           messages: [
-            { role: "system", content: cfg.prompt || TX_PROMPT_DEFAULT },
+            { role: "system", content: (cfg.prompt || TX_PROMPT_DEFAULT) + epubRule },
             { role: "user", content: text },
           ],
           temperature: 0,
@@ -1592,7 +1831,19 @@
         c.error = "";
         render();
         try {
-          c.out = await txCallOnce(cfg, c.src);
+          c.out = await txCallOnce(cfg, c.src, c.kind || tx.fileType);
+          // EPUB 先检查节点标记。坏标记不等到导出才暴露，队列里直接标红可重试。
+          if (c.kind === "epub") {
+            const positions = (c.marks || []).map((m) => c.out.indexOf(m));
+            if (positions.some((p) => p < 0)) {
+              throw new Error("译文破坏了 EPUB 节点标记，请重试这一块");
+            }
+            for (let j = 1; j < positions.length; j++) {
+              if (positions[j] <= positions[j - 1]) {
+                throw new Error("译文改变了 EPUB 节点标记顺序，请重试这一块");
+              }
+            }
+          }
           c.status = "done";
         } catch (e) {
           c.status = "error";
@@ -1613,9 +1864,11 @@
     else say(`全部完成（${done} 块），可以导出了`, "ok");
   }
 
-  /** 导出。缺译文的块用原文占位并标注，避免导出一份中间夹空的文件却看不出来。 */
-  function txExport(say) {
+  /** 导出。TXT 可把失败块用原文占位；EPUB 必须全部成功，不能静默混入半本原文。 */
+  async function txExport(say) {
     if (!tx.chunks.length) return say("还没有内容", "bad");
+    if (tx.fileType === "epub") return txExportEpub(say);
+
     const missing = tx.chunks.filter((c) => c.status !== "done").length;
     const text = tx.chunks
       .map((c) => (c.status === "done" ? c.out : `【未翻译】\n${c.src}`))
@@ -1733,8 +1986,13 @@
 
     const fileInput = document.createElement("input");
     fileInput.type = "file";
-    fileInput.accept = ".txt,text/plain";
+    fileInput.accept = ".txt,.epub,text/plain,application/epub+zip";
     fileRow.appendChild(fileInput);
+
+    const fileHint = document.createElement("span");
+    fileHint.className = "tx-file-hint";
+    fileHint.textContent = "支持 TXT / EPUB；EPUB 会保留图片、CSS、目录与元数据，只翻译可见正文。";
+    fileRow.appendChild(fileHint);
     box.appendChild(fileRow);
 
     /* --- 队列 --- */
@@ -1767,7 +2025,12 @@
       runBtn.disabled = tx.running || !tx.chunks.length;
       stopBtn.disabled = !tx.running;
       retryBtn.disabled = tx.running || !bad;
-      expBtn.disabled = !done;
+      // TXT 可导出部分结果（未完成块用原文占位）；EPUB 为避免一本书里混着
+      // 原文和译文，必须全部完成才开放导出。
+      expBtn.disabled = tx.fileType === "epub"
+        ? done !== tx.chunks.length || !done
+        : !done;
+      expBtn.textContent = tx.fileType === "epub" ? "导出 EPUB" : "导出译文";
       clearBtn.disabled = tx.running || !tx.chunks.length;
       runBtn.textContent = tx.running
         ? `翻译中… ${done}/${tx.chunks.length}`
@@ -1788,7 +2051,9 @@
         head.appendChild(tag);
         const size = document.createElement("span");
         size.className = "tx-size";
-        size.textContent = `第 ${c.i + 1} 块 · ${c.src.length} 字`;
+        size.textContent = c.kind === "epub"
+          ? `第 ${c.i + 1} 块 · ${(c.refs || []).length} 个节点 · ${c.docPath}`
+          : `第 ${c.i + 1} 块 · ${c.src.length} 字`;
         head.appendChild(size);
         li.appendChild(head);
 
@@ -1813,15 +2078,40 @@
       if (!f) return;
       if (tx.running) return say("正在翻译，先停止再换文件", "bad");
       try {
-        const text = await f.text();
-        const parts = txSplit(text);
-        if (!parts.length) return say("文件是空的", "bad");
+        const isEpub = /\.epub$/i.test(f.name) || f.type === "application/epub+zip";
         tx.fileName = f.name;
-        tx.chunks = parts.map((src, i) => ({ i, src, out: "", status: "pending", error: "" }));
-        say(`已载入《${f.name}》：${text.length} 字，切成 ${parts.length} 块`, "ok");
+        tx.stopping = false;
+
+        if (isEpub) {
+          say("正在解析 EPUB…");
+          const book = await txLoadEpub(f);
+          tx.fileType = "epub";
+          tx.epub = book;
+          tx.chunks = book.chunks;
+          const nodes = tx.chunks.reduce((n, c) => n + (c.refs ? c.refs.length : 0), 0);
+          say(
+            `已载入《${f.name}》：${book.docs.length} 个文档、${nodes} 个文本节点，` +
+              `切成 ${tx.chunks.length} 块（${(book.bytes / 1024 / 1024).toFixed(1)} MB）`,
+            "ok"
+          );
+        } else {
+          const text = await f.text();
+          const parts = txSplit(text);
+          if (!parts.length) return say("文件是空的", "bad");
+          tx.fileType = "txt";
+          tx.epub = null;
+          tx.chunks = parts.map((src, i) => ({
+            i, src, out: "", status: "pending", error: "", kind: "txt",
+          }));
+          say(`已载入《${f.name}》：${text.length} 字，切成 ${parts.length} 块`, "ok");
+        }
         render();
       } catch (e) {
+        tx.chunks = [];
+        tx.epub = null;
+        tx.fileName = "";
         say("读文件失败：" + (e.message || e), "bad");
+        render();
       }
     });
 
@@ -1843,11 +2133,24 @@
       persist();
       txRun(render, say);
     });
-    expBtn.addEventListener("click", () => txExport(say));
+    expBtn.addEventListener("click", async () => {
+      expBtn.disabled = true;
+      say(tx.fileType === "epub" ? "正在重新打包 EPUB…" : "正在导出…");
+      try {
+        await txExport(say);
+      } catch (e) {
+        say("导出失败：" + (e.message || e), "bad");
+      } finally {
+        render();
+      }
+    });
     clearBtn.addEventListener("click", () => {
       if (!window.confirm("清空当前文件与已翻译内容？未导出的译文会丢。")) return;
+      tx.stopping = true;
       tx.chunks = [];
       tx.fileName = "";
+      tx.fileType = "txt";
+      tx.epub = null;       // EPUB 可能含大量图片，及时释放内存
       fileInput.value = "";
       say("已清空", "");
       render();
