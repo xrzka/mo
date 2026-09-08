@@ -12589,6 +12589,40 @@
       "note": "收这个发布页而不是直接收主站 —— 这类站换域名频繁，发布页能一直找到新地址。当前列出的主站是 www.lmm85.com，备用 m.lm6.net，两个实测都可直连。仅提供安卓 APP，iOS 用它的网页版；站方提示 APP 安装若报毒可断网安装。"
     },
     {
+      "id": "manual-anime-2",
+      "name": "TV天堂",
+      "section": "anime",
+      "subsection": "site",
+      "description": "免费动画在线观看网站，提供动漫内容与在线播放入口。",
+      "url": "https://earth.dyfish.cyou",
+      "tags": [
+        "动漫网站",
+        "在线观看",
+        "免费"
+      ],
+      "kind": "动漫在线观看",
+      "need_login": false,
+      "update_info": "持续更新",
+      "note": "网站域名可能调整，如无法访问请留意站点后续地址变化。"
+    },
+    {
+      "id": "manual-anime-3",
+      "name": "Omofun动漫",
+      "section": "anime",
+      "subsection": "site",
+      "description": "一个专注于免费动漫内容的在线观看网站。",
+      "url": "https://www.omofuna.com",
+      "tags": [
+        "动漫网站",
+        "在线观看",
+        "免费"
+      ],
+      "kind": "动漫在线观看",
+      "need_login": false,
+      "update_info": "持续更新",
+      "note": "第三方免费动漫网站，请以站点实际可用情况为准。"
+    },
+    {
       "id": "manual-novel-6",
       "name": "轻小说文库 wenku8（日轻）",
       "section": "novel",
