@@ -9,11 +9,11 @@
       content="墨小说漫画 · 小说、漫画、动画、游戏、AI 资源导航，分区整理，点击直达。"
     />
     <title>墨小说漫画 · 资源导航</title>
-    <script src="config.js?v=20260906b"></script>
-    <link rel="stylesheet" href="styles.css?v=20260906b" />
+    <script src="config.js?v=20260908a"></script>
+    <link rel="stylesheet" href="styles.css?v=20260908a" />
     <!-- EPUB 本质是 zip。固定版本并随站点托管，不依赖第三方 CDN 运行。 -->
     <script src="vendor/jszip.min.js?v=3.10.1" defer></script>
-    <script src="app.js?v=20260906b" defer></script>
+    <script src="app.js?v=20260908a" defer></script>
   </head>
   <body>
     <a class="skip-link" href="#feed">跳到资源列表</a>
@@ -133,6 +133,15 @@
           </button>
           <span class="admin-new-msg" data-admin-new-msg aria-live="polite"></span>
           <div class="admin-new-form" data-admin-new-form hidden></div>
+        </div>
+
+        <!-- 静态卡片采用软删除，登录后可在这里恢复，避免误删后只能改数据库。 -->
+        <div class="admin-deleted" data-admin-deleted hidden>
+          <button type="button" class="admin-new-toggle" data-admin-deleted-toggle>
+            已删除卡片（0）
+          </button>
+          <span class="admin-new-msg" data-admin-deleted-msg aria-live="polite"></span>
+          <div class="admin-deleted-list" data-admin-deleted-list hidden></div>
         </div>
 
         <!--

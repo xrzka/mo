@@ -369,10 +369,10 @@ JSZip 文件在 `vendor/jszip.min.js`，不依赖运行时第三方 CDN。`test_
 `manual-` / `xlsx-` / `gal-` / `relay-` 开头，不会撞；xlsx 导入与 AI 同步脚本
 只重写自己前缀的条目，所以重跑导入不会冲掉后台加的东西。
 
-**只能删 `custom-` 前缀的条目。** `items.json` 里的条目不在这张表里，
-删除得改仓库文件；从这里删会让人以为删掉了，刷新又回来。
-删条目时连带清掉它的覆盖行，否则留下一行孤儿数据。
-前端删除前有一次 `confirm` —— 不可撤销，误删得重新填一遍表单。
+**两类条目都能删。** 后台新增的 `custom-` 条目会从 `custom_items` 真正删除，
+同时清掉关联覆盖行；静态 `items.json` 条目则在 `overrides.deleted` 写软删除标记，
+对访客隐藏但不改仓库数据。后台「已删除卡片」列表可以恢复静态条目。
+前端两类删除都有一次 `confirm`，其中后台新增条目删除后不可撤销。
 
 新增上限 `CUSTOM_MAX_ITEMS = 300`，满了拒绝新增。这既是防手滑刷爆库，
 也是个提醒：该把数据折回 `items.json` 了。
@@ -428,6 +428,18 @@ printf '%s' '你的密码' | node ../gen_admin_hash.mjs | ../wr.sh pages secret 
 `listCustomItems()` 会用 `section`+`subsection` 现拼一个 `placements` 出来，
 所以前端只需要认一种形式。线上已经跑过了，用 `PRAGMA table_info(overrides)`
 和 `PRAGMA table_info(custom_items)` 可以复核。
+
+### 给已有库补静态卡片软删除列
+
+静态卡片的删除状态存在 `overrides.deleted`；已有库需要显式加列：
+
+```bash
+./wr.sh d1 execute mo-stats --remote --command \
+  "ALTER TABLE overrides ADD COLUMN deleted INTEGER"
+```
+
+`NULL` 表示正常显示，`1` 表示隐藏。恢复卡片会把该字段清回 `NULL`；如果覆盖行
+没有其他字段，后端会直接删除整行。可用 `PRAGMA table_info(overrides)` 复核。
 
 ### 第一站（中转站榜单）共用后台
 

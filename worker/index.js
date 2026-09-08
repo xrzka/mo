@@ -68,7 +68,7 @@ const REQ_KINDS = ["want", "broken"];
  */
 const OVERRIDE_FIELDS = [
   "name", "description", "url", "password", "note",
-  "section", "subsection", "placements",
+  "section", "subsection", "placements", "deleted",
 ];
 
 /** 各字段长度上限（按字符数，中文算 1）。 */
@@ -81,6 +81,7 @@ const OVERRIDE_MAX = {
   section: 32,
   subsection: 32,
   placements: 300,
+  deleted: 1,
 };
 
 /**
@@ -721,7 +722,9 @@ async function listOverrides(env) {
     const o = {};
     OVERRIDE_FIELDS.forEach((f) => {
       // null 表示这个字段没被覆盖，别塞进去 —— 否则前端会把原值盖成 null
-      if (r[f] !== null && r[f] !== undefined) o[f] = r[f];
+      if (r[f] !== null && r[f] !== undefined) {
+        o[f] = f === "deleted" ? r[f] === 1 : r[f];
+      }
     });
     o.updated = r.updated;
     map[r.item_id] = o;
@@ -767,6 +770,14 @@ async function saveOverride(env, body) {
     const v = fields[f];
     if (v === null) {
       next[f] = null;                  // 显式撤销这一项
+      continue;
+    }
+    // deleted 在 D1 中是 INTEGER；其他覆盖字段都是 TEXT。
+    if (f === "deleted") {
+      if (v !== true && v !== false && v !== 1 && v !== 0) {
+        return { status: 400, body: { error: "deleted 必须是布尔值或 null" } };
+      }
+      next[f] = v === true || v === 1 ? 1 : 0;
       continue;
     }
     if (typeof v !== "string") {

@@ -107,6 +107,7 @@ CREATE TABLE IF NOT EXISTS overrides (
   section     TEXT,
   subsection  TEXT,
   placements  TEXT,
+  deleted     INTEGER,
   updated  TEXT NOT NULL,
   by_who   TEXT NOT NULL DEFAULT ''
 );

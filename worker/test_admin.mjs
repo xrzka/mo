@@ -215,6 +215,17 @@ const create = (env, title, note = "", opts) =>
   check("读回备注", got.note === "新备注", got.note);
   check("读回分区", got.section === "novel", got.section);
   check("读回小分区", got.subsection === "jp", got.subsection);
+
+  // 静态 items.json 卡片用 deleted 覆盖做软删除；必须严格收布尔值。
+  let del = await save(env, token, "manual-manga-2", { deleted: true });
+  check("静态卡片可标记删除", del.status === 200, JSON.stringify(del.data));
+  let deleted = (await call(env, "/api/overrides")).data.overrides["manual-manga-2"];
+  check("删除标记公开读回布尔值", deleted.deleted === true, JSON.stringify(deleted));
+  del = await save(env, token, "manual-manga-2", { deleted: "true" });
+  check("删除标记拒绝字符串", del.status === 400, JSON.stringify(del.data));
+  await save(env, token, "manual-manga-2", { deleted: null });
+  deleted = (await call(env, "/api/overrides")).data.overrides["manual-manga-2"];
+  check("清除删除标记后覆盖行消失", deleted === undefined, JSON.stringify(deleted));
 }
 
 /* ---------- 6b. 移动分区 ---------- */

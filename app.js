@@ -404,9 +404,8 @@
   // 本机已反馈过失效的条目 id。init() 里赋值，用于让按钮在刷新后仍是完成态。
   let reportedSet = new Set();
 
-  // 后台编辑的覆盖层：{ itemId: {name?, description?, url?, password?, note?, updated} }
-  // 站点是纯静态的，浏览器改不了 items.json，所以编辑结果存在 D1 里，
-  // 渲染前合并进来（见 normalize 的 ov 参数）。
+  // 后台编辑的覆盖层：{ itemId: {name?, description?, url?, ..., deleted?, updated} }
+  // deleted=true 是静态 items.json 卡片的软删除标记；访客侧加载后直接过滤。
   let overrides = {};
 
   // 管理员登录态。token 只放内存，不落 localStorage ——
@@ -1285,6 +1284,13 @@
   /** items.json 的原始条目 + 后台新增的，合起来才是完整数据源。 */
   const allRaw = () => state.rawItems.concat(state.customItems);
 
+  /** D1 覆盖层里的 deleted=true 会隐藏静态卡片；后台新增卡仍走真正删除。 */
+  const rebuildItems = () => {
+    state.items = allRaw()
+      .filter((r) => !(overrides[r && r.id] && overrides[r.id].deleted === true))
+      .map((r, i) => normalize(r, i, overrides[r && r.id]));
+  };
+
   /** 覆盖层或新增条目变了之后重建 state.items 并重渲染。 */
   async function refreshOverrides({ withItems = false } = {}) {
     const [ov, custom] = await Promise.all([
@@ -1293,7 +1299,7 @@
     ]);
     overrides = ov;
     if (custom) state.customItems = custom;
-    state.items = allRaw().map((r, i) => normalize(r, i, overrides[r && r.id]));
+    rebuildItems();
     render();
     refreshScrollDock();
   }
@@ -1368,6 +1374,18 @@
       }
     }
 
+    // 静态卡片软删除后可在后台恢复。退出时整个恢复区隐藏。
+    const deletedWrap = $("[data-admin-deleted]");
+    if (deletedWrap) {
+      deletedWrap.hidden = !logged;
+      if (!logged) {
+        const list = $("[data-admin-deleted-list]");
+        if (list) list.hidden = true;
+      } else {
+        renderDeletedAdmin();
+      }
+    }
+
     // 翻译工作区同理。退出时收起并清空 —— 里面可能留着上次的文件与队列，
     // 下次登录看到半截状态会以为出了问题。
     const txWrap = $("[data-tx]");
@@ -1436,6 +1454,7 @@
     // 支持直接改 hash 进出后台，不用刷新
     window.addEventListener("hashchange", renderAdmin);
     bindAdminNew();
+    bindDeletedAdmin();
     bindTx();
   }
 
@@ -2277,6 +2296,74 @@
     });
   }
 
+  /** 渲染静态卡片的软删除记录；名称优先显示删除前已经保存的覆盖标题。 */
+  function renderDeletedAdmin() {
+    const wrap = $("[data-admin-deleted]");
+    const toggle = $("[data-admin-deleted-toggle]");
+    const list = $("[data-admin-deleted-list]");
+    const msg = $("[data-admin-deleted-msg]");
+    if (!wrap || !toggle || !list || !msg) return;
+
+    const rawById = new Map(state.rawItems.map((r) => [String(r.id || ""), r]));
+    const deleted = Object.entries(overrides)
+      .filter(([id, ov]) => ov && ov.deleted === true && rawById.has(id))
+      .map(([id, ov]) => ({ id, name: ov.name || rawById.get(id).name || id }));
+    toggle.textContent = `已删除卡片（${deleted.length}）`;
+    list.textContent = "";
+
+    if (!deleted.length) {
+      const empty = document.createElement("p");
+      empty.className = "admin-deleted-empty";
+      empty.textContent = "暂无已删除的静态卡片";
+      list.appendChild(empty);
+      return;
+    }
+
+    deleted.forEach((item) => {
+      const row = document.createElement("div");
+      row.className = "admin-deleted-row";
+      const label = document.createElement("span");
+      label.textContent = `${item.name}（${item.id}）`;
+      row.appendChild(label);
+
+      const restore = document.createElement("button");
+      restore.type = "button";
+      restore.className = "admin-restore";
+      restore.textContent = "恢复";
+      restore.addEventListener("click", async () => {
+        restore.disabled = true;
+        msg.textContent = "恢复中…";
+        msg.className = "admin-new-msg";
+        const r = await adminFetch("/api/admin/override", {
+          item_id: item.id,
+          fields: { deleted: null },
+        });
+        restore.disabled = false;
+        if (!r.ok) {
+          msg.textContent = r.error;
+          msg.className = "admin-new-msg bad";
+          return;
+        }
+        msg.textContent = `已恢复「${item.name}」`;
+        msg.className = "admin-new-msg ok";
+        await refreshOverrides();
+        renderDeletedAdmin();
+      });
+      row.appendChild(restore);
+      list.appendChild(row);
+    });
+  }
+
+  function bindDeletedAdmin() {
+    const toggle = $("[data-admin-deleted-toggle]");
+    const list = $("[data-admin-deleted-list]");
+    if (!toggle || !list) return;
+    toggle.addEventListener("click", () => {
+      list.hidden = !list.hidden;
+      renderDeletedAdmin();
+    });
+  }
+
   function initAdmin() {
     bindAdmin();
     renderAdmin();
@@ -2598,33 +2685,37 @@
       adminFlash = null;
     });
 
-    // 后台新增的条目可以直接删掉。items.json 里的条目不给删 ——
-    // 它们不在 custom_items 表里，删除得改仓库文件。
-    if (String(item.id).startsWith("custom-")) {
-      const del = document.createElement("button");
-      del.type = "button";
-      del.className = "admin-delete";
-      del.textContent = "删除这条";
-      actions.appendChild(del);
+    // 两类条目都能删：custom- 真删 D1 行；静态 items.json 条目写 deleted 覆盖软删除。
+    const del = document.createElement("button");
+    del.type = "button";
+    del.className = "admin-delete";
+    del.textContent = "删除这条";
+    actions.appendChild(del);
 
-      del.addEventListener("click", async (e) => {
-        e.stopPropagation();
-        // 删除不可撤销，问一句。误删一条得重新填一遍表单。
-        if (!window.confirm(`确定删除「${item.name}」？此操作不可撤销。`)) return;
-        del.disabled = true;
-        say("删除中…");
-        const r = await adminFetch("/api/admin/item/delete", { id: item.id });
-        del.disabled = false;
-        if (!r.ok) return say(r.error, "bad");
-        // 这张卡会消失，flash 没有落点，提示改放到后台面板那行
-        const panelMsg = $("[data-admin-new-msg]");
-        if (panelMsg) {
-          panelMsg.textContent = `已删除「${item.name}」`;
-          panelMsg.className = "admin-new-msg ok";
-        }
-        await refreshOverrides({ withItems: true });
-      });
-    }
+    del.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      const isCustom = String(item.id).startsWith("custom-");
+      const detail = isCustom
+        ? "此操作不可撤销。"
+        : "这会对所有访客隐藏该卡片，可在后台的「已删除卡片」中恢复。";
+      if (!window.confirm(`确定删除「${item.name}」？${detail}`)) return;
+      del.disabled = true;
+      say("删除中…");
+      const r = isCustom
+        ? await adminFetch("/api/admin/item/delete", { id: item.id })
+        : await adminFetch("/api/admin/override", { item_id: item.id, fields: { deleted: true } });
+      del.disabled = false;
+      if (!r.ok) return say(r.error, "bad");
+      const panelMsg = $("[data-admin-new-msg]");
+      if (panelMsg) {
+        panelMsg.textContent = isCustom
+          ? `已删除「${item.name}」`
+          : `已隐藏「${item.name}」，可在「已删除卡片」中恢复`;
+        panelMsg.className = "admin-new-msg ok";
+      }
+      await refreshOverrides({ withItems: isCustom });
+      renderDeletedAdmin();
+    });
   }
 
   /** 本机记下已反馈过的条目，避免同一个人反复点同一张卡。
@@ -3457,7 +3548,7 @@
       overrides = ovMap;
       state.rawItems = raw;
       state.customItems = customs;
-      state.items = allRaw().map((r, i) => normalize(r, i, overrides[r && r.id]));
+      rebuildItems();
       state.generatedAt = payload.generated_at || null;
       $("[data-footer-updated]").textContent = fmtDate(state.generatedAt);
       renderModeUI();

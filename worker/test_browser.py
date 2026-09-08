@@ -146,7 +146,7 @@ class StatsStub(http.server.BaseHTTPRequestHandler):
 
     # ---- 后台编辑 ----
     # 覆盖层：itemId -> {name?, description?, url?, password?, note?,
-    #                    section?, subsection?, updated}
+    #                    section?, subsection?, deleted?, updated}
     overrides = {}
     # 后台新增的条目：id -> 条目 dict（与 items.json 同构）
     custom_items = {}
@@ -157,7 +157,7 @@ class StatsStub(http.server.BaseHTTPRequestHandler):
     # 与 Worker 的 OVERRIDE_FIELDS 保持一致。多一项少一项都会让测试测不到实情。
     override_fields = (
         "name", "description", "url", "password", "note",
-        "section", "subsection", "placements",
+        "section", "subsection", "placements", "deleted",
     )
     # 一条资源最多挂几个分区。与 Worker 的 PLACEMENT_MAX 一致。
     placement_max = 8
@@ -361,6 +361,10 @@ class StatsStub(http.server.BaseHTTPRequestHandler):
             for k, v in fields.items():
                 if v is None:
                     cur.pop(k, None)          # null 撤销这一项
+                elif k == "deleted":
+                    if not isinstance(v, bool):
+                        return self._send({"error": "deleted 必须是布尔值或 null"}, 400)
+                    cur[k] = v
                 elif isinstance(v, str):
                     if k == "url" and v and not re.match(r"^https?://", v, re.I):
                         return self._send({"error": "链接必须以 http:// 或 https:// 开头"}, 400)
@@ -2319,8 +2323,8 @@ def test_admin_new_item(page, base, stub_port):
 
 
 def test_admin_delete_item(page, base, stub_port):
-    """后台新增的条目能删；items.json 里的条目不给删。"""
-    print("\n--- 后台：删除新增的条目 ---")
+    """后台新增条目真删；items.json 静态条目软删除后可以恢复。"""
+    print("\n--- 后台：删除与恢复条目 ---")
     StatsStub.reset_admin()
     StatsStub.custom_seq = 0
     StatsStub.custom_items["custom-stub9"] = {
@@ -2334,9 +2338,26 @@ def test_admin_delete_item(page, base, stub_port):
     page.wait_for_timeout(1400)
     admin_login(page)
 
-    # items.json 里的条目不该有删除按钮
+    # 静态条目也有删除按钮，但走软删除，并能从后台恢复。
     other = card_editor(page, "manual-manga-1")
-    check("items.json 条目无删除按钮", other.locator(".admin-delete").count() == 0)
+    check("items.json 条目有删除按钮", other.locator(".admin-delete").count() == 1)
+    page.once("dialog", lambda d: d.accept())
+    other.locator(".admin-delete").click()
+    page.wait_for_timeout(900)
+    check("静态条目写入软删除标记",
+          (StatsStub.overrides.get("manual-manga-1") or {}).get("deleted") is True,
+          json.dumps(StatsStub.overrides.get("manual-manga-1")))
+    check("软删除后卡片消失",
+          page.locator('.feed-card[data-item-id="manual-manga-1"]').count() == 0)
+    check("恢复面板计数更新", "（1）" in page.text_content("[data-admin-deleted-toggle]"),
+          page.text_content("[data-admin-deleted-toggle]").strip())
+    page.click("[data-admin-deleted-toggle]")
+    page.click("[data-admin-deleted-list] .admin-restore")
+    page.wait_for_timeout(900)
+    check("恢复后删除标记清除", "manual-manga-1" not in StatsStub.overrides,
+          json.dumps(StatsStub.overrides.get("manual-manga-1")))
+    check("恢复后卡片重新出现",
+          page.locator('.feed-card[data-item-id="manual-manga-1"]').count() == 1)
 
     page.fill('[data-filter="q"]', "待删除的后台条目")
     page.wait_for_timeout(500)

@@ -1015,6 +1015,16 @@ h1 {
 .admin-new-form { margin-top: 12px; display: grid; gap: 10px; max-width: 620px; }
 .admin-new-form[hidden] { display: none; }
 
+/* 静态卡片是软删除，可从后台恢复；后台新增卡仍直接删除。 */
+.admin-deleted { margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--border); }
+.admin-deleted[hidden], .admin-deleted-list[hidden] { display: none; }
+.admin-deleted-list { margin-top: 10px; display: grid; gap: 7px; max-width: 720px; }
+.admin-deleted-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; }
+.admin-deleted-row span { min-width: 0; overflow-wrap: anywhere; color: var(--text-muted); font-size: 12px; }
+.admin-deleted-empty { margin: 0; color: var(--text-muted); font-size: 12px; }
+.admin-restore { padding: 4px 11px; border: 1px solid var(--accent); border-radius: 7px; background: transparent; color: var(--accent); font: inherit; font-size: 12px; cursor: pointer; }
+.admin-restore:disabled { opacity: 0.6; cursor: default; }
+
 /* 勾选框那行不该把 label 撑成两行 */
 .admin-field-inline {
   display: flex;
