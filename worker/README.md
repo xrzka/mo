@@ -466,7 +466,8 @@ printf '%s' '第一站密码' | node ../gen_admin_hash.mjs | ../wr.sh pages secr
 首次上线无论是否分开密码，都要先执行 schema 建表。只有选择独立密码时才执行后两条
 `secret put`。Worker 与 Pages 的 Secret 彼此独立，分开密码时两边都要设置。
 后端新增或修改后也要同时部署两处。前端 token 仍只放内存，刷新需重新登录；
-静态卡片只能覆盖修改，网页新增卡片可删除。
+后台新增卡片直接删除，静态卡片用 `board_overrides.fields_json` 里的 `deleted` 标记
+软删除，并可在第一站后台的「已删除卡片」中恢复。
 
 接口前缀均为 `/api/board`：公开读 `/overrides`、`/items`；登录与写接口在
 `/admin/login`、`/admin/override`、`/admin/item`、`/admin/item/delete`。

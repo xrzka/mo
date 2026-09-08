@@ -114,6 +114,26 @@ result = await call("/api/board/items");
 check("访客能读到新增卡片", result.data.items.length === 1);
 check("新增卡片字段正确", result.data.items[0].resource_name === "后台新增站");
 
+result = await call("/api/board/admin/override", {
+  method: "POST", token,
+  body: { item_id: "agentrouter", fields: { deleted: true } },
+});
+check("静态卡片可标记删除", result.status === 200, JSON.stringify(result.data));
+result = await call("/api/board/overrides");
+check("删除标记公开读回", result.data.overrides.agentrouter.deleted === true);
+result = await call("/api/board/admin/override", {
+  method: "POST", token,
+  body: { item_id: "agentrouter", fields: { deleted: "true" } },
+});
+check("删除标记拒绝字符串", result.status === 400, JSON.stringify(result.data));
+result = await call("/api/board/admin/override", {
+  method: "POST", token,
+  body: { item_id: "agentrouter", fields: {}, clear_fields: ["deleted"] },
+});
+check("静态卡片可恢复", result.status === 200, JSON.stringify(result.data));
+result = await call("/api/board/overrides");
+check("恢复后清除删除标记", !("deleted" in result.data.overrides.agentrouter));
+
 result = await call("/api/board/admin/item/delete", {
   method: "POST", token, body: { id: "agentrouter" },
 });
