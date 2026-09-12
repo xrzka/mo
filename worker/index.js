@@ -95,6 +95,7 @@ const SECTION_SUBS = {
   novel: ["site", "app", "download", "kr", "jp"],
   manga: ["site", "app", "wechat", "download", "kr", "jp"],
   anime: ["site", "app"],
+  watch: ["music", "manga", "anime", "novel"],
   game: ["site", "app", "gal"],
   music: ["site", "app", "download"],
   study: ["course", "video", "doc"],
@@ -232,6 +233,488 @@ function corsHeaders(request) {
 
 const json = (data, request, status = 200) =>
   new Response(JSON.stringify(data), { status, headers: corsHeaders(request).headers });
+
+/* ---------- 观看区上游（只允许固定白名单，绝不接受任意 URL） ---------- */
+const WATCH_MUSIC_API = "http://www.tinysignal.fun/soda_music/music_action_v2.php";
+const WATCH_QUERY_MAX = 80;
+const WATCH_AUDIO_HOSTS = new Set([
+  "music.163.com", "music.126.net", "m7.music.126.net", "m8.music.126.net",
+  "m701.music.126.net", "m801.music.126.net",
+]);
+
+function watchText(value, max = WATCH_QUERY_MAX) {
+  return String(value || "").replace(/[\x00-\x1f\x7f]/g, " ").trim().slice(0, max);
+}
+
+async function watchFetch(url, init = {}, timeoutMs = 15000, allowedHosts = null) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    let target = new URL(url);
+    const allowed = allowedHosts
+      ? new Set([...allowedHosts].map((host) => String(host).toLowerCase()))
+      : new Set([target.hostname.toLowerCase()]);
+    for (let redirects = 0; redirects <= 3; redirects++) {
+      if (!["http:", "https:"].includes(target.protocol)
+          || !allowed.has(target.hostname.toLowerCase())) {
+        throw new Error("upstream redirect host not allowed");
+      }
+      const response = await fetch(target, {
+        ...init, signal: controller.signal, redirect: "manual",
+      });
+      if (![301, 302, 303, 307, 308].includes(response.status)) return response;
+      const location = response.headers.get("Location");
+      if (!location || redirects === 3) throw new Error("too many upstream redirects");
+      target = new URL(location, target);
+    }
+    throw new Error("too many upstream redirects");
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function watchMusic(request, url) {
+  const action = watchText(url.searchParams.get("action") || "getNewestSongsV2", 32);
+  if (!["getNewestSongsV2", "searchV2", "getAlgerListenUrl"].includes(action)) {
+    return json({ error: "unsupported music action" }, request, 400);
+  }
+  const params = new URLSearchParams({ action });
+  if (action === "searchV2") {
+    const keywords = watchText(url.searchParams.get("q"));
+    if (!keywords) return json({ error: "请输入搜索内容" }, request, 400);
+    params.set("keywords", keywords);
+  }
+  if (action === "getAlgerListenUrl") {
+    const id = watchText(url.searchParams.get("id"), 40);
+    if (!/^\d{1,24}$/.test(id)) return json({ error: "bad song id" }, request, 400);
+    params.set("linkMid", id);
+  }
+  const upstream = await watchFetch(`${WATCH_MUSIC_API}?${params}`, {
+    headers: { Accept: "application/json,text/plain,*/*" },
+  });
+  const text = await upstream.text();
+  if (!upstream.ok) return json({ error: `music upstream HTTP ${upstream.status}` }, request, 502);
+  let payload;
+  try { payload = JSON.parse(text); } catch { return json({ error: "music upstream returned invalid JSON" }, request, 502); }
+  return json(payload, request);
+}
+
+async function watchAudio(request, url) {
+  let target;
+  try { target = new URL(url.searchParams.get("url") || ""); } catch { return json({ error: "bad audio url" }, request, 400); }
+  if (target.protocol !== "https:" || !WATCH_AUDIO_HOSTS.has(target.hostname.toLowerCase())) {
+    return json({ error: "audio host not allowed" }, request, 403);
+  }
+  const range = request.headers.get("Range") || "";
+  const headers = { Referer: "https://music.163.com/", "User-Agent": "Mozilla/5.0" };
+  if (/^bytes=\d*-\d*$/.test(range)) headers.Range = range;
+  const upstream = await watchFetch(target, { headers }, 25000, WATCH_AUDIO_HOSTS);
+  if (!upstream.ok && upstream.status !== 206) return json({ error: `audio upstream HTTP ${upstream.status}` }, request, 502);
+  const out = new Headers(corsHeaders(request).headers);
+  out.set("Content-Type", upstream.headers.get("Content-Type") || "audio/mpeg");
+  out.set("Cache-Control", "public, max-age=1800");
+  for (const h of ["Content-Length", "Content-Range", "Accept-Ranges"]) {
+    const value = upstream.headers.get(h); if (value) out.set(h, value);
+  }
+  return new Response(upstream.body, { status: upstream.status, headers: out });
+}
+
+const WATCH_NOVEL_ORIGINS = [
+  "https://tw.linovelib.com", "https://www.bilinovel.com", "https://www.linovelib.com",
+];
+const WATCH_ANIME_ORIGINS = ["https://www.lmm85.com", "https://m.lm6.net"];
+const WATCH_MANGA_API_ORIGINS = [
+  "http://crm.weichu.asia", "http://meiwenti.xn--vhqr42drhf5k7b.com",
+  "http://bkbfblh.xn--vhqr42drhf5k7b.com",
+];
+const WATCH_MANGA_IMAGE_ORIGIN = "https://i.lzimg.xyz";
+const WATCH_MANGA_PACK = "com.hbsclj.uth";
+const WATCH_MANGA_SIGN = "CDD266DF8B2399C24DA38E408B6D9825C7BD2AF073229847F551EA653EA096E1";
+const WATCH_MANGA_IMAGE_HOSTS = new Set(["i.lzimg.xyz", "cf-1.imgio.club"]);
+const WATCH_VIDEO_HOSTS = /(?:^|\.)(?:92cj\.com|upaiyun\.com|bcebos\.com|qpic\.cn|qq\.com)$/i;
+
+function decodeEntities(value) {
+  return String(value || "")
+    .replace(/&nbsp;/gi, " ").replace(/&amp;/gi, "&").replace(/&quot;/gi, '"')
+    .replace(/&#39;|&apos;/gi, "'").replace(/&lt;/gi, "<").replace(/&gt;/gi, ">");
+}
+
+function stripTags(value) {
+  return decodeEntities(String(value || "").replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ").replace(/<[^>]+>/g, " "))
+    .replace(/\s+/g, " ").trim();
+}
+
+function absoluteWatchUrl(value, origin) {
+  try { return new URL(decodeEntities(value), origin).toString(); } catch { return ""; }
+}
+
+function proxyWatchAsset(value, kind) {
+  const url = absoluteWatchUrl(value, "https://invalid.local");
+  if (!url || url.includes("invalid.local")) return "";
+  return `/api/watch/asset?kind=${kind}&url=${encodeURIComponent(url)}`;
+}
+
+async function fetchWatchHtml(url, referer = "") {
+  const response = await watchFetch(url, { headers: {
+    Accept: "text/html,application/xhtml+xml", "User-Agent": "Mozilla/5.0",
+    "Accept-Language": "zh-CN,zh;q=0.9", ...(referer ? { Referer: referer } : {}),
+  } }, 25000);
+  if (!response.ok) throw new Error(`upstream HTTP ${response.status}`);
+  return await response.text();
+}
+
+async function fetchFirstWatchHtml(origins, path) {
+  const errors = [];
+  for (const origin of origins) {
+    try { return { html: await fetchWatchHtml(`${origin}${path}`), origin }; }
+    catch (error) { errors.push(`${new URL(origin).hostname}: ${error.message}`); }
+  }
+  throw new Error(errors.join("; ") || "upstream unavailable");
+}
+
+function parseNovelCards(html, origin) {
+  const cards = [];
+  const seen = new Set();
+  const re = /<li[^>]*class=["'][^"']*book-li[^"']*["'][^>]*>([\s\S]*?)<\/li>/gi;
+  let match;
+  while ((match = re.exec(html)) && cards.length < 30) {
+    const block = match[1];
+    const href = block.match(/href=["'](\/novel\/(\d+)\.html)["']/i);
+    if (!href || seen.has(href[2])) continue;
+    const title = stripTags(block.match(/class=["']book-title["'][^>]*>([\s\S]*?)<\//i)?.[1] || "");
+    const images = [...block.matchAll(/(?:data-src|src)=["']([^"']+)["']/gi)]
+      .map((entry) => entry[1]).filter((value) => value && !/book-cover-no|data:image/i.test(value));
+    const coverUrl = absoluteWatchUrl(images[0] || "", origin);
+    seen.add(href[2]);
+    cards.push({
+      id: href[2], title: title || `小说 ${href[2]}`,
+      cover: coverUrl ? proxyWatchAsset(coverUrl, "novel") : "", subtitle: "哔哩轻小说",
+    });
+  }
+  return cards;
+}
+
+async function watchNovel(request, url) {
+  const action = watchText(url.searchParams.get("action") || "list", 24);
+  if (action === "list") {
+    const q = watchText(url.searchParams.get("q"));
+    if (q) {
+      const search = new URLSearchParams({ searchkey: q });
+      const { html, origin } = await fetchFirstWatchHtml(WATCH_NOVEL_ORIGINS, `/search.html?${search}`);
+      return json({ items: parseNovelCards(html, origin) }, request);
+    }
+    const { html, origin } = await fetchFirstWatchHtml(WATCH_NOVEL_ORIGINS, "/wenku/");
+    return json({ items: parseNovelCards(html, origin) }, request);
+  }
+  const novelId = watchText(url.searchParams.get("novel"), 12);
+  if (!/^\d+$/.test(novelId)) return json({ error: "bad novel id" }, request, 400);
+  if (action === "detail") {
+    const [{ html: detail, origin }, { html: catalog }] = await Promise.all([
+      fetchFirstWatchHtml(WATCH_NOVEL_ORIGINS, `/novel/${novelId}.html`),
+      fetchFirstWatchHtml(WATCH_NOVEL_ORIGINS, `/novel/${novelId}/catalog`),
+    ]);
+    const title = decodeEntities(detail.match(/<meta\s+property=["']og:title["']\s+content=["']([^"']+)/i)?.[1] || `小说 ${novelId}`);
+    const coverUrl = absoluteWatchUrl(detail.match(/<meta\s+property=["']og:image["']\s+content=["']([^"']+)/i)?.[1] || "", origin);
+    const cover = coverUrl ? proxyWatchAsset(coverUrl, "novel") : "";
+    const description = decodeEntities(detail.match(/<meta\s+property=["']og:description["']\s+content=["']([^"']+)/i)?.[1] || "");
+    const chapters = [];
+    const chapterRe = new RegExp(`<a[^>]+href=["'](/novel/${novelId}/(?!vol_)(\\d+)\\.html)["'][^>]*>([\\s\\S]*?)<\\/a>`, "gi");
+    let m;
+    while ((m = chapterRe.exec(catalog)) && chapters.length < 1000) {
+      const chapterTitle = stripTags(m[3]);
+      if (!chapters.some((x) => x.id === m[2])) chapters.push({ id: m[2], title: chapterTitle || `章节 ${m[2]}` });
+    }
+    return json({ id: novelId, title, cover, description, chapters }, request);
+  }
+  if (action === "chapter") {
+    const chapterId = watchText(url.searchParams.get("chapter"), 12);
+    if (!/^\d+$/.test(chapterId)) return json({ error: "bad chapter id" }, request, 400);
+    const { html, origin } = await fetchFirstWatchHtml(
+      WATCH_NOVEL_ORIGINS, `/novel/${novelId}/${chapterId}.html`
+    );
+    const chapter = parseNovelChapter(html, origin, novelId, chapterId);
+    if (!chapter.blocks.length) return json({ error: "正文为空或被上游保护" }, request, 502);
+    return json(chapter, request);
+  }
+  return json({ error: "unsupported novel action" }, request, 400);
+}
+
+function mangaId(value) {
+  const text = watchText(value, 20);
+  return /^\d{1,18}$/.test(text) ? text : "";
+}
+
+async function fetchMangaJson(path, params = new URLSearchParams()) {
+  const errors = [];
+  for (const origin of WATCH_MANGA_API_ORIGINS) {
+    const url = new URL(`app/api/${path.replace(/^\/+/, "")}`, `${origin}/`);
+    params.forEach((value, key) => url.searchParams.set(key, value));
+    try {
+      const response = await watchFetch(url, { headers: {
+        Accept: "application/json,text/plain,*/*", "User-Agent": "Bohe-Lizi-Web/1.0",
+      } }, 15000);
+      const data = await response.json();
+      if (!response.ok || ![200, 201].includes(Number(data?.code))) {
+        throw new Error(data?.msg || data?.message || `HTTP ${response.status}`);
+      }
+      return data;
+    } catch (error) { errors.push(`${new URL(origin).hostname}: ${error.message}`); }
+  }
+  throw new Error(errors.join("; ") || "manga upstream unavailable");
+}
+
+function mangaImageUrl(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  const absolute = absoluteWatchUrl(raw, WATCH_MANGA_IMAGE_ORIGIN);
+  if (!absolute) return "";
+  const url = new URL(absolute);
+  if (!WATCH_MANGA_IMAGE_HOSTS.has(url.hostname.toLowerCase())) return "";
+  url.protocol = "https:";
+  return proxyWatchAsset(url.toString(), "manga");
+}
+
+function mangaComic(value) {
+  const raw = value || {};
+  const id = mangaId(raw.id || raw.comic_id || raw.comicID);
+  const title = stripTags(raw.name || raw.comic_name || raw.title || "");
+  if (!id || !title) return null;
+  const subtitle = stripTags(raw.tags || raw.author || raw.alias) || "漫画";
+  return {
+    id, title, subtitle, cover: mangaImageUrl(raw.picY || raw.picX || raw.pic || ""),
+    description: stripTags(raw.content || ""), chapterCount: Number(raw.nums || raw.chapter_count || 0) || 0,
+  };
+}
+
+function collectMangaComics(value) {
+  const source = Array.isArray(value) ? value : [];
+  const result = [], seen = new Set();
+  for (const raw of source) {
+    const comic = mangaComic(raw);
+    if (comic && !seen.has(comic.id)) { seen.add(comic.id); result.push(comic); }
+  }
+  return result.slice(0, 36);
+}
+
+function mangaGroups(value) {
+  const groups = [];
+  const visit = (node, depth = 0) => {
+    if (!node || depth > 4) return;
+    if (Array.isArray(node)) return node.forEach((item) => visit(item, depth + 1));
+    if (typeof node !== "object") return;
+    const hasChapterId = Object.prototype.hasOwnProperty.call(node, "chapter_id")
+      || Object.prototype.hasOwnProperty.call(node, "chapterId");
+    const insideChapterTree = depth > 1;
+    const looksLikeChapter = hasChapterId || (insideChapterTree
+      && Object.prototype.hasOwnProperty.call(node, "id"));
+    const id = looksLikeChapter ? mangaId(node.chapter_id || node.chapterId || node.id) : "";
+    if (id && !groups.includes(id)) groups.push(id);
+    Object.entries(node).forEach(([key, child]) => { if (/group|chapter/i.test(key)) visit(child, depth + 1); });
+  };
+  visit(value);
+  return groups;
+}
+
+async function watchManga(request, url) {
+  const action = watchText(url.searchParams.get("action") || "list", 24);
+  if (action === "list") {
+    const q = watchText(url.searchParams.get("q"));
+    const data = q
+      ? await fetchMangaJson("search/suggest", new URLSearchParams({ q }))
+      : await fetchMangaJson("home/data");
+    const source = q
+      ? data?.data?.search_suggest
+      : (data?.data?.home_content_list || []).flatMap((block) => block?.comic_list || []);
+    return json({ items: collectMangaComics(source) }, request);
+  }
+  const comicId = mangaId(url.searchParams.get("comic"));
+  if (!comicId) return json({ error: "bad comic id" }, request, 400);
+  if (action === "detail") {
+    const data = await fetchMangaJson(`detail/${comicId}`);
+    const raw = data?.data || {};
+    const comic = mangaComic(raw) || { id: comicId, title: `漫画 ${comicId}`, subtitle: "漫画", cover: "" };
+    const directChapters = (Array.isArray(raw.chapters) ? raw.chapters : []).map((item, index) => ({
+      id: mangaId(item?.id || item?.chapter_id || item?.chapterId),
+      title: stripTags(item?.name || item?.title) || `第 ${index + 1} 章`,
+    })).filter((item) => item.id);
+    const chapters = directChapters.length ? directChapters : mangaGroups(raw).map((id, index) => ({
+      id, title: `第 ${index + 1} 章`,
+    }));
+    return json({ ...comic, description: stripTags(raw.content || comic.description), chapters }, request);
+  }
+  if (action === "chapter") {
+    const chapterId = mangaId(url.searchParams.get("chapter"));
+    if (!chapterId) return json({ error: "bad chapter id" }, request, 400);
+    const params = new URLSearchParams({ packname: WATCH_MANGA_PACK, appsign256: WATCH_MANGA_SIGN });
+    const data = await fetchMangaJson(`chapter/v2/${chapterId}`, params);
+    const images = (Array.isArray(data?.data?.pics) ? data.data.pics : [])
+      .map(mangaImageUrl).filter(Boolean).slice(0, 300);
+    if (!images.length) return json({ error: "章节没有可用图片" }, request, 502);
+    return json({ id: chapterId, title: stripTags(data?.data?.name || ""), images }, request);
+  }
+  return json({ error: "unsupported manga action" }, request, 400);
+}
+
+function parseNovelChapter(html, origin, novelId, chapterId) {
+  const title = stripTags(html.match(/<(?:h1|div)[^>]*class=["'][^"']*(?:chapter-title|read-h1)[^"']*["'][^>]*>([\s\S]*?)<\//i)?.[1]
+    || html.match(/chaptername\s*:\s*["']([^"']+)/i)?.[1] || `章节 ${chapterId}`);
+  const raw = html.match(/<(?:div|article)[^>]*(?:id=["'](?:acontent|TextContent)["']|class=["'][^"']*(?:acontent|TextContent|read-content|chapter-content)[^"']*["'])[^>]*>([\s\S]*?)<\/(?:div|article)>/i)?.[1] || "";
+  const blocks = [];
+  const tokenRe = /<img[^>]+(?:data-src|src)=["']([^"']+)["'][^>]*>|<p[^>]*>([\s\S]*?)<\/p>/gi;
+  let token;
+  while ((token = tokenRe.exec(raw)) && blocks.length < 500) {
+    if (token[1]) {
+      const imageUrl = absoluteWatchUrl(token[1], origin);
+      if (imageUrl && !/logo|icon|avatar|ads?/i.test(imageUrl)) {
+        blocks.push({ type: "image", src: proxyWatchAsset(imageUrl, "novel") });
+      }
+    } else {
+      const text = stripTags(token[2]);
+      if (text) blocks.push({ type: "text", text });
+    }
+  }
+  if (!blocks.length) {
+    const text = stripTags(raw);
+    if (text) blocks.push({ type: "text", text });
+  }
+  return { id: chapterId, novelId, title, blocks };
+}
+
+function animationPath(value, pattern) {
+  try {
+    const parsed = new URL(decodeEntities(value), WATCH_ANIME_ORIGINS[0]);
+    if (!WATCH_ANIME_ORIGINS.some((origin) => new URL(origin).hostname === parsed.hostname)) return "";
+    return pattern.test(parsed.pathname) ? parsed.pathname : "";
+  } catch { return ""; }
+}
+
+function parseAnimeCards(html, origin) {
+  const items = [], seen = new Set();
+  for (const link of html.matchAll(/<a[^>]+href=["'](\/detail\/(\d+)\.html)["'][^>]*>([\s\S]*?)<\/a>/gi)) {
+    if (seen.has(link[2])) continue;
+    const start = Math.max(0, link.index - 500);
+    const end = Math.min(html.length, link.index + link[0].length + 1000);
+    const block = html.slice(start, end);
+    const title = stripTags(block.match(/class=["']title["'][^>]*>[\s\S]*?<a[^>]*>([\s\S]*?)<\/a>/i)?.[1]
+      || link[3] || link[0].match(/title=["']([^"']+)/i)?.[1]);
+    const image = block.match(/(?:data-src|data-original)=["']([^"']+)["']/i)?.[1]
+      || block.match(/<img[^>]+src=["']([^"']+)["']/i)?.[1] || "";
+    const coverUrl = absoluteWatchUrl(image, origin);
+    if (!title || !coverUrl || /placeholder/i.test(coverUrl)) continue;
+    seen.add(link[2]);
+    items.push({ id: link[2], title, subtitle: "在线动画", cover: proxyWatchAsset(coverUrl, "anime") });
+    if (items.length >= 36) break;
+  }
+  return items;
+}
+
+function animeEmbedUrl(value, origin = WATCH_ANIME_ORIGINS[0]) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  const absolute = absoluteWatchUrl(raw, origin);
+  if (!absolute) return "";
+  const target = new URL(absolute);
+  if (target.protocol === "http:") target.protocol = "https:";
+  if (target.protocol !== "https:") return "";
+  const host = target.hostname.toLowerCase();
+  const allowed = WATCH_VIDEO_HOSTS.test(host)
+    || WATCH_ANIME_ORIGINS.some((item) => host === new URL(item).hostname);
+  return allowed ? target.toString() : "";
+}
+
+function parseAnimeEpisodes(html) {
+  const episodes = [], seen = new Set();
+  for (const match of html.matchAll(/<a[^>]+href=["'](\/play\/(\d+_\d+_\d+)\.html)["'][^>]*>([\s\S]*?)<\/a>/gi)) {
+    if (seen.has(match[2])) continue;
+    seen.add(match[2]);
+    episodes.push({
+      id: match[2],
+      title: stripTags(match[3]) || `第 ${episodes.length + 1} 集`,
+    });
+  }
+  return episodes.slice(0, 2000);
+}
+
+function parseAnimePlayer(html, origin, episode) {
+  const iframe = html.match(/<iframe[^>]+src=["']([^"']+)["']/i)?.[1] || "";
+  let embedUrl = animeEmbedUrl(iframe, origin);
+  if (embedUrl) return embedUrl;
+  const raw = html.match(/var\s+player_aaaa\s*=\s*(\{[\s\S]*?\})\s*(?:<\/script>|;)/i)?.[1];
+  let player = null;
+  try { player = raw ? JSON.parse(raw) : null; } catch { player = null; }
+  const referer = `${origin}/play/${episode}.html`;
+  if (player?.from === "vxdev" && player.url) {
+    embedUrl = `https://yun.92cj.com/yunbox/?type=vxdev&vid=${encodeURIComponent(player.url)}&referer=${encodeURIComponent(referer)}`;
+  } else if (player?.from === "xgvxcd" && player.url) {
+    embedUrl = `https://yun.92cj.com/yunbox/?type=vxcd&vid=${encodeURIComponent(player.url)}&referer=${encodeURIComponent(referer)}`;
+  } else if (player?.url) {
+    embedUrl = animeEmbedUrl(player.url, origin);
+  }
+  return animeEmbedUrl(embedUrl, origin);
+}
+
+async function watchAnime(request, url) {
+  const action = watchText(url.searchParams.get("action") || "list", 24);
+  if (action === "list") {
+    const q = watchText(url.searchParams.get("q"));
+    if (q) {
+      for (const origin of WATCH_ANIME_ORIGINS) {
+        try {
+          const target = new URL("/index.php/ajax/suggest", origin);
+          target.search = new URLSearchParams({ mid: "1", wd: q, limit: "36" });
+          const response = await watchFetch(target, { headers: { "X-Requested-With": "XMLHttpRequest", "User-Agent": "Mozilla/5.0" } }, 20000);
+          const data = await response.json();
+          const items = (data?.list || []).map((entry) => {
+            const id = watchText(entry?.id || entry?.vod_id, 20);
+            const coverUrl = absoluteWatchUrl(entry?.pic || entry?.vod_pic || "", origin);
+            return { id, title: stripTags(entry?.name || entry?.vod_name) || `动画 ${id}`, subtitle: stripTags(entry?.remarks || entry?.en) || "在线动画", cover: coverUrl ? proxyWatchAsset(coverUrl, "anime") : "" };
+          }).filter((item) => /^\d+$/.test(item.id));
+          if (items.length) return json({ items }, request);
+        } catch { /* try mirror */ }
+      }
+      throw new Error("animation search unavailable");
+    }
+    const { html, origin } = await fetchFirstWatchHtml(WATCH_ANIME_ORIGINS, "/type/dongman.html");
+    return json({ items: parseAnimeCards(html, origin) }, request);
+  }
+  const animeId = watchText(url.searchParams.get("anime"), 20);
+  if (!/^\d+$/.test(animeId)) return json({ error: "bad anime id" }, request, 400);
+  if (action === "detail") {
+    const { html } = await fetchFirstWatchHtml(WATCH_ANIME_ORIGINS, `/detail/${animeId}.html`);
+    const title = stripTags(html.match(/<(?:h1|div)[^>]*class=["'][^"']*(?:page-title|video-title)[^"']*["'][^>]*>([\s\S]*?)<\//i)?.[1] || `动画 ${animeId}`);
+    const episodes = parseAnimeEpisodes(html);
+    return json({ id: animeId, title, episodes }, request);
+  }
+  if (action === "play") {
+    const episode = watchText(url.searchParams.get("episode"), 60);
+    if (!new RegExp(`^${animeId}_\\d+_\\d+$`).test(episode)) return json({ error: "bad episode id" }, request, 400);
+    const { html, origin } = await fetchFirstWatchHtml(WATCH_ANIME_ORIGINS, `/play/${episode}.html`);
+    const embedUrl = parseAnimePlayer(html, origin, episode);
+    if (!embedUrl) return json({ error: "未解析到受信任的播放器" }, request, 502);
+    return json({ id: episode, embedUrl }, request);
+  }
+  return json({ error: "unsupported anime action" }, request, 400);
+}
+
+async function watchAsset(request, url) {
+  const kind = watchText(url.searchParams.get("kind"), 12);
+  let target;
+  try { target = new URL(url.searchParams.get("url") || ""); } catch { return json({ error: "bad asset url" }, request, 400); }
+  const host = target.hostname.toLowerCase();
+  const allowed = target.protocol === "https:" && (
+    (kind === "novel" && WATCH_NOVEL_ORIGINS.some((origin) => host === new URL(origin).hostname))
+    || (kind === "manga" && WATCH_MANGA_IMAGE_HOSTS.has(host))
+    || (kind === "anime" && (WATCH_VIDEO_HOSTS.test(host) || WATCH_ANIME_ORIGINS.some((origin) => host === new URL(origin).hostname)))
+  );
+  if (!allowed) return json({ error: "asset host not allowed" }, request, 403);
+  const response = await watchFetch(target, { headers: { Referer: kind === "novel" ? `${WATCH_NOVEL_ORIGINS[0]}/` : "", "User-Agent": "Mozilla/5.0" } }, 25000);
+  if (!response.ok) return json({ error: `asset upstream HTTP ${response.status}` }, request, 502);
+  const headers = new Headers(corsHeaders(request).headers);
+  headers.set("Content-Type", response.headers.get("Content-Type") || "application/octet-stream");
+  headers.set("Cache-Control", "public, max-age=3600");
+  return new Response(response.body, { status: 200, headers });
+}
 
 /**
  * 按 IP 限流。计数放 KV（env.RATE），没绑 KV 就跳过限流。
@@ -1016,6 +1499,40 @@ export default {
         if (boardResponse) return boardResponse;
       }
 
+      if (url.pathname === "/api/watch/music" && request.method === "GET") {
+        const ip = request.headers.get("CF-Connecting-IP") || "";
+        if (await rateLimited(env, ip)) return json({ error: "too many requests" }, request, 429);
+        return await watchMusic(request, url);
+      }
+
+      if (url.pathname === "/api/watch/audio" && request.method === "GET") {
+        const ip = request.headers.get("CF-Connecting-IP") || "";
+        if (await rateLimited(env, ip)) return json({ error: "too many requests" }, request, 429);
+        return await watchAudio(request, url);
+      }
+
+      if (url.pathname === "/api/watch/novel" && request.method === "GET") {
+        const ip = request.headers.get("CF-Connecting-IP") || "";
+        if (await rateLimited(env, ip)) return json({ error: "too many requests" }, request, 429);
+        return await watchNovel(request, url);
+      }
+
+      if (url.pathname === "/api/watch/manga" && request.method === "GET") {
+        const ip = request.headers.get("CF-Connecting-IP") || "";
+        if (await rateLimited(env, ip)) return json({ error: "too many requests" }, request, 429);
+        return await watchManga(request, url);
+      }
+
+      if (url.pathname === "/api/watch/anime" && request.method === "GET") {
+        const ip = request.headers.get("CF-Connecting-IP") || "";
+        if (await rateLimited(env, ip)) return json({ error: "too many requests" }, request, 429);
+        return await watchAnime(request, url);
+      }
+
+      if (url.pathname === "/api/watch/asset" && request.method === "GET") {
+        return await watchAsset(request, url);
+      }
+
       if (url.pathname === "/api/stats" && request.method === "GET") {
         return json(await readStats(env), request);
       }
@@ -1199,4 +1716,14 @@ export const _internal = {
   pbkdf2Hex,
   timingSafeEqual,
   randomHex,
+  watchText,
+  mangaGroups,
+  mangaImageUrl,
+  parseNovelCards,
+  parseNovelChapter,
+  collectMangaComics,
+  parseAnimeCards,
+  parseAnimeEpisodes,
+  parseAnimePlayer,
+  animeEmbedUrl,
 };

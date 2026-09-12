@@ -47,6 +47,17 @@
       ],
     },
     {
+      id: "watch",
+      label: "观看",
+      icon: "▶",
+      subs: [
+        { id: "music", label: "音乐" },
+        { id: "manga", label: "漫画" },
+        { id: "anime", label: "动画" },
+        { id: "novel", label: "小说" },
+      ],
+    },
+    {
       id: "game",
       label: "游戏",
       icon: "🎮",
@@ -376,6 +387,12 @@
 
   const state = {
     items: [],
+    // 观看区由 APK 的网页逻辑适配；数据通过同源 Worker 白名单接口读取。
+    watchKind: "music",
+    watchQuery: "",
+    watchItems: [],
+    watchLoading: false,
+    watchRequest: 0,
     // items.json 的原始数据。改完覆盖层要用它重建 items，不必重新发请求。
     rawItems: [],
     // 后台新增的条目（来自 /api/items）。和 rawItems 拼起来才是完整数据源。
@@ -628,16 +645,20 @@
       btn.setAttribute("aria-selected", String(state.section === s.id));
       btn.textContent = s.label;
 
-      const cnt = document.createElement("span");
-      cnt.className = "tab-count";
-      cnt.textContent = n;
-      btn.appendChild(cnt);
+      // 观看区数据来自实时上游，不属于 items.json；显示 0 会让人误以为入口是空的。
+      if (s.id !== "watch") {
+        const cnt = document.createElement("span");
+        cnt.className = "tab-count";
+        cnt.textContent = n;
+        btn.appendChild(cnt);
+      }
 
       btn.addEventListener("click", () => {
         state.section = s.id;
-        state.sub = "all"; // 换主分区时重置小分区
+        state.sub = s.id === "watch" ? state.watchKind : "all";
         state.page = 1;
         render();
+        if (s.id === "watch" && !state.watchItems.length) loadWatch();
       });
       bar.appendChild(btn);
     });
@@ -679,7 +700,15 @@
       btn.addEventListener("click", () => {
         state.sub = o.id;
         state.page = 1;
+        if (state.section === "watch") {
+          if (o.id === "all") state.sub = state.watchKind;
+          else {
+            state.watchKind = o.id;
+            state.watchItems = [];
+          }
+        }
         render();
+        if (state.section === "watch" && o.id !== "all") loadWatch();
       });
       bar.appendChild(btn);
     });
@@ -3344,12 +3373,310 @@
   function render() {
     renderTabs();
     renderSubTabs();
-    renderFeed();
+    const watching = state.section === "watch";
+    const feed = $("[data-feed]")?.closest(".feed-section");
+    const watch = $("[data-watch-panel]");
+    if (feed) feed.hidden = watching;
+    if (watch) watch.hidden = !watching;
+    if (watching) renderWatch();
+    else renderFeed();
     renderStatsTabs();
     renderStats();
     $('[data-stat="total"]').textContent = String(allowedItems().length).padStart(2, "0");
     refreshScrollDock();
   }
+  /* ---------- 观看区（薄荷梨子网页适配） ---------- */
+
+  const WATCH_KIND_LABELS = { music: "音乐", manga: "漫画", anime: "动画", novel: "小说" };
+
+  function watchStatus(text, bad = false) {
+    const el = $("[data-watch-status]");
+    if (!el) return;
+    el.textContent = text;
+    el.classList.toggle("is-bad", bad);
+  }
+
+  function watchMusicItems(data) {
+    const root = data?.data;
+    const list = Array.isArray(root) ? root : root?.result || root?.songs || data?.result || [];
+    return (Array.isArray(list) ? list : []).map((entry) => {
+      const song = entry?.song || entry || {};
+      const artists = song.artists || song.ar || entry.artists || [];
+      const album = song.album || song.al || {};
+      return {
+        id: String(song.id || entry.id || ""),
+        title: song.name || entry.name || "未知歌曲",
+        subtitle: (Array.isArray(artists) ? artists.map((a) => a?.name).filter(Boolean).join(" / ") : "") || album.name || "未知歌手",
+        cover: song.pic || entry.pic || entry.picUrl || album.picUrl || "",
+      };
+    }).filter((x) => x.id);
+  }
+
+  async function watchApi(path) {
+    const base = apiBase();
+    if (!base) throw new Error("观看服务未配置");
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 20000);
+    try {
+      const res = await fetch(base + path, { cache: "no-store", signal: ctrl.signal });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+      return data;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  async function loadWatch() {
+    const kind = state.watchKind;
+    const requestId = ++state.watchRequest;
+    state.watchLoading = true;
+    renderWatch();
+    watchStatus(`正在加载${WATCH_KIND_LABELS[kind]}…`);
+    try {
+      if (kind === "music") {
+        const q = state.watchQuery.trim();
+        const path = q
+          ? `/api/watch/music?action=searchV2&q=${encodeURIComponent(q)}`
+          : "/api/watch/music?action=getNewestSongsV2";
+        state.watchItems = watchMusicItems(await watchApi(path));
+      } else if (kind === "novel") {
+        const q = state.watchQuery.trim();
+        const path = `/api/watch/novel?action=list${q ? `&q=${encodeURIComponent(q)}` : ""}`;
+        state.watchItems = (await watchApi(path)).items || [];
+      } else if (kind === "manga") {
+        const q = state.watchQuery.trim();
+        const path = `/api/watch/manga?action=list${q ? `&q=${encodeURIComponent(q)}` : ""}`;
+        state.watchItems = (await watchApi(path)).items || [];
+      } else if (kind === "anime") {
+        const q = state.watchQuery.trim();
+        const path = `/api/watch/anime?action=list${q ? `&q=${encodeURIComponent(q)}` : ""}`;
+        state.watchItems = (await watchApi(path)).items || [];
+      } else {
+        state.watchItems = [];
+      }
+      if (requestId !== state.watchRequest) return;
+      watchStatus(state.watchItems.length
+        ? `${WATCH_KIND_LABELS[kind]}：${state.watchItems.length} 条，点击即可在网页内打开。`
+        : `${WATCH_KIND_LABELS[kind]}线路正在适配，当前不提供不稳定或需要登录的来源。`);
+    } catch (error) {
+      if (requestId !== state.watchRequest) return;
+      state.watchItems = [];
+      watchStatus(`加载失败：${error.name === "AbortError" ? "请求超时" : error.message}`, true);
+    } finally {
+      if (requestId === state.watchRequest) {
+        state.watchLoading = false;
+        renderWatch();
+      }
+    }
+  }
+
+  function watchMediaUrl(value) {
+    const src = String(value || "");
+    if (!src) return "";
+    if (src.startsWith("/")) return `${apiBase()}${src}`;
+    return src.replace(/^http:/, "https:");
+  }
+
+  function renderWatch() {
+    const grid = $("[data-watch-grid]");
+    const viewer = $("[data-watch-viewer]");
+    if (!grid || !viewer) return;
+    viewer.hidden = true;
+    grid.hidden = false;
+    grid.textContent = "";
+    if (state.watchLoading) {
+      grid.innerHTML = '<p class="watch-empty">加载中…</p>';
+      return;
+    }
+    if (!state.watchItems.length) {
+      grid.innerHTML = `<p class="watch-empty">${WATCH_KIND_LABELS[state.watchKind]}暂无可显示内容</p>`;
+      return;
+    }
+    state.watchItems.forEach((item) => {
+      const card = document.createElement("button");
+      card.type = "button";
+      card.className = "watch-card";
+      if (item.cover) {
+        const img = document.createElement("img");
+        img.src = watchMediaUrl(item.cover);
+        img.alt = "";
+        img.loading = "lazy";
+        img.referrerPolicy = "no-referrer";
+        card.appendChild(img);
+      }
+      const copy = document.createElement("span");
+      copy.className = "watch-card-copy";
+      const title = document.createElement("strong");
+      title.textContent = item.title;
+      const sub = document.createElement("small");
+      sub.textContent = item.subtitle || WATCH_KIND_LABELS[state.watchKind];
+      copy.append(title, sub);
+      card.appendChild(copy);
+      card.addEventListener("click", () => openWatchItem(item));
+      grid.appendChild(card);
+    });
+  }
+
+  async function openWatchItem(item) {
+    const grid = $("[data-watch-grid]");
+    const viewer = $("[data-watch-viewer]");
+    const body = $("[data-watch-viewer-body]");
+    $("[data-watch-viewer-title]").textContent = item.title;
+    grid.hidden = true;
+    viewer.hidden = false;
+    body.textContent = "正在获取播放地址…";
+    if (state.watchKind === "music") return openWatchMusic(item, body);
+    if (state.watchKind === "novel") return openWatchNovel(item, body);
+    if (state.watchKind === "manga") return openWatchManga(item, body);
+    if (state.watchKind === "anime") return openWatchAnime(item, body);
+    body.innerHTML = '<p class="watch-empty">该线路尚未开放网页播放。</p>';
+  }
+
+  function watchError(body, prefix, error) {
+    const message = error?.name === "AbortError" ? "请求超时" : (error?.message || String(error));
+    const note = document.createElement("p");
+    note.className = "watch-empty";
+    note.textContent = `${prefix}：${message}`;
+    body.replaceChildren(note);
+  }
+
+  async function openWatchMusic(item, body) {
+    try {
+      const data = await watchApi(`/api/watch/music?action=getAlgerListenUrl&id=${encodeURIComponent(item.id)}`);
+      const remote = typeof data?.data === "string" ? data.data : data?.data?.url || data?.url || "";
+      if (!remote) throw new Error("上游没有返回播放地址");
+      const audio = document.createElement("audio");
+      audio.className = "watch-player";
+      audio.controls = true;
+      audio.autoplay = true;
+      audio.preload = "metadata";
+      audio.src = `${apiBase()}/api/watch/audio?url=${encodeURIComponent(remote.replace(/^http:/, "https:"))}`;
+      body.replaceChildren(audio);
+      localStorage.setItem("mo-watch-last", JSON.stringify({ kind: "music", id: item.id, title: item.title, at: Date.now() }));
+    } catch (error) {
+      watchError(body, "播放失败", error);
+    }
+  }
+
+  function watchButton(label, onClick, className = "") {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.textContent = label;
+    if (className) button.className = className;
+    button.addEventListener("click", onClick);
+    return button;
+  }
+
+  async function openWatchNovel(item, body) {
+    try {
+      const detail = await watchApi(`/api/watch/novel?action=detail&novel=${encodeURIComponent(item.id)}`);
+      $(`[data-watch-viewer-title]`).textContent = detail.title || item.title;
+      body.textContent = "";
+      if (detail.description) {
+        const description = document.createElement("p");
+        description.className = "watch-description";
+        description.textContent = detail.description;
+        body.appendChild(description);
+      }
+      const chapters = document.createElement("div");
+      chapters.className = "watch-chapters";
+      (detail.chapters || []).forEach((chapter) => chapters.appendChild(watchButton(chapter.title, async () => {
+        body.textContent = "正在读取正文…";
+        try {
+          const data = await watchApi(`/api/watch/novel?action=chapter&novel=${encodeURIComponent(item.id)}&chapter=${encodeURIComponent(chapter.id)}`);
+          $(`[data-watch-viewer-title]`).textContent = data.title || chapter.title;
+          const reader = document.createElement("div");
+          reader.className = "watch-reader";
+          (data.blocks || []).forEach((block) => {
+            if (block.type === "image") {
+              const image = document.createElement("img");
+              image.src = watchMediaUrl(block.src);
+              image.alt = "";
+              image.loading = "lazy";
+              image.referrerPolicy = "no-referrer";
+              reader.appendChild(image);
+            } else if (block.text) {
+              const paragraph = document.createElement("p");
+              paragraph.textContent = block.text;
+              reader.appendChild(paragraph);
+            }
+          });
+          body.replaceChildren(watchButton("← 返回目录", () => openWatchNovel(item, body), "watch-inline-back"), reader);
+        } catch (error) { watchError(body, "阅读失败", error); }
+      })));
+      body.appendChild(chapters);
+    } catch (error) { watchError(body, "目录加载失败", error); }
+  }
+
+  async function openWatchManga(item, body) {
+    try {
+      const detail = await watchApi(`/api/watch/manga?action=detail&comic=${encodeURIComponent(item.id)}`);
+      body.textContent = "";
+      const chapters = document.createElement("div");
+      chapters.className = "watch-chapters";
+      (detail.chapters || []).forEach((chapter) => chapters.appendChild(watchButton(chapter.title, async () => {
+        body.textContent = "正在读取漫画…";
+        try {
+          const data = await watchApi(`/api/watch/manga?action=chapter&comic=${encodeURIComponent(item.id)}&chapter=${encodeURIComponent(chapter.id)}`);
+          const reader = document.createElement("div");
+          reader.className = "watch-manga-reader";
+          (data.images || []).forEach((src, index) => {
+            const image = document.createElement("img");
+            image.src = watchMediaUrl(src);
+            image.alt = `${chapter.title} 第 ${index + 1} 页`;
+            image.loading = "lazy";
+            reader.appendChild(image);
+          });
+          body.replaceChildren(watchButton("← 返回目录", () => openWatchManga(item, body), "watch-inline-back"), reader);
+        } catch (error) { watchError(body, "漫画加载失败", error); }
+      })));
+      body.appendChild(chapters);
+      if (!detail.chapters?.length) body.innerHTML = '<p class="watch-empty">当前线路没有返回章节，请稍后刷新。</p>';
+    } catch (error) { watchError(body, "目录加载失败", error); }
+  }
+
+  async function openWatchAnime(item, body) {
+    try {
+      const detail = await watchApi(`/api/watch/anime?action=detail&anime=${encodeURIComponent(item.id)}`);
+      $(`[data-watch-viewer-title]`).textContent = detail.title || item.title;
+      body.textContent = "";
+      const episodes = document.createElement("div");
+      episodes.className = "watch-chapters";
+      (detail.episodes || []).forEach((episode) => episodes.appendChild(watchButton(episode.title, async () => {
+        body.textContent = "正在获取播放器…";
+        try {
+          const data = await watchApi(`/api/watch/anime?action=play&anime=${encodeURIComponent(item.id)}&episode=${encodeURIComponent(episode.id)}`);
+          const frame = document.createElement("iframe");
+          frame.className = "watch-video";
+          frame.src = data.embedUrl;
+          frame.title = episode.title;
+          frame.allow = "autoplay; fullscreen; encrypted-media; picture-in-picture";
+          frame.allowFullscreen = true;
+          frame.referrerPolicy = "origin";
+          body.replaceChildren(watchButton("← 返回选集", () => openWatchAnime(item, body), "watch-inline-back"), frame);
+        } catch (error) { body.innerHTML = `<p class="watch-empty">播放失败：${escapeHtml(error.message)}</p>`; }
+      })));
+      body.appendChild(episodes);
+    } catch (error) { body.innerHTML = `<p class="watch-empty">选集加载失败：${escapeHtml(error.message)}</p>`; }
+  }
+
+  function bindWatch() {
+    const form = $("[data-watch-search]");
+    const input = $("[data-watch-query]");
+    form?.addEventListener("submit", (event) => {
+      event.preventDefault();
+      state.watchQuery = input.value.trim();
+      state.watchItems = [];
+      loadWatch();
+    });
+    $("[data-watch-refresh]")?.addEventListener("click", () => loadWatch());
+    $("[data-watch-back]")?.addEventListener("click", () => {
+      $("[data-watch-viewer]").hidden = true;
+      $("[data-watch-grid]").hidden = false;
+    });
+  }
+
   /* ---------- 成年 / 未成年模式 ---------- */
 
   /** 更新模式按钮的文字与状态。 */
@@ -3521,6 +3848,7 @@
   async function init() {
     bindTheme();
     bindControls();
+    bindWatch();
     bindMode();
     bindNoticeJump();
     bindStatsPanel();

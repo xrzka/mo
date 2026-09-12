@@ -144,6 +144,13 @@ class StatsStub(http.server.BaseHTTPRequestHandler):
         cls.force_error = None
         cls.legacy_summary = False
 
+    # ---- 观看区 ----
+    watch_requests = []
+
+    @classmethod
+    def reset_watch(cls):
+        cls.watch_requests = []
+
     # ---- 后台编辑 ----
     # 覆盖层：itemId -> {name?, description?, url?, password?, note?,
     #                    section?, subsection?, deleted?, updated}
@@ -242,12 +249,58 @@ class StatsStub(http.server.BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def _send_bytes(self, body, content_type="image/jpeg", status=200):
+        self.send_response(status)
+        self.send_header("Content-Type", content_type)
+        self._cors()
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
     def do_OPTIONS(self):
         self.send_response(204)
         self._cors()
         self.end_headers()
 
     def do_GET(self):
+        parsed = urllib.parse.urlparse(self.path)
+        query = urllib.parse.parse_qs(parsed.query)
+        if parsed.path.startswith("/api/watch/"):
+            StatsStub.watch_requests.append(self.path)
+            action = (query.get("action") or [""])[0]
+            if parsed.path == "/api/watch/music":
+                if action in ("", "getNewestSongsV2"):
+                    return self._send({"data": [{"id": 11, "name": "测试歌曲", "artists": [{"name": "测试歌手"}], "picUrl": ""}]})
+                if action == "getAlgerListenUrl":
+                    return self._send({"data": "https://music.163.com/song.mp3"})
+            if parsed.path == "/api/watch/audio":
+                return self._send_bytes(b"ID3-test-audio", "audio/mpeg")
+            if parsed.path == "/api/watch/novel":
+                if action == "list":
+                    return self._send({"items": [{"id": "12", "title": "测试小说", "subtitle": "小说线路", "cover": ""}]})
+                if action == "detail":
+                    return self._send({"id": "12", "title": "测试小说", "description": "小说简介", "chapters": [{"id": "1201", "title": "第一章"}]})
+                if action == "chapter":
+                    return self._send({"id": "1201", "title": "第一章", "blocks": [{"type": "text", "text": "第一段正文"}, {"type": "image", "src": "/api/watch/asset?kind=novel&url=https%3A%2F%2Ftw.linovelib.com%2Fpage.jpg"}]})
+            if parsed.path == "/api/watch/anime":
+                if action == "list":
+                    return self._send({"items": [{"id": "88", "title": "测试动画", "subtitle": "动画线路", "cover": ""}]})
+                if action == "detail":
+                    return self._send({"id": "88", "title": "测试动画", "episodes": [{"id": "88_1_1", "title": "第 1 集"}]})
+                if action == "play":
+                    return self._send({"id": "88_1_1", "embedUrl": "https://yun.92cj.com/player/test"})
+            if parsed.path == "/api/watch/manga":
+                if action == "list":
+                    return self._send({"items": [{"id": "7", "title": "测试漫画", "subtitle": "漫画线路", "cover": "/api/watch/asset?kind=manga&url=https%3A%2F%2Fi.lzimg.xyz%2Fcover.jpg"}]})
+                if action == "detail":
+                    return self._send({"id": "7", "title": "测试漫画", "chapters": [{"id": "701", "title": "第一话"}]})
+                if action == "chapter":
+                    return self._send({"id": "701", "title": "第一话", "images": ["/api/watch/asset?kind=manga&url=https%3A%2F%2Fi.lzimg.xyz%2Fpage.jpg"]})
+            if parsed.path == "/api/watch/asset":
+                pixel = base64.b64decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=")
+                return self._send_bytes(pixel, "image/png")
+            return self._send({"error": "unsupported watch action"}, 400)
+
         if self.path.startswith("/api/overrides"):
             # 后台编辑的覆盖层。前端加载时用它盖住 items.json 的原值。
             return self._send({
@@ -2972,6 +3025,110 @@ def test_tx_epub_requires_all_done(page, base, stub_port):
           page.locator('.tx-btn:has-text("导出 EPUB")').is_disabled())
 
 
+def open_watch_kind(page, base, stub_port, label):
+    StatsStub.reset_watch()
+    stub_config(page, f"http://127.0.0.1:{stub_port}")
+    page.goto(base, wait_until="networkidle")
+    page.get_by_role("tab", name=re.compile(r"观看")).click()
+    page.locator("[data-subtabs] button").filter(has_text=re.compile(label)).click()
+    page.wait_for_selector(".watch-card")
+
+
+def test_watch_music(page, base, stub_port):
+    """观看区：音乐列表、播放地址与音频代理链路。"""
+    print("\n--- 观看区：音乐播放 ---")
+    open_watch_kind(page, base, stub_port, "音乐")
+    page.locator(".watch-card").click()
+    page.wait_for_selector("audio.watch-player")
+    audio = page.locator("audio.watch-player")
+    check("音乐播放器已生成", audio.count() == 1)
+    check("音频使用 Worker 代理", "/api/watch/audio?url=" in audio.get_attribute("src"), audio.get_attribute("src"))
+
+
+def test_watch_novel(page, base, stub_port):
+    """观看区：小说目录、正文和正文图片。"""
+    print("\n--- 观看区：小说阅读 ---")
+    open_watch_kind(page, base, stub_port, "小说")
+    page.locator(".watch-card").click()
+    page.get_by_role("button", name="第一章").click()
+    page.wait_for_selector(".watch-reader p")
+    check("小说正文已显示", page.locator(".watch-reader p").inner_text() == "第一段正文")
+    image = page.locator(".watch-reader img")
+    image.wait_for(state="visible")
+    check("小说正文图片已加载", image.evaluate("img => img.complete && img.naturalWidth > 0"))
+    page.get_by_role("button", name="← 返回目录").click()
+    page.get_by_role("button", name="第一章").wait_for()
+    check("小说返回目录可用", page.get_by_role("button", name="第一章").count() == 1)
+
+
+def test_watch_anime(page, base, stub_port):
+    """观看区：动画选集与受信任 iframe 播放器。"""
+    print("\n--- 观看区：动画播放 ---")
+    open_watch_kind(page, base, stub_port, "动画")
+    page.locator(".watch-card").click()
+    page.get_by_role("button", name="第 1 集").click()
+    page.wait_for_selector("iframe.watch-video")
+    frame = page.locator("iframe.watch-video")
+    check("动画播放器已生成", frame.count() == 1)
+    check("动画播放器地址正确", frame.get_attribute("src") == "https://yun.92cj.com/player/test", frame.get_attribute("src"))
+    page.get_by_role("button", name="← 返回选集").click()
+    page.get_by_role("button", name="第 1 集").wait_for()
+    check("动画返回选集可用", page.get_by_role("button", name="第 1 集").count() == 1)
+
+
+def test_watch_manga(page, base, stub_port):
+    """观看区：切换漫画、加载封面、打开章节并回到列表。"""
+    print("\n--- 观看区：漫画完整交互 ---")
+    StatsStub.reset_watch()
+    stub_config(page, f"http://127.0.0.1:{stub_port}")
+    errors = []
+    page.on("pageerror", lambda e: errors.append(str(e)))
+    page.goto(base, wait_until="networkidle")
+    page.get_by_role("tab", name=re.compile(r"观看")).click()
+    page.locator("[data-subtabs] button").filter(has_text=re.compile(r"漫画")).click()
+    page.wait_for_selector(".watch-card")
+
+    check("观看区漫画卡片已显示", page.locator(".watch-card").count() == 1)
+    check("漫画标题正确", page.locator(".watch-card strong").inner_text() == "测试漫画")
+    cover = page.locator(".watch-card img")
+    cover.wait_for(state="visible")
+    check("相对代理封面补成后端绝对地址", cover.get_attribute("src").startswith(
+        f"http://127.0.0.1:{stub_port}/api/watch/asset?kind=manga"), cover.get_attribute("src"))
+    check("漫画封面请求成功", cover.evaluate("img => img.complete && img.naturalWidth > 0"))
+
+    page.locator(".watch-card").click()
+    page.get_by_role("button", name="第一话").click()
+    page.wait_for_selector(".watch-manga-reader img")
+    image = page.locator(".watch-manga-reader img")
+    check("章节图片请求成功", image.evaluate("img => img.complete && img.naturalWidth > 0"))
+    check("没有拼出前端域名下的错误代理路径",
+          not any("index.html/api/watch" in req for req in StatsStub.watch_requests),
+          json.dumps(StatsStub.watch_requests, ensure_ascii=False))
+
+    page.get_by_role("button", name="← 返回目录").click()
+    page.wait_for_selector(".watch-chapters button")
+    check("返回目录后章节按钮恢复", page.locator(".watch-chapters button", has_text="第一话").count() == 1)
+    page.locator("[data-watch-back]").click()
+    check("返回列表后卡片可见", page.locator(".watch-card").is_visible())
+    check("观看区无未捕获异常", not errors, ";".join(errors)[:200])
+
+
+def test_watch_all_tab(page, base, stub_port):
+    """观看区的“全部”没有独立数据源，应保持当前类型而不是显示空页。"""
+    print("\n--- 观看区：全部标签 ---")
+    StatsStub.reset_watch()
+    stub_config(page, f"http://127.0.0.1:{stub_port}")
+    page.goto(base, wait_until="networkidle")
+    page.get_by_role("tab", name=re.compile(r"观看")).click()
+    page.wait_for_selector(".watch-card")
+    page.locator("[data-subtabs] button", has_text="全部").click()
+    check("点全部后仍保留当前类型卡片", page.locator(".watch-card").count() == 1)
+    selected = page.locator('[data-subtabs] [aria-selected="true"]')
+    check("全部标签不会留下无选中状态", selected.count() == 1)
+    selected_text = selected.inner_text() if selected.count() else ""
+    check("当前类型标签仍高亮", "音乐" in selected_text, selected_text)
+
+
 def test_admin_no_backend(page, base):
     """后端整体不可用时，后台面板不能假装能用。"""
     print("\n--- 后台：后端不可用 ---")
@@ -3230,6 +3387,27 @@ def main():
 
             ctx = browser.new_context()
             test_api_down(ctx.new_page(), base)
+            ctx.close()
+
+            # ---- 观看区 ----
+            ctx = browser.new_context()
+            test_watch_music(ctx.new_page(), base, stub_port)
+            ctx.close()
+
+            ctx = browser.new_context()
+            test_watch_novel(ctx.new_page(), base, stub_port)
+            ctx.close()
+
+            ctx = browser.new_context()
+            test_watch_anime(ctx.new_page(), base, stub_port)
+            ctx.close()
+
+            ctx = browser.new_context()
+            test_watch_manga(ctx.new_page(), base, stub_port)
+            ctx.close()
+
+            ctx = browser.new_context()
+            test_watch_all_tab(ctx.new_page(), base, stub_port)
             ctx.close()
         finally:
             browser.close()

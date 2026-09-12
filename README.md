@@ -18,6 +18,34 @@
 | `worker/` | 可选的统计后端（Cloudflare Worker + D1），不部署也能用 |
 | `.nojekyll` | 关掉 Jekyll，静态文件原样输出 |
 
+## 观看区
+
+“观看”是独立于资源导航的一级分区，包含音乐、漫画、动画、小说四个小分区。
+内容列表、搜索、目录/选集和播放地址由同一个 Cloudflare Worker 提供，因此必须先部署
+`worker/index.js`；只更新 GitHub Pages 会显示界面，但无法加载内容。
+
+- 音乐：列表、搜索、站内 `<audio>` 播放；音频经 `/api/watch/audio` 转发并支持 Range
+- 漫画：列表、搜索、章节和纵向图片阅读器
+- 动画：列表、搜索、选集和站内 iframe 播放器
+- 小说：书库、搜索、目录、正文段落与插图阅读
+
+观看接口只接受固定来源和固定资源域名，不提供任意 URL 转发。上游镜像失败时会按顺序
+切换；图片、音频和播放器的重定向也逐跳校验域名，不能借重定向绕过白名单。
+
+相关接口：
+
+```text
+GET /api/watch/music
+GET /api/watch/audio
+GET /api/watch/manga
+GET /api/watch/anime
+GET /api/watch/novel
+GET /api/watch/asset
+```
+
+纯逻辑与接口测试运行 `node worker/test_watch.mjs`；四类内容的浏览器交互归入
+`python worker/test_browser.py`。测试不访问真实上游，使用本地桩验证完整前后端链路。
+
 ## 资源帮找 / 失效反馈
 
 免责声明上方有「资源帮找 / 失效反馈」区块（默认收起），面板顶部两个标签切换：

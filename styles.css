@@ -1549,6 +1549,85 @@ h1 {
   .card-arrow { display: none; }
 }
 
+/* ---------- 观看区 ---------- */
+.watch-section {
+  margin-bottom: 28px;
+  padding: clamp(18px, 3vw, 28px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-elevated);
+  box-shadow: var(--shadow);
+}
+.watch-head, .watch-toolbar, .watch-viewer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+.watch-head h2, .watch-viewer-head h3 { margin: 2px 0; }
+.watch-head p { margin: 0; color: var(--text-muted); }
+.watch-source {
+  flex: 0 0 auto;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: var(--ok-soft);
+  color: var(--ok);
+  font-size: 12px;
+}
+.watch-toolbar { margin: 20px 0 10px; }
+.watch-toolbar form { display: flex; flex: 1; gap: 8px; }
+.watch-toolbar input { flex: 1; min-width: 0; }
+.watch-toolbar input, .watch-toolbar button, .watch-viewer button {
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+}
+.watch-toolbar button, .watch-viewer button { cursor: pointer; }
+.watch-status { margin: 8px 0 14px; color: var(--text-muted); }
+.watch-status.is-bad { color: var(--warn); }
+.watch-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+}
+.watch-card {
+  overflow: hidden;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+.watch-card img { display: block; width: 100%; aspect-ratio: 3 / 4; object-fit: cover; background: var(--accent-soft); }
+.watch-card-copy { display: grid; gap: 3px; padding: 10px 12px; }
+.watch-card-copy strong { line-height: 1.4; }
+.watch-card-copy small { color: var(--text-muted); }
+.watch-viewer { margin-top: 14px; }
+.watch-viewer-head { margin-bottom: 14px; justify-content: flex-start; }
+.watch-viewer-body { display: grid; gap: 14px; }
+.watch-player { width: 100%; max-height: 68vh; border-radius: 12px; background: #000; }
+.watch-reader { width: min(100%, 760px); margin: auto; font-size: 17px; line-height: 2; }
+.watch-reader p { margin: 0 0 1.15em; white-space: pre-wrap; }
+.watch-reader img, .watch-manga-reader img { display: block; width: 100%; height: auto; margin: 0 auto; }
+.watch-manga-reader { width: min(100%, 1100px); margin: auto; background: #111; }
+.watch-video { width: 100%; min-height: min(68vh, 680px); border: 0; border-radius: 12px; background: #000; }
+.watch-description { margin: 0; color: var(--text-muted); line-height: 1.7; }
+.watch-inline-back { justify-self: start; }
+.watch-chapters { display: flex; flex-wrap: wrap; gap: 8px; }
+.watch-chapters button { padding: 8px 11px; border: 1px solid var(--border); border-radius: 9px; background: var(--bg); color: var(--text); cursor: pointer; }
+.watch-empty { padding: 24px; color: var(--text-muted); text-align: center; border: 1px dashed var(--border); border-radius: 12px; }
+.watch-section[hidden], .watch-grid[hidden], .watch-viewer[hidden], .feed-section[hidden] { display: none; }
+@media (max-width: 620px) {
+  .watch-head { align-items: flex-start; }
+  .watch-toolbar { align-items: stretch; flex-direction: column; }
+  .watch-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
 
 
 

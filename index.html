@@ -9,11 +9,11 @@
       content="墨小说漫画 · 小说、漫画、动画、游戏、AI 资源导航，分区整理，点击直达。"
     />
     <title>墨小说漫画 · 资源导航</title>
-    <script src="config.js?v=20260908a"></script>
-    <link rel="stylesheet" href="styles.css?v=20260908a" />
+    <script src="config.js?v=20260912d"></script>
+    <link rel="stylesheet" href="styles.css?v=20260912d" />
     <!-- EPUB 本质是 zip。固定版本并随站点托管，不依赖第三方 CDN 运行。 -->
     <script src="vendor/jszip.min.js?v=3.10.1" defer></script>
-    <script src="app.js?v=20260908a" defer></script>
+    <script src="app.js?v=20260912d" defer></script>
   </head>
   <body>
     <a class="skip-link" href="#feed">跳到资源列表</a>
@@ -159,6 +159,33 @@
 
       <nav class="tab-bar" aria-label="资源分区" data-tabs></nav>
       <nav class="subtab-bar" aria-label="小分区" data-subtabs hidden></nav>
+
+      <section class="watch-section" id="watch" data-watch-panel hidden aria-labelledby="watch-title">
+        <div class="watch-head">
+          <div>
+            <p class="eyebrow">WATCH IN BROWSER</p>
+            <h2 id="watch-title">观看区</h2>
+            <p>由薄荷梨子移动端适配。支持在当前网页搜索、选集、播放和阅读。</p>
+          </div>
+          <span class="watch-source">多设备网页端</span>
+        </div>
+        <div class="watch-toolbar">
+          <form data-watch-search role="search">
+            <input data-watch-query type="search" maxlength="80" placeholder="搜索音乐、漫画、动画或小说" autocomplete="off" />
+            <button type="submit">搜索</button>
+          </form>
+          <button type="button" data-watch-refresh>刷新</button>
+        </div>
+        <p class="watch-status" data-watch-status aria-live="polite">选择上方小分区开始浏览。</p>
+        <div class="watch-grid" data-watch-grid></div>
+        <article class="watch-viewer" data-watch-viewer hidden>
+          <div class="watch-viewer-head">
+            <button type="button" data-watch-back>← 返回列表</button>
+            <h3 data-watch-viewer-title></h3>
+          </div>
+          <div data-watch-viewer-body></div>
+        </article>
+      </section>
 
       <section class="feed-section" id="feed" aria-labelledby="feed-title">
         <div class="section-heading">

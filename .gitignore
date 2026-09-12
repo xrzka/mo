@@ -1,3 +1,4 @@
 __pycache__/
 *.pyc
 data/*.json.tmp
+worker/browser-test.log
