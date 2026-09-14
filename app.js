@@ -3568,8 +3568,17 @@
 
   function watchMusicItems(data) {
     const root = data?.data;
-    const list = Array.isArray(root) ? root : root?.result || root?.songs || data?.result || [];
+    const list = Array.isArray(root) ? root : root?.result || root?.songs || data?.result || data?.items || [];
     return (Array.isArray(list) ? list : []).map((entry) => {
+      // explore 模式（Worker 归一化过）已经是 {id,name,artists,cover}
+      if (entry?.name && entry?.artists && entry?.cover) {
+        return {
+          id: String(entry.id || ""),
+          title: entry.name || "未知歌曲",
+          subtitle: entry.artists.join(" / ") || "未知歌手",
+          cover: entry.cover,
+        };
+      }
       const song = entry?.song || entry || {};
       const artists = song.artists || song.ar || entry.artists || [];
       const album = song.album || song.al || {};
@@ -3577,9 +3586,18 @@
         id: String(song.id || entry.id || ""),
         title: song.name || entry.name || "未知歌曲",
         subtitle: (Array.isArray(artists) ? artists.map((a) => a?.name).filter(Boolean).join(" / ") : "") || album.name || "未知歌手",
-        cover: song.pic || entry.pic || entry.picUrl || album.picUrl || "",
+        cover: musicCover(song.pic || entry.pic || entry.picUrl || album.picUrl || ""),
       };
     }).filter((x) => x.id);
+  }
+
+  /** 网易云图床 ?param=WxH 裁剪：原图 200~700KB，300y300 只要 5~30KB，
+   *  不裁剪的话一页封面要拉几 MB，半天显示不出来。 */
+  function musicCover(value) {
+    const raw = String(value || "").trim();
+    if (!raw) return "";
+    if (!/^https?:\/\/p\d*\.music\.126\.net\//i.test(raw)) return raw.replace(/^http:/, "https:");
+    return `${raw.replace(/^http:/, "https:").split("?")[0]}?param=300y300`;
   }
 
   async function watchApi(path) {
@@ -3613,33 +3631,6 @@
     const parts = [`${label}：共 ${total} 条，已显示 ${shown}`];
     if (state.watchKind === "manga") parts.push(`线路 ${sourceLabel()}`);
     watchStatus(`${parts.join(" · ")}${q ? ` · 关键词“${q}”` : ""}，点击卡片即可在网页内打开。`);
-  }
-
-  /** 只做分页计数 + 状态行，不动已渲染的卡片，避免页面滚动位置被重置。 */
-  function showMoreWatch() {
-    const list = $("[data-watch-list]");
-    const before = state.watchLimit;
-    state.watchLimit = Math.min(state.watchLimit + WATCH_PAGE_SIZE, watchRowCount());
-    // 只追加新露出的那一段，已渲染的卡片保持原节点，滚动位置不会跳。
-    let firstNew = null;
-    if (list) {
-      const last = watchProgress()[state.watchKind];
-      state.watchItems.slice(before, state.watchLimit).forEach((item) => {
-        const card = buildWatchCard(item, last);
-        if (!firstNew) firstNew = card;
-        list.appendChild(card);
-      });
-    }
-    setWatchStatus();
-    const wrap = $("[data-watch-more]");
-    if (!wrap) return;
-    if (state.watchLimit >= watchRowCount()) wrap.hidden = true;
-    const label = $("[data-watch-more-label]");
-    if (label) label.textContent = `加载更多（还剩 ${watchRowCount() - state.watchLimit} 条）`;
-    const info = $("[data-watch-page-info]");
-    if (info) info.textContent = `已显示 ${Math.min(state.watchLimit, watchRowCount())} / ${watchRowCount()} 条`;
-    // 列表跟随页面滚动，所以把第一张新卡片滚进视野，而不是设置列表的 scrollTop。
-    if (firstNew) firstNew.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }
 
   /** 单张卡片。renderWatchGrid 与 showMoreWatch 共用，保证追加的卡片和首批一致。 */
@@ -3687,7 +3678,6 @@
     const wrap = $("[data-watch-more]");
     if (!wrap) return;
     const list = $("[data-watch-list]");
-    const previous = list ? list.scrollTop : 0;
     wrap.hidden = true;
     if (!list) return;
 
@@ -3696,14 +3686,68 @@
     state.watchItems.slice(0, state.watchLimit)
       .forEach((item) => list.appendChild(buildWatchCard(item, last)));
 
-    list.scrollTop = previous;
-    if (state.watchLimit < watchRowCount()) {
-      wrap.hidden = false;
-      const label = $("[data-watch-more-label]");
-      if (label) label.textContent = `加载更多（还剩 ${watchRowCount() - state.watchLimit} 条）`;
-    }
+    updateWatchPager();
+  }
+
+  /** 翻页条状态：页码指示 + 上一页/下一页可用性 + 剩余条数。 */
+  function updateWatchPager() {
+    const wrap = $("[data-watch-more]");
+    if (!wrap) return;
+    const total = watchRowCount();
+    const shown = Math.min(state.watchLimit, total);
+    const page = Math.ceil(shown / WATCH_PAGE_SIZE) || 1;
+    const pages = Math.ceil(total / WATCH_PAGE_SIZE) || 1;
+
+    wrap.hidden = total <= WATCH_PAGE_SIZE;
+    const now = $("[data-watch-page-now]");
+    if (now) now.textContent = `第 ${page} / ${pages} 页`;
+    const prev = $("[data-watch-prev]");
+    if (prev) prev.disabled = page <= 1;
+    const next = $("[data-watch-next]");
+    if (next) next.disabled = page >= pages;
+    const label = $("[data-watch-more-label]");
+    if (label) label.textContent = shown >= total ? "已到末页" : `加载更多（还剩 ${total - shown} 条）`;
     const info = $("[data-watch-page-info]");
-    if (info) info.textContent = `已显示 ${Math.min(state.watchLimit, watchRowCount())} / ${watchRowCount()} 条`;
+    if (info) info.textContent = `已显示 ${shown} / ${total} 条`;
+  }
+
+  /** 翻到指定页（1 起）。只渲染到该页末尾：向后翻就追加新卡片，
+   *  向前翻则重建到该页（数量少，重建比逐个删更省事）。 */
+  function gotoWatchPage(page) {
+    const total = watchRowCount();
+    const pages = Math.ceil(total / WATCH_PAGE_SIZE) || 1;
+    const target = Math.min(Math.max(1, page), pages);
+    const newLimit = Math.min(target * WATCH_PAGE_SIZE, total);
+    const before = state.watchLimit;
+
+    if (newLimit < before) {
+      // 往回翻：重建列表到目标页
+      state.watchLimit = newLimit;
+      renderWatchGrid();
+      setWatchStatus();
+      document.querySelector("[data-watch-grid]")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
+
+    const list = $("[data-watch-list]");
+    if (newLimit > before && list) {
+      const last = watchProgress()[state.watchKind];
+      let firstNew = null;
+      state.watchItems.slice(before, newLimit).forEach((item) => {
+        const card = buildWatchCard(item, last);
+        if (!firstNew) firstNew = card;
+        list.appendChild(card);
+      });
+      if (firstNew) firstNew.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+    state.watchLimit = newLimit;
+    updateWatchPager();
+    setWatchStatus();
+  }
+
+  /** 只做分页计数 + 状态行，不动已渲染的卡片，避免页面滚动位置被重置。 */
+  function showMoreWatch() {
+    gotoWatchPage(Math.ceil(Math.min(state.watchLimit, watchRowCount()) / WATCH_PAGE_SIZE) + 1);
   }
 
   async function loadWatch({ force = false } = {}) {
@@ -3737,9 +3781,11 @@
     try {
       let items = [];
       if (kind === "music") {
+        // 无搜索词时用 explore（最新 + 品类聚合），不然永远只有 10 首；
+        // 搜索仍走上游 searchV2。
         const path = q
           ? `/api/watch/music?action=searchV2&q=${encodeURIComponent(q)}`
-          : "/api/watch/music?action=getNewestSongsV2";
+          : "/api/watch/music?action=explore";
         items = watchMusicItems(await watchApi(path));
       } else {
         const params = new URLSearchParams({ action: "list" });
@@ -4300,6 +4346,15 @@
     $(`[data-watch-refresh]`)?.addEventListener("click", () => loadWatch({ force: true }));
     $(`[data-watch-back]`)?.addEventListener("click", closeWatchViewer);
     $("[data-watch-more-btn]")?.addEventListener("click", showMoreWatch);
+    // 翻页条：上一页 / 下一页（页码指示由 updateWatchPager 维护）
+    $("[data-watch-prev]")?.addEventListener("click", () => {
+      const page = Math.ceil(Math.min(state.watchLimit, watchRowCount()) / WATCH_PAGE_SIZE) || 1;
+      gotoWatchPage(page - 1);
+    });
+    $("[data-watch-next]")?.addEventListener("click", () => {
+      const page = Math.ceil(Math.min(state.watchLimit, watchRowCount()) / WATCH_PAGE_SIZE) || 1;
+      gotoWatchPage(page + 1);
+    });
   }
 
   /* ---------- 成年 / 未成年模式 ---------- */

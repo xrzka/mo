@@ -1721,6 +1721,20 @@ h1 {
   padding-top: 4px;
 }
 .watch-page-info { color: var(--text-muted); font-size: 13px; }
+/* 翻页条：上一页 / 页码 / 下一页，和「加载更多」并排 */
+.watch-pager { display: inline-flex; align-items: center; gap: 8px; }
+.watch-page-btn {
+  padding: 9px 14px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+  cursor: pointer;
+}
+.watch-page-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+.watch-page-btn:disabled { opacity: .45; cursor: not-allowed; }
+.watch-page-now { min-width: 84px; text-align: center; color: var(--text-muted); font-size: 13px; font-variant-numeric: tabular-nums; }
 @supports not (backdrop-filter: blur(8px)) {
   .watch-action-bar { background: var(--bg); }
 }
@@ -1813,6 +1827,9 @@ h1 {
   .watch-action-bar { position: static; }
   .watch-more { flex: 1 1 100%; min-height: 44px; }
   .watch-more-wrap { flex-direction: column; }
+  .watch-pager { width: 100%; justify-content: center; }
+  .watch-page-btn { flex: 1 1 0; min-height: 44px; }
+  .watch-page-now { min-width: 76px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .watch-card, .watch-card-media img { transition: none; }

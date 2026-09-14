@@ -273,8 +273,67 @@ async function watchFetch(url, init = {}, timeoutMs = 15000, allowedHosts = null
   }
 }
 
+/* 音乐区默认不能只有「最新 10 首」：getNewestSongsV2 固定返回 10 条且
+   category 参数被上游忽略。这里并发拉「最新 + 若干热门关键词」的搜索结果，
+   按 id 去重合并。关键词挑宽泛品类词（各约 100 首），合并去重后足够分页。
+   数量控制在 4 个以内：Worker 要等最慢的一路返回，太多会把整体时长拖爆。 */
+const WATCH_MUSIC_EXPLORE_KEYS = ["华语", "流行", "纯音乐", "经典"];
+
+/** 网易云图床支持 ?param=WxH 裁剪：封面原图 200~700KB，300y300 只要 5~30KB，
+    不加参数的话一页卡片要拉几 MB 的图，封面半天出不来。 */
+function musicCoverUrl(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  if (!/^https?:\/\/p\d*\.music\.126\.net\//i.test(raw)) return raw.replace(/^http:/, "https:");
+  const base = raw.replace(/^http:/, "https:").split("?")[0];
+  return `${base}?param=300y300`;
+}
+
+/** 把上游两种返回（getNewestSongsV2 / searchV2）归一化成统一歌曲形状。
+ *  getNewest: data.result = [{id,name,picUrl,song:{artists,album}}]
+ *  searchV2:  data.result.songs = [网易云标准 {id,name,ar:[{name}],al:{picUrl}}] */
+function normalizeMusicList(payload) {
+  const root = payload?.data;
+  const raw = Array.isArray(root?.result) ? root.result : root?.result?.songs || [];
+  if (!Array.isArray(raw)) return [];
+  return raw.map((entry) => {
+    const song = entry?.song || entry || {};
+    const artists = song.artists || song.ar || entry.artists || [];
+    const album = song.album || song.al || {};
+    return {
+      id: String(song.id || entry.id || ""),
+      name: song.name || entry.name || "未知歌曲",
+      artists: Array.isArray(artists) ? artists.map((a) => a?.name).filter(Boolean) : [],
+      cover: musicCoverUrl(song.pic || entry.pic || entry.picUrl || album.picUrl || ""),
+    };
+  }).filter((x) => x.id);
+}
+
 async function watchMusic(request, url) {
   const action = watchText(url.searchParams.get("action") || "getNewestSongsV2", 32);
+
+  if (action === "explore") {
+    const jobs = [
+      { action: "getNewestSongsV2" },
+      ...WATCH_MUSIC_EXPLORE_KEYS.map((kw) => ({ action: "searchV2", keywords: kw })),
+    ];
+    const results = await Promise.allSettled(jobs.map((job) => watchMusicUpstream(job)));
+    const merged = [];
+    const seen = new Set();
+    let failed = 0;
+    for (const result of results) {
+      if (result.status !== "fulfilled" || !result.value) { failed += 1; continue; }
+      for (const song of normalizeMusicList(result.value)) {
+        const id = String(song?.id || "");
+        if (!id || seen.has(id)) continue;
+        seen.add(id);
+        merged.push(song);
+      }
+    }
+    if (!merged.length) return json({ error: "音乐上游暂时不可用" }, request, 502);
+    return json({ items: merged.slice(0, 300), failed }, request);
+  }
+
   if (!["getNewestSongsV2", "searchV2", "getAlgerListenUrl"].includes(action)) {
     return json({ error: "unsupported music action" }, request, 400);
   }
@@ -289,14 +348,19 @@ async function watchMusic(request, url) {
     if (!/^\d{1,24}$/.test(id)) return json({ error: "bad song id" }, request, 400);
     params.set("linkMid", id);
   }
+  const payload = await watchMusicUpstream(Object.fromEntries(params));
+  return json(payload, request);
+}
+
+/** 调音乐上游一次，返回原始 payload；explore 聚合用。 */
+async function watchMusicUpstream(job) {
+  const params = new URLSearchParams(job);
   const upstream = await watchFetch(`${WATCH_MUSIC_API}?${params}`, {
     headers: { Accept: "application/json,text/plain,*/*" },
-  });
+  }, 20000);
   const text = await upstream.text();
-  if (!upstream.ok) return json({ error: `music upstream HTTP ${upstream.status}` }, request, 502);
-  let payload;
-  try { payload = JSON.parse(text); } catch { return json({ error: "music upstream returned invalid JSON" }, request, 502); }
-  return json(payload, request);
+  if (!upstream.ok) throw new Error(`music upstream HTTP ${upstream.status}`);
+  return JSON.parse(text);
 }
 
 async function watchAudio(request, url) {
@@ -1049,7 +1113,12 @@ function parseAnimeCards(html, origin) {
       || link[3] || link[0].match(/title=["']([^"']+)/i)?.[1]);
     const image = block.match(/(?:data-src|data-original)=["']([^"']+)["']/i)?.[1]
       || block.match(/<img[^>]+src=["']([^"']+)["']/i)?.[1] || "";
-    const coverUrl = absoluteWatchUrl(image, origin);
+    let coverUrl = absoluteWatchUrl(image, origin);
+    if (coverUrl && coverUrl.startsWith("http:")) {
+      // 上游图片是 http://p.qpic.cn/...（腾讯图床），代理只收 https，
+      // 不升级的话封面一律 403，动画区全是有图无封面的占位卡。
+      coverUrl = coverUrl.replace(/^http:/, "https:");
+    }
     if (!title || !coverUrl || /placeholder/i.test(coverUrl)) continue;
     seen.add(link[2]);
     items.push({ id: link[2], title, subtitle: "在线动画", cover: proxyWatchAsset(coverUrl, "anime") });
