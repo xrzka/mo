@@ -4005,12 +4005,21 @@
 
       const chapters = detail.chapters || [];
 
+      // 个别条目在上游已经下架或换镜像（列表里还挂着，正文却是空的）。
+      // 这种情况直接给一句人话 + 重试，比留一张只有标题的空目录好。
+      if (!chapters.length) {
+        renderWatchMessage(body, "这个条目在上游取不到目录，可能已下架或换了镜像。", {
+          label: "重新获取", run: () => openWatchNovel(item, body, requestId),
+        });
+        return;
+      }
+
       // 目录工具栏：章节数 + 一键下载全本（逐章抓正文后打包成 txt）。
       const tools = document.createElement("div");
       tools.className = "watch-dir-tools";
       const count = document.createElement("span");
       count.className = "watch-dir-count";
-      count.textContent = chapters.length ? `共 ${chapters.length} 章` : "没有取到目录";
+      count.textContent = `共 ${chapters.length} 章`;
       tools.appendChild(count);
       if (chapters.length) {
         tools.appendChild(watchButton(`下载全本（${chapters.length} 章）`, async (event) => {
