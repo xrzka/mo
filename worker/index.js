@@ -333,12 +333,33 @@ const WATCH_MANGA_IMAGE_ORIGIN = "https://i.lzimg.xyz";
 const WATCH_MANGA_PACK = "com.hbsclj.uth";
 const WATCH_MANGA_SIGN = "CDD266DF8B2399C24DA38E408B6D9825C7BD2AF073229847F551EA653EA096E1";
 const WATCH_MANGA_IMAGE_HOSTS = new Set(["i.lzimg.xyz", "cf-1.imgio.club"]);
+// 漫画多源之后图片域名变多（叽叽漫画 / GMH 各有自己的图床），按「基础域名 +
+// 子域」放行，避免每加一个源就要改一次白名单。
+const WATCH_MANGA_IMAGE_DOMAINS = [
+  "lzimg.xyz", "imgio.club",
+  "jjmhw.cc", "jjmhw8.top", "jjmhw6.top",
+  "6wm.top", "g-mh.org",
+];
+
+/** 图片是否来自允许的图床。子域一并放行（c-nd3-1.6wm.top 之类）。 */
+function mangaImageHostAllowed(host) {
+  const name = String(host || "").toLowerCase();
+  if (WATCH_MANGA_IMAGE_HOSTS.has(name)) return true;
+  return WATCH_MANGA_IMAGE_DOMAINS.some((domain) => name === domain || name.endsWith(`.${domain}`));
+}
 const WATCH_VIDEO_HOSTS = /(?:^|\.)(?:92cj\.com|upaiyun\.com|bcebos\.com|qpic\.cn|qq\.com)$/i;
+
+const WATCH_ENTITIES = {
+  nbsp: " ", amp: "&", quot: '"', apos: "'", lt: "<", gt: ">",
+  hellip: "…", mdash: "—", ndash: "–", middot: "·", times: "×",
+  ldquo: "“", rdquo: "”", lsquo: "‘", rsquo: "’", copy: "©", reg: "®",
+};
 
 function decodeEntities(value) {
   return String(value || "")
-    .replace(/&nbsp;/gi, " ").replace(/&amp;/gi, "&").replace(/&quot;/gi, '"')
-    .replace(/&#39;|&apos;/gi, "'").replace(/&lt;/gi, "<").replace(/&gt;/gi, ">");
+    .replace(/&#(\d+);/g, (_, code) => String.fromCodePoint(Number(code) || 32))
+    .replace(/&#x([0-9a-f]+);/gi, (_, code) => String.fromCodePoint(parseInt(code, 16) || 32))
+    .replace(/&([a-z]+);/gi, (whole, name) => WATCH_ENTITIES[name.toLowerCase()] ?? whole);
 }
 
 function stripTags(value) {
@@ -447,6 +468,343 @@ function mangaId(value) {
   return /^\d{1,18}$/.test(text) ? text : "";
 }
 
+/* ---------- 漫画多源 ----------
+ *
+ * 薄荷梨子 App 里漫画本来就分了好几个源（assets/public.js 里的 MOBILE_*_SOURCE）：
+ * 自家的 app/api（crm 系列）、叽叽漫画(manga3r)、GMH(manga4)、拷贝漫画(manga5/6)、
+ * mangakakalot(manga5en)。网站这边原来只接了自家的 app/api —— 那三条域名
+ * 2026-09 已经全部解析失败，于是整个漫画区就空了。
+ *
+ * 这里把 App 的取数逻辑照搬到 Worker：每个源一个 handler，统一输出
+ * {items} / {detail} / {images} 三种形状，前端不需要知道源之间的差异。
+ */
+
+const WATCH_MANGA_SOURCES = [
+  { id: "manga3r", label: "叽叽漫画" },
+  { id: "manga4", label: "GMH 漫画" },
+  { id: "crm", label: "薄荷梨子（原线路）" },
+];
+const WATCH_MANGA_SOURCE_IDS = WATCH_MANGA_SOURCES.map((item) => item.id);
+
+const WATCH_MOBILE_UA = "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 "
+  + "(KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36";
+
+const WATCH_R_BASE = "https://www.jjmhw.cc";
+const WATCH_GMH_BASE = "https://m.g-mh.org";
+const WATCH_GMH_API_FALLBACK = "https://v2.apikk.top";
+
+/** 抓 HTML 页面。上游普遍要求像浏览器，Referer 缺了会 403。 */
+async function watchFetchHtml(target, referer = "") {
+  const response = await watchFetch(target, { headers: {
+    Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    "Accept-Language": "zh-CN,zh;q=0.9",
+    "User-Agent": WATCH_MOBILE_UA,
+    ...(referer ? { Referer: referer } : {}),
+  } }, 20000);
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  return await response.text();
+}
+
+/** 抓 JSON 接口，带上游要求的平台头。 */
+async function watchFetchJson(target, referer = "", extraHeaders = {}) {
+  const response = await watchFetch(target, { headers: {
+    Accept: "application/json,text/plain,*/*",
+    "User-Agent": WATCH_MOBILE_UA,
+    ...(referer ? { Referer: referer, Origin: referer.replace(/\/$/, "") } : {}),
+    ...extraHeaders,
+  } }, 20000);
+  const text = await response.text();
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  try { return JSON.parse(text); } catch { throw new Error("上游返回的不是 JSON"); }
+}
+
+/* ---------- 源 1：叽叽漫画（manga3r，jjmhw.cc） ---------- */
+
+function mangaRBookId(value) {
+  return String(value || "").match(/\/book\/(\d+)/)?.[1] || "";
+}
+
+function mangaRChapterId(value) {
+  return String(value || "").match(/\/chapter\/(\d+)/)?.[1] || "";
+}
+
+/** 图片子域名（jjmhw6/8.top）会间歇性重置连接，统一改写回主域名的同路径。 */
+function mangaRImage(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  let target;
+  try { target = new URL(raw, WATCH_R_BASE); } catch { return ""; }
+  const host = target.hostname.toLowerCase();
+  if (!/^(?:[a-z0-9-]+\.)?jjmhw\d*\.(?:cc|top)$/i.test(host) && !/(?:^|\.)jjmhw\d*\.top$/i.test(host)) {
+    return "";
+  }
+  target.protocol = "https:";
+  target.host = "www.jjmhw.cc";
+  return proxyWatchAsset(target.toString(), "manga");
+}
+
+function mangaRText(value) {
+  return stripTags(value);
+}
+
+/**
+ * 首页/搜索页的漫画卡片。
+ *
+ * 这个站会按 UA 换模板：桌面模板是 `div.mh-item`（封面在独立锚点的
+ * background-image 里），移动模板是 `<a href="  /book/N" title="...">`（href 里
+ * 还带前导空格）。所以不按容器切块，而是把所有指向 /book/N 的锚点按 id 聚合，
+ * 谁先提供标题/封面就用谁的 —— 两种模板都能出结果。
+ */
+function mangaRComics(html) {
+  const found = new Map();
+  const anchorRe = /<a\b[^>]*href="([^"]*\/book\/(\d+)[^"]*)"[^>]*>([\s\S]{0,800}?)<\/a>/gi;
+  let match;
+  while ((match = anchorRe.exec(html))) {
+    const id = match[2];
+    const attrs = match[0].slice(0, match[0].indexOf(">"));
+    const inner = match[3];
+    const entry = found.get(id) || { id, title: "", cover: "" };
+    if (!entry.title) {
+      entry.title = mangaRText(attrs.match(/\btitle="([^"]*)"/i)?.[1] || "")
+        || mangaRText(inner.match(/<img[^>]+\balt="([^"]*)"/i)?.[1] || "")
+        || mangaRText(inner);
+    }
+    if (!entry.cover) {
+      entry.cover = inner.match(/<img[^>]+(?:data-original|data-src|src)="([^"]+)"/i)?.[1]
+        || inner.match(/background-image\s*:\s*url\(\s*['"]?([^'")]+)['"]?\s*\)/i)?.[1]
+        || attrs.match(/background-image\s*:\s*url\(\s*['"]?([^'")]+)['"]?\s*\)/i)?.[1]
+        || "";
+    }
+    found.set(id, entry);
+  }
+
+  // 桌面模板的封面锚点里没有文字，标题在紧跟的 h2.title 里，单独补一遍。
+  for (const block of html.split(/<div class="mh-item"/i).slice(1)) {
+    const id = mangaRBookId(block.match(/href="([^"]*\/book\/\d+[^"]*)"/i)?.[1] || "");
+    if (!id) continue;
+    const entry = found.get(id) || { id, title: "", cover: "" };
+    if (!entry.title) entry.title = mangaRText(block.match(/class="title"[^>]*>\s*<a[^>]*>([\s\S]*?)<\/a>/i)?.[1] || "");
+    if (!entry.cover) {
+      entry.cover = block.match(/background-image\s*:\s*url\(\s*['"]?([^'")]+)['"]?\s*\)/i)?.[1] || "";
+    }
+    found.set(id, entry);
+  }
+
+  return [...found.values()]
+    .filter((entry) => entry.id && entry.title)
+    .slice(0, 60)
+    .map((entry) => ({
+      id: entry.id,
+      title: entry.title,
+      subtitle: "叽叽漫画",
+      cover: mangaRImage(entry.cover),
+      description: "",
+      chapterCount: 0,
+    }));
+}
+
+async function manga3rList(q) {
+  const path = q ? `/search?keyword=${encodeURIComponent(q)}` : "/";
+  const html = await watchFetchHtml(`${WATCH_R_BASE}${path}`, `${WATCH_R_BASE}/`);
+  const items = mangaRComics(html);
+  if (!items.length) throw new Error(q ? `没有搜到“${q}”` : "首页没有解析到漫画");
+  return items;
+}
+
+async function manga3rDetail(comicId) {
+  const url = `${WATCH_R_BASE}/book/${comicId}`;
+  const html = await watchFetchHtml(url, `${WATCH_R_BASE}/`);
+  const title = mangaRText(html.match(/class="detail-main-info-title[^"]*"[^>]*>([\s\S]*?)<\//i)?.[1] || "")
+    || mangaRText(html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i)?.[1] || "");
+  const description = mangaRText(html.match(/class="detail-desc[^"]*"[^>]*>([\s\S]*?)<\/div>/i)?.[1] || "");
+  const cover = mangaRImage(html.match(/class="detail-main-cover[^"]*"[^>]*>[\s\S]{0,400}?<img[^>]+(?:data-original|data-src|src)="([^"]+)"/i)?.[1]
+    || `/static/upload/book/${comicId}/cover.jpg`);
+  const chapters = [];
+  const seen = new Set();
+  const linkRe = /<a\b[^>]*href="([^"]*\/chapter\/(\d+)[^"]*)"[^>]*>([\s\S]*?)<\/a>/gi;
+  let match;
+  while ((match = linkRe.exec(html)) && chapters.length < 2000) {
+    const id = match[2];
+    const name = mangaRText(match[0].slice(0, match[0].indexOf(">")).match(/\btitle="([^"]*)"/i)?.[1] || "")
+      || mangaRText(match[3]);
+    if (!id || !name || seen.has(id)) continue;
+    seen.add(id);
+    chapters.push({ id, title: name });
+  }
+  if (!chapters.length) throw new Error("没有解析到章节");
+  return { id: comicId, title: title || `漫画 ${comicId}`, cover, description, chapters };
+}
+
+async function manga3rChapter(chapterId) {
+  const url = `${WATCH_R_BASE}/chapter/${chapterId}`;
+  const html = await watchFetchHtml(url, `${WATCH_R_BASE}/`);
+  const images = [];
+  const seen = new Set();
+  const imgRe = /<img[^>]+(?:data-original|data-src|data-page-src|src)="([^"]+\.(?:jpg|jpeg|png|webp)[^"]*)"/gi;
+  let match;
+  while ((match = imgRe.exec(html)) && images.length < 300) {
+    // 页面上混着站点 logo / 返回按钮图，按文件名排掉。
+    if (/logo|view-back|view-top|favicon/i.test(match[1])) continue;
+    const src = mangaRImage(match[1]);
+    if (!src || seen.has(src)) continue;
+    seen.add(src);
+    images.push(src);
+  }
+  if (!images.length) throw new Error("这一话没有解析到图片");
+  return { id: chapterId, title: "", images };
+}
+
+/* ---------- 源 2：GMH（manga4，m.g-mh.org + v2.apikk.top） ---------- */
+
+/** 图片串是自定义混淆：前缀 J7r / 后缀 nQ，分三段重排 + 逐字符换表 + base64url。 */
+function mangaGmhBase64UrlDecode(value) {
+  const text = String(value || "");
+  const pad = text.length % 4 ? "=".repeat(4 - (text.length % 4)) : "";
+  const binary = atob((text + pad).replace(/-/g, "+").replace(/_/g, "/"));
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return new TextDecoder().decode(bytes);
+}
+
+function mangaGmhDecodeImages(value) {
+  const prefix = "J7r", suffix = "nQ", marker = "kD", secret = "W4s", chunkSize = 7;
+  const sourceAlphabet = "_-9876543210abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  const targetAlphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+  const text = String(value || "");
+  if (!text.startsWith(prefix) || !text.endsWith(suffix)) throw new Error("图片数据格式异常");
+
+  const body = text.slice(prefix.length, -suffix.length);
+  const contentLength = body.length - marker.length - secret.length;
+  if (contentLength < 0) throw new Error("图片数据长度异常");
+  const tailLength = Math.floor(contentLength / 3);
+  const firstLength = Math.floor((contentLength - tailLength) / 2);
+  const middleLength = contentLength - tailLength - firstLength;
+
+  const first = body.slice(0, firstLength);
+  const markerPart = body.slice(firstLength, firstLength + marker.length);
+  const middle = body.slice(firstLength + marker.length, firstLength + marker.length + middleLength);
+  const secretPart = body.slice(firstLength + marker.length + middleLength,
+    firstLength + marker.length + middleLength + secret.length);
+  const tail = body.slice(firstLength + marker.length + middleLength + secret.length);
+  if (markerPart !== marker || secretPart !== secret || tail.length !== tailLength) {
+    throw new Error("图片数据校验失败");
+  }
+
+  let packed = "";
+  const joined = tail + first + middle;
+  for (let offset = 0, index = 0; offset < joined.length; offset += chunkSize, index += 1) {
+    const chunk = joined.slice(offset, offset + chunkSize);
+    packed += index % 2 ? chunk.split("").reverse().join("") : chunk;
+  }
+  let mapped = "";
+  for (const char of packed) {
+    const index = sourceAlphabet.indexOf(char);
+    if (index < 0) throw new Error("图片数据含未知字符");
+    mapped += targetAlphabet[index];
+  }
+  const decoded = JSON.parse(mangaGmhBase64UrlDecode(mapped));
+  return Array.isArray(decoded) ? decoded : [];
+}
+
+/** 解码结果是 /cp/... 相对路径，要拼到图片域名上；行号 2 走 nd2，其余走 nd3。 */
+function mangaGmhImage(value, line) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  const base = Number(line) === 2 ? "https://c-nd2-1.6wm.top/" : "https://c-nd3-1.6wm.top/";
+  let target;
+  try { target = new URL(raw, base); } catch { return ""; }
+  if (!/^(?:[ct]-nd[23]-1\.6wm\.top|m\.g-mh\.org|c-nc-1\.6wm\.top)$/i.test(target.hostname)) {
+    // 有些条目直接给的就是完整图片地址，只在白名单内才用
+    if (!/\.6wm\.top$/i.test(target.hostname)) return "";
+  }
+  target.protocol = "https:";
+  return proxyWatchAsset(target.toString(), "manga");
+}
+
+function mangaGmhSlug(value) {
+  const raw = String(value || "").trim();
+  const match = raw.match(/\/manga\/([^/?#]+)/);
+  if (match) return match[1];
+  return /^[A-Za-z0-9_-]{1,80}$/.test(raw) ? raw : "";
+}
+
+async function manga4List(q) {
+  const path = q ? `/?q=${encodeURIComponent(q)}` : "/";
+  const html = await watchFetchHtml(`${WATCH_GMH_BASE}${path}`, `${WATCH_GMH_BASE}/`);
+  const items = [];
+  const seen = new Set();
+  const anchorRe = /<a[^>]+href="\/manga\/([^"?#]+)"[^>]*>([\s\S]{0,1200}?)<\/a>/gi;
+  let match;
+  while ((match = anchorRe.exec(html)) && items.length < 60) {
+    const slug = mangaGmhSlug(match[1]);
+    if (!slug || seen.has(slug)) continue;
+    const inner = match[2];
+    // 卡片上有两个标题类：slicardtitlep 是「时间 + 章节」，slicardtitle 才是漫画名。
+    // img 的 alt 最稳，优先用它；类名兜底时用 \b 卡住，别让 titlep 被匹配进来。
+    const title = stripTags(inner.match(/<img[^>]+alt="([^"]*)"/i)?.[1] || "")
+      || stripTags(inner.match(/class="[^"]*\bslicardtitle\b[^"]*"[^>]*>([\s\S]*?)</i)?.[1] || "");
+    if (!title) continue;
+    const cover = mangaGmhImage(inner.match(/<img[^>]+(?:data-src|src)="([^"]+)"/i)?.[1] || "", 0);
+    seen.add(slug);
+    items.push({ id: slug, title, subtitle: "GMH 漫画", cover, description: "", chapterCount: 0 });
+  }
+  if (!items.length) throw new Error(q ? `没有搜到“${q}”` : "首页没有解析到漫画");
+  return items;
+}
+
+async function manga4Detail(slug) {
+  const url = `${WATCH_GMH_BASE}/manga/${encodeURIComponent(slug)}`;
+  const html = await watchFetchHtml(url, `${WATCH_GMH_BASE}/`);
+  const config = html.match(/id="chapterDrawerConfig"([^>]*)>/i)?.[1] || "";
+  const remoteId = config.match(/data-mid="([^"]+)"/i)?.[1] || "";
+  const apiHost = (config.match(/data-api-host="([^"]+)"/i)?.[1] || WATCH_GMH_API_FALLBACK).replace(/\/$/, "");
+  if (!remoteId) throw new Error("页面里没有章节配置");
+  const payload = await watchFetchJson(
+    `${apiHost}/api/v2/manga/get?mid=${encodeURIComponent(remoteId)}&mode=all`, `${WATCH_GMH_BASE}/`
+  );
+  const detail = payload?.data || {};
+  const chapters = (Array.isArray(detail.chapters) ? detail.chapters : []).map((chapter, index) => ({
+    id: String(chapter?.id || ""),
+    title: stripTags(chapter?.attributes?.title) || `第 ${index + 1} 话`,
+    slug: String(chapter?.attributes?.slug || ""),
+  })).filter((chapter) => chapter.id);
+  if (!chapters.length) throw new Error("没有取到章节列表");
+  return {
+    id: slug,
+    title: stripTags(detail.title) || stripTags(html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i)?.[1] || "") || slug,
+    cover: mangaGmhImage(detail.cover || "", 0),
+    description: stripTags(detail.desc || ""),
+    chapters,
+    remoteId,
+    apiHost,
+  };
+}
+
+async function manga4Chapter(chapterId, remoteId, apiHost) {
+  if (!remoteId) throw new Error("缺少远端漫画 ID");
+  const host = (apiHost || WATCH_GMH_API_FALLBACK).replace(/\/$/, "");
+  const payload = await watchFetchJson(
+    `${host}/api/v2/chapter/getinfo?m=${encodeURIComponent(remoteId)}&c=${encodeURIComponent(chapterId)}`,
+    `${WATCH_GMH_BASE}/`
+  );
+  const info = payload?.data?.info;
+  if (!info) throw new Error("章节信息返回异常");
+  const decoded = mangaGmhDecodeImages(info.images?.images || "");
+  const images = [];
+  const seen = new Set();
+  for (const entry of decoded) {
+    const src = mangaGmhImage(typeof entry === "string" ? entry : entry?.url, info.images?.line);
+    if (!src || seen.has(src)) continue;
+    seen.add(src);
+    images.push(src);
+    if (images.length >= 300) break;
+  }
+  if (!images.length) throw new Error("这一话没有解析到图片");
+  return { id: String(chapterId), title: stripTags(info.title || ""), images };
+}
+
+/* ---------- 源 3：薄荷梨子自家 app/api（原线路，域名可能已失效） ---------- */
+
 /** 按 source 参数把线路收敛成一家；没有有效 source 就保留全部，逐个回落。 */
 function mangaOrigins(source) {
   const key = watchText(source, 24).toLowerCase();
@@ -475,13 +833,88 @@ async function fetchMangaJson(path, params = new URLSearchParams(), source = "")
   throw new Error(errors.join("; ") || "manga upstream unavailable");
 }
 
+async function mangaCrmList(q) {
+  const data = q
+    ? await fetchMangaJson("search/suggest", new URLSearchParams({ q }))
+    : await fetchMangaJson("home/data");
+  const source = q
+    ? data?.data?.search_suggest
+    : (data?.data?.home_content_list || []).flatMap((block) => block?.comic_list || []);
+  const items = collectMangaComics(source);
+  if (!items.length) throw new Error(q ? `没有搜到“${q}”` : "首页没有返回漫画");
+  return items;
+}
+
+async function mangaCrmDetail(comicId) {
+  const data = await fetchMangaJson(`detail/${comicId}`);
+  const raw = data?.data || {};
+  const comic = mangaComic(raw) || { id: comicId, title: `漫画 ${comicId}`, subtitle: "漫画", cover: "" };
+  const direct = (Array.isArray(raw.chapters) ? raw.chapters : []).map((item, index) => ({
+    id: mangaId(item?.id || item?.chapter_id || item?.chapterId),
+    title: stripTags(item?.name || item?.title) || `第 ${index + 1} 章`,
+  })).filter((item) => item.id);
+  const chapters = direct.length ? direct : mangaGroups(raw).map((id, index) => ({
+    id, title: `第 ${index + 1} 章`,
+  }));
+  if (!chapters.length) throw new Error("没有取到章节列表");
+  return { ...comic, description: stripTags(raw.content || comic.description || ""), chapters };
+}
+
+async function mangaCrmChapter(chapterId) {
+  const params = new URLSearchParams({ packname: WATCH_MANGA_PACK, appsign256: WATCH_MANGA_SIGN });
+  const data = await fetchMangaJson(`chapter/v2/${chapterId}`, params);
+  const images = (Array.isArray(data?.data?.pics) ? data.data.pics : [])
+    .map(mangaImageUrl).filter(Boolean).slice(0, 300);
+  if (!images.length) throw new Error("章节没有可用图片");
+  return { id: chapterId, title: stripTags(data?.data?.name || ""), images };
+}
+
+/* ---------- 源调度 ---------- */
+
+const WATCH_MANGA_HANDLERS = {
+  manga3r: {
+    list: (q) => manga3rList(q),
+    detail: (id) => manga3rDetail(id),
+    chapter: (id) => manga3rChapter(id),
+  },
+  manga4: {
+    list: (q) => manga4List(q),
+    detail: (id) => manga4Detail(id),
+    chapter: (id, params) => manga4Chapter(id, params.get("remoteId") || "", params.get("apiHost") || ""),
+  },
+  crm: {
+    list: (q) => mangaCrmList(q),
+    detail: (id) => mangaCrmDetail(id),
+    chapter: (id) => mangaCrmChapter(id),
+  },
+};
+
+/** 没指定 source 就按注册顺序依次尝试，全失败才报错。 */
+async function mangaDispatch(action, payload, source) {
+  const key = watchText(source, 24).toLowerCase();
+  const candidates = WATCH_MANGA_SOURCE_IDS.includes(key) ? [key] : WATCH_MANGA_SOURCE_IDS;
+  const errors = [];
+  for (const id of candidates) {
+    const label = WATCH_MANGA_SOURCES.find((item) => item.id === id)?.label || id;
+    try {
+      const value = await WATCH_MANGA_HANDLERS[id][action](payload.id, payload.params);
+      // 把「实际是哪条线出的内容」带回前端 —— 自动模式下用户看不到这个。
+      return { value, source: id, sourceLabel: label };
+    } catch (error) {
+      errors.push(`${label}: ${error.message}`);
+    }
+  }
+  throw new Error(errors.join("; ") || "所有漫画线路都不可用");
+}
+
+
 function mangaImageUrl(value) {
   const raw = String(value || "").trim();
   if (!raw) return "";
   const absolute = absoluteWatchUrl(raw, WATCH_MANGA_IMAGE_ORIGIN);
   if (!absolute) return "";
   const url = new URL(absolute);
-  if (!WATCH_MANGA_IMAGE_HOSTS.has(url.hostname.toLowerCase())) return "";
+  if (!mangaImageHostAllowed(url.hostname)) return "";
   url.protocol = "https:";
   return proxyWatchAsset(url.toString(), "manga");
 }
@@ -530,49 +963,40 @@ function mangaGroups(value) {
 async function watchManga(request, url) {
   const action = watchText(url.searchParams.get("action") || "list", 24);
   const source = watchText(url.searchParams.get("source"), 24);
-  // 上游线路随时可能整批挂掉（域名被污染 / 换域名）。把「试了哪几条、各自
-  // 报什么错」回给前端，界面上才能说清是线路问题，而不是一句 internal error。
+  const params = url.searchParams;
+
+  // 上游随时可能整批挂掉（换域名 / 被墙）。把「试了哪几条、各自什么错」回给前端，
+  // 界面上才能说清是线路问题，而不是一句 internal error。
   const fail = (error) => json({
-    error: `漫画线路不可用（已试 ${mangaOrigins(source).length} 条）：${error.message}`,
-    tried: mangaOrigins(source).map((origin) => new URL(origin).hostname),
+    error: error.message,
+    tried: WATCH_MANGA_SOURCE_IDS.includes(source.toLowerCase())
+      ? [source]
+      : WATCH_MANGA_SOURCES.map((item) => item.label),
   }, request, 502);
+
   try {
-  if (action === "list") {
-    const q = watchText(url.searchParams.get("q"));
-    const data = q
-      ? await fetchMangaJson("search/suggest", new URLSearchParams({ q }), source)
-      : await fetchMangaJson("home/data", new URLSearchParams(), source);
-    const upstream = q
-      ? data?.data?.search_suggest
-      : (data?.data?.home_content_list || []).flatMap((block) => block?.comic_list || []);
-    return json({ items: collectMangaComics(upstream) }, request);
-  }
-  const comicId = mangaId(url.searchParams.get("comic"));
-  if (!comicId) return json({ error: "bad comic id" }, request, 400);
-  if (action === "detail") {
-    const data = await fetchMangaJson(`detail/${comicId}`, new URLSearchParams(), source);
-    const raw = data?.data || {};
-    const comic = mangaComic(raw) || { id: comicId, title: `漫画 ${comicId}`, subtitle: "漫画", cover: "" };
-    const directChapters = (Array.isArray(raw.chapters) ? raw.chapters : []).map((item, index) => ({
-      id: mangaId(item?.id || item?.chapter_id || item?.chapterId),
-      title: stripTags(item?.name || item?.title) || `第 ${index + 1} 章`,
-    })).filter((item) => item.id);
-    const chapters = directChapters.length ? directChapters : mangaGroups(raw).map((id, index) => ({
-      id, title: `第 ${index + 1} 章`,
-    }));
-    return json({ ...comic, description: stripTags(raw.content || comic.description), chapters }, request);
-  }
-  if (action === "chapter") {
-    const chapterId = mangaId(url.searchParams.get("chapter"));
-    if (!chapterId) return json({ error: "bad chapter id" }, request, 400);
-    const params = new URLSearchParams({ packname: WATCH_MANGA_PACK, appsign256: WATCH_MANGA_SIGN });
-    const data = await fetchMangaJson(`chapter/v2/${chapterId}`, params, source);
-    const images = (Array.isArray(data?.data?.pics) ? data.data.pics : [])
-      .map(mangaImageUrl).filter(Boolean).slice(0, 300);
-    if (!images.length) return json({ error: "章节没有可用图片" }, request, 502);
-    return json({ id: chapterId, title: stripTags(data?.data?.name || ""), images }, request);
-  }
-  return json({ error: "unsupported manga action" }, request, 400);
+    if (action === "list") {
+      const { value } = await mangaDispatch("list", { id: watchText(params.get("q")) }, source);
+      return json({ items: value }, request);
+    }
+
+    if (action === "detail") {
+      const comicId = watchText(params.get("comic"), 80);
+      if (!comicId) return json({ error: "bad comic id" }, request, 400);
+      const { value, source: used, sourceLabel: usedLabel } =
+        await mangaDispatch("detail", { id: comicId, params }, source);
+      // GMH 的章节要带远端 id 和接口域名才能取图，详情里一并回给前端。
+      return json({ ...value, source: used, sourceLabel: usedLabel }, request);
+    }
+
+    if (action === "chapter") {
+      const chapterId = watchText(params.get("chapter"), 80);
+      if (!chapterId) return json({ error: "bad chapter id" }, request, 400);
+      const { value } = await mangaDispatch("chapter", { id: chapterId, params }, source);
+      return json(value, request);
+    }
+
+    return json({ error: "unsupported manga action" }, request, 400);
   } catch (error) {
     return fail(error);
   }
@@ -726,7 +1150,7 @@ async function watchAsset(request, url) {
   const host = target.hostname.toLowerCase();
   const allowed = target.protocol === "https:" && (
     (kind === "novel" && WATCH_NOVEL_ORIGINS.some((origin) => host === new URL(origin).hostname))
-    || (kind === "manga" && WATCH_MANGA_IMAGE_HOSTS.has(host))
+    || (kind === "manga" && mangaImageHostAllowed(host))
     || (kind === "anime" && (WATCH_VIDEO_HOSTS.test(host) || WATCH_ANIME_ORIGINS.some((origin) => host === new URL(origin).hostname)))
   );
   if (!allowed) return json({ error: "asset host not allowed" }, request, 403);

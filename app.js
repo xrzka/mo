@@ -3437,13 +3437,13 @@
 
   /* ---------- 观看区：漫画线路（多源） ---------- */
 
-  // 上游接口本身会按顺序回落到下一台机器，这里的「线路」是给用户手动切换用的：
-  // 手动选择会作为 source 参数传到 Worker，直接锁定那一条线路。
+  // 和 App 里的漫画源对应（assets/public.js 的 MOBILE_*_SOURCE）。
+  // 空 id = 自动：Worker 按注册顺序依次尝试，某条挂了自动跳下一条。
   const WATCH_MANGA_SOURCES = [
-    { id: "", label: "自动（最快线路）" },
-    { id: "crm", label: "线路 1 · 主站" },
-    { id: "meiwenti", label: "线路 2 · 备用" },
-    { id: "bkbfblh", label: "线路 3 · 备用" },
+    { id: "", label: "自动（依次尝试）" },
+    { id: "manga3r", label: "叽叽漫画" },
+    { id: "manga4", label: "GMH 漫画" },
+    { id: "crm", label: "薄荷梨子（原线路）" },
   ];
 
   const WATCH_PAGE_SIZE = 24;
@@ -3828,8 +3828,8 @@
     const hint = $("[data-watch-source-hint]");
     if (hint) {
       hint.textContent = currentSource()
-        ? "已锁定该线路，标题加载不出来或章节缺失时换一条试试。"
-        : "自动模式会按顺序尝试各条线路，某条挂了会自动跳到下一条。";
+        ? "已锁定该漫画源；打不开或没有章节时换一个源试试。"
+        : "自动模式会依次尝试各漫画源（叽叽漫画 → GMH → 原线路），某条挂了自动跳下一条。";
     }
   }
 
@@ -4134,9 +4134,18 @@
       $(`[data-watch-viewer-title]`).textContent = detail.title || item.title;
       body.textContent = "";
 
+      // GMH 这类源取章节图要带上远端漫画 ID 和接口域名，详情接口会一起返回。
+      const remoteId = detail.remoteId || "";
+      const apiHost = detail.apiHost || "";
+      // 章节固定用「出详情的那条线」：自动模式下各源 id 体系不同，
+      // 换线去查同一个 id 可能撞到另一部漫画。
+      const effectiveSource = detail.source || source;
+
       const meta = document.createElement("p");
       meta.className = "watch-source-line";
-      meta.textContent = `当前线路：${sourceLabel()}${detail.description ? ` · ${detail.description}` : ""}`;
+      // 自动模式下用实际出内容的那条线，而不是「自动」两个字。
+      const shownSource = detail.sourceLabel || sourceLabel();
+      meta.textContent = `当前线路：${shownSource}${detail.description ? ` · ${detail.description}` : ""}`;
       body.appendChild(meta);
 
       const chapters = document.createElement("div");
@@ -4145,7 +4154,9 @@
         body.innerHTML = '<p class="watch-loading">正在读取漫画…</p>';
         try {
           const chapterParams = new URLSearchParams({ action: "chapter", comic: item.id, chapter: chapter.id });
-          if (source) chapterParams.set("source", source);
+          if (effectiveSource) chapterParams.set("source", effectiveSource);
+          if (remoteId) chapterParams.set("remoteId", remoteId);
+          if (apiHost) chapterParams.set("apiHost", apiHost);
           const data = await watchApi(`/api/watch/manga?${chapterParams}`);
           if (!watchViewCurrent(requestId)) return;
           const reader = document.createElement("div");
