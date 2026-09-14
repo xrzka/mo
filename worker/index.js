@@ -530,6 +530,13 @@ function mangaGroups(value) {
 async function watchManga(request, url) {
   const action = watchText(url.searchParams.get("action") || "list", 24);
   const source = watchText(url.searchParams.get("source"), 24);
+  // 上游线路随时可能整批挂掉（域名被污染 / 换域名）。把「试了哪几条、各自
+  // 报什么错」回给前端，界面上才能说清是线路问题，而不是一句 internal error。
+  const fail = (error) => json({
+    error: `漫画线路不可用（已试 ${mangaOrigins(source).length} 条）：${error.message}`,
+    tried: mangaOrigins(source).map((origin) => new URL(origin).hostname),
+  }, request, 502);
+  try {
   if (action === "list") {
     const q = watchText(url.searchParams.get("q"));
     const data = q
@@ -566,6 +573,9 @@ async function watchManga(request, url) {
     return json({ id: chapterId, title: stripTags(data?.data?.name || ""), images }, request);
   }
   return json({ error: "unsupported manga action" }, request, 400);
+  } catch (error) {
+    return fail(error);
+  }
 }
 
 function parseNovelChapter(html, origin, novelId, chapterId) {
