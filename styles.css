@@ -1825,7 +1825,7 @@ h1 {
   .watch-chapter-open { grid-template-columns: 36px minmax(0, 1fr); min-height: 44px; }
   .watch-chapter-download { min-height: 40px; }
   .watch-action-bar { position: static; }
-  .watch-more { flex: 1 1 100%; min-height: 44px; }
+  .watch-more { flex: 0 0 auto; width: 100%; box-sizing: border-box; min-width: 0; min-height: 44px; }
   .watch-more-wrap { flex-direction: column; }
   .watch-pager { width: 100%; justify-content: center; }
   .watch-page-btn { flex: 1 1 0; min-height: 44px; }
