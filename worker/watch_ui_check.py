@@ -1,7 +1,7 @@
 """观看区 UI 回归检查。
 
 用法（Windows，需先装 playwright 并设好浏览器路径）：
-    $env:PLAYWRIGHT_BROWSERS_PATH="D:\ms-playwright"
+    $env:PLAYWRIGHT_BROWSERS_PATH=r"D:\\ms-playwright"
     python worker/watch_ui_check.py
 
 它用真实上游数据（从线上 Worker 取回）在本地起一个静态服务，然后用 Chromium
