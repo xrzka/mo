@@ -392,7 +392,12 @@
     watchQuery: "",
     watchItems: [],
     watchLoading: false,
+    watchError: "",
     watchRequest: 0,
+    watchViewRequest: 0,
+    watchViewerOpen: false,
+    watchLimit: 20,
+    watchSource: "", // 漫画线路，空字符串 = 自动
     // items.json 的原始数据。改完覆盖层要用它重建 items，不必重新发请求。
     rawItems: [],
     // 后台新增的条目（来自 /api/items）。和 rawItems 拼起来才是完整数据源。
@@ -654,6 +659,7 @@
       }
 
       btn.addEventListener("click", () => {
+        if (state.section === "watch" && s.id !== "watch") closeWatchViewer();
         state.section = s.id;
         state.sub = s.id === "watch" ? state.watchKind : "all";
         state.page = 1;
@@ -692,10 +698,12 @@
       btn.setAttribute("aria-selected", String(state.sub === o.id));
       btn.textContent = o.label;
 
-      const cnt = document.createElement("span");
-      cnt.className = "tab-count";
-      cnt.textContent = n;
-      btn.appendChild(cnt);
+      if (state.section !== "watch") {
+        const cnt = document.createElement("span");
+        cnt.className = "tab-count";
+        cnt.textContent = n;
+        btn.appendChild(cnt);
+      }
 
       btn.addEventListener("click", () => {
         state.sub = o.id;
@@ -703,8 +711,13 @@
         if (state.section === "watch") {
           if (o.id === "all") state.sub = state.watchKind;
           else {
+            closeWatchViewer();
             state.watchKind = o.id;
             state.watchItems = [];
+            state.watchError = "";
+            state.watchQuery = "";
+            const input = $("[data-watch-query]");
+            if (input) input.value = "";
           }
         }
         render();
@@ -3388,12 +3401,169 @@
   /* ---------- 观看区（薄荷梨子网页适配） ---------- */
 
   const WATCH_KIND_LABELS = { music: "音乐", manga: "漫画", anime: "动画", novel: "小说" };
+  const WATCH_CACHE_TTL = 5 * 60 * 1000;
+  const WATCH_PROGRESS_KEY = "mo-watch-progress-v1";
+  const watchCache = new Map();
+
+  function watchCacheKey(kind = state.watchKind, query = state.watchQuery) {
+    return `${kind}:${String(query || "").trim().toLowerCase()}`;
+  }
+
+  function watchProgress() {
+    try {
+      const value = JSON.parse(localStorage.getItem(WATCH_PROGRESS_KEY) || "{}");
+      return value && typeof value === "object" ? value : {};
+    } catch { return {}; }
+  }
+
+  function saveWatchProgress(kind, item, part = null) {
+    try {
+      const all = watchProgress();
+      all[kind] = {
+        id: String(item.id), title: item.title,
+        partId: part ? String(part.id) : "",
+        partTitle: part?.title || "", at: Date.now(),
+      };
+      localStorage.setItem(WATCH_PROGRESS_KEY, JSON.stringify(all));
+    } catch { /* 无痕模式下不影响观看 */ }
+  }
 
   function watchStatus(text, bad = false) {
     const el = $("[data-watch-status]");
     if (!el) return;
     el.textContent = text;
     el.classList.toggle("is-bad", bad);
+  }
+
+  /* ---------- 观看区：漫画线路（多源） ---------- */
+
+  // 上游接口本身会按顺序回落到下一台机器，这里的「线路」是给用户手动切换用的：
+  // 手动选择会作为 source 参数传到 Worker，直接锁定那一条线路。
+  const WATCH_MANGA_SOURCES = [
+    { id: "", label: "自动（最快线路）" },
+    { id: "crm", label: "线路 1 · 主站" },
+    { id: "meiwenti", label: "线路 2 · 备用" },
+    { id: "bkbfblh", label: "线路 3 · 备用" },
+  ];
+
+  const WATCH_PAGE_SIZE = 24;
+
+  function currentSource() {
+    if (state.watchKind !== "manga") return "";
+    return WATCH_MANGA_SOURCES.some((s) => s.id === state.watchSource) ? state.watchSource : "";
+  }
+
+  function sourceLabel() {
+    const found = WATCH_MANGA_SOURCES.find((s) => s.id === currentSource());
+    return found ? found.label : "自动";
+  }
+
+  /* ---------- 观看区：下载 ---------- */
+
+  function watchDownloadName(item, suffix) {
+    const safe = String(item?.title || "watch").replace(/[\\/:*?"<>|\r\n\t]+/g, " ").trim().slice(0, 80);
+    return `${safe || "watch"}${suffix}`;
+  }
+
+  function watchSaveBlob(blob, filename) {
+    const href = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = href;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(href), 60000);
+  }
+
+  /** 把上游地址换成同源代理地址，否则 Worker 会因为跨域 / 白名单拒掉。 */
+  function watchProxyAudio(remote) {
+    return `${apiBase()}/api/watch/audio?url=${encodeURIComponent(String(remote).replace(/^http:/, "https:"))}`;
+  }
+
+  /** 逐个抓取章节图片，串行下载以免同时打爆上游。 */
+  async function watchDownloadImages(srcs, item, onProgress) {
+    const files = [];
+    for (let i = 0; i < srcs.length; i++) {
+      onProgress?.(`正在下载第 ${i + 1}/${srcs.length} 张…`);
+      const response = await fetch(watchMediaUrl(srcs[i]), { cache: "force-cache" });
+      if (!response.ok) throw new Error(`第 ${i + 1} 张失败（HTTP ${response.status}）`);
+      const blob = await response.blob();
+      const ext = (blob.type.split("/")[1] || "jpg").replace("jpeg", "jpg");
+      const name = `${String(i + 1).padStart(4, "0")}.${ext}`;
+      files.push({ name, blob });
+    }
+    return files;
+  }
+
+  function watchPackZip(files) {
+    if (!window.JSZip) throw new Error("打包组件未加载，请刷新页面重试");
+    const zip = new window.JSZip();
+    files.forEach((file) => zip.file(file.name, file.blob));
+    return zip.generateAsync({ type: "blob", compression: "STORE" });
+  }
+
+  /** 正文按章节拼成一本纯文本，图片以 URL 形式留在原位。 */
+  function watchNovelText(detail, item) {
+    const lines = [
+      `《${item.title}》`,
+      detail.description ? `\n${detail.description}\n` : "",
+      "".padEnd(24, "="),
+    ];
+    (detail.chapters || []).forEach((chapter) => {
+      if (chapter.text) {
+        lines.push(`\n\n${chapter.title}\n`);
+        lines.push(chapter.text);
+      } else {
+        lines.push(`\n\n${chapter.title}\n（正文抓取失败）`);
+      }
+    });
+    return lines.join("\n");
+  }
+
+  /** 目录页每章旁边的「下载」：单独抓一章正文，存成 txt。 */
+  async function downloadNovelChapter(item, chapter, button) {
+    const original = button.textContent;
+    button.disabled = true;
+    button.textContent = "下载中…";
+    try {
+      const data = await watchApi(
+        `/api/watch/novel?action=chapter&novel=${encodeURIComponent(item.id)}&chapter=${encodeURIComponent(chapter.id)}`
+      );
+      const text = (data.blocks || []).map((block) => (block.type === "image" ? `[图片] ${block.src}` : block.text)).join("\n\n");
+      watchSaveBlob(
+        new Blob([`${data.title || chapter.title}\n\n${text || "（本章没有正文）"}`], { type: "text/plain;charset=utf-8" }),
+        watchDownloadName({ title: `${item.title} ${chapter.title}` }, ".txt")
+      );
+      button.textContent = "已下载";
+    } catch (error) {
+      button.textContent = "失败";
+      watchStatus(`下载失败：${error.message}`, true);
+    } finally {
+      button.disabled = false;
+      setTimeout(() => { button.textContent = original; }, 1800);
+    }
+  }
+
+  /** 正文阅读页顶部的「下载本章」。 */
+  async function downloadNovelChapterView(item, chapter, data, button) {
+    const original = button.textContent;
+    button.disabled = true;
+    button.textContent = "打包中…";
+    try {
+      const text = (data.blocks || []).map((block) => (block.type === "image" ? `[图片] ${block.src}` : block.text)).join("\n\n");
+      watchSaveBlob(
+        new Blob([`${data.title || chapter.title}\n\n${text}`], { type: "text/plain;charset=utf-8" }),
+        watchDownloadName({ title: `${item.title} ${chapter.title}` }, ".txt")
+      );
+      button.textContent = "已下载";
+    } catch (error) {
+      button.textContent = "失败";
+      watchStatus(`下载失败：${error.message}`, true);
+    } finally {
+      button.disabled = false;
+      setTimeout(() => { button.textContent = original; }, 1800);
+    }
   }
 
   function watchMusicItems(data) {
@@ -3427,42 +3597,163 @@
     }
   }
 
-  async function loadWatch() {
+  function watchRowCount() {
+    return state.watchItems.length;
+  }
+
+  function setWatchStatus() {
+    const label = WATCH_KIND_LABELS[state.watchKind];
+    const q = state.watchQuery.trim();
+    const total = state.watchItems.length;
+    const shown = Math.min(state.watchLimit, total);
+    if (!total) {
+      watchStatus(q ? `没有找到“${q}”相关的${label}。` : `${label}暂无可显示内容。`);
+      return;
+    }
+    const parts = [`${label}：共 ${total} 条，已显示 ${shown}`];
+    if (state.watchKind === "manga") parts.push(`线路 ${sourceLabel()}`);
+    watchStatus(`${parts.join(" · ")}${q ? ` · 关键词“${q}”` : ""}，点击卡片即可在网页内打开。`);
+  }
+
+  /** 只做分页计数 + 状态行，不动 DOM 列表，避免滚动位置被重置。 */
+  function showMoreWatch() {
+    const list = $("[data-watch-list]");
+    const before = state.watchLimit;
+    state.watchLimit = Math.min(state.watchLimit + WATCH_PAGE_SIZE, watchRowCount());
+    // 只追加新露出的那一段，已渲染的卡片保持原节点，滚动位置不会跳。
+    if (list) {
+      const last = watchProgress()[state.watchKind];
+      state.watchItems.slice(before, state.watchLimit).forEach((item) => {
+        list.appendChild(buildWatchCard(item, last));
+      });
+    }
+    setWatchStatus();
+    const wrap = $("[data-watch-more]");
+    if (!wrap) return;
+    if (state.watchLimit >= watchRowCount()) wrap.hidden = true;
+    const label = $("[data-watch-more-label]");
+    if (label) label.textContent = `加载更多（还剩 ${watchRowCount() - state.watchLimit} 条）`;
+    const info = $("[data-watch-page-info]");
+    if (info) info.textContent = `已显示 ${Math.min(state.watchLimit, watchRowCount())} / ${watchRowCount()} 条`;
+    if (list) list.scrollTop = list.scrollHeight;
+  }
+
+  /** 单张卡片。renderWatchGrid 与 showMoreWatch 共用，保证追加的卡片和首批一致。 */
+  function buildWatchCard(item, last) {
+    const card = document.createElement("button");
+    card.type = "button";
+    card.className = "watch-card";
+    card.dataset.kind = state.watchKind;
+    const media = document.createElement("span");
+    media.className = "watch-card-media";
+    media.appendChild(watchPlaceholder());
+    if (item.cover) {
+      const img = document.createElement("img");
+      img.alt = "";
+      img.loading = "lazy";
+      img.decoding = "async";
+      img.referrerPolicy = "no-referrer";
+      img.addEventListener("load", () => img.classList.add("is-loaded"));
+      img.addEventListener("error", () => img.remove());
+      img.src = watchMediaUrl(item.cover);
+      if (img.complete && img.naturalWidth) img.classList.add("is-loaded");
+      media.appendChild(img);
+    }
+    const copy = document.createElement("span");
+    copy.className = "watch-card-copy";
+    const title = document.createElement("strong");
+    title.textContent = item.title;
+    const sub = document.createElement("small");
+    sub.textContent = item.subtitle || WATCH_KIND_LABELS[state.watchKind];
+    copy.append(title, sub);
+    if (last && String(last.id) === String(item.id)) {
+      card.classList.add("has-progress");
+      const badge = document.createElement("span");
+      badge.className = "watch-progress";
+      badge.textContent = last.partTitle ? `上次：${last.partTitle}` : "最近打开";
+      copy.appendChild(badge);
+    }
+    card.append(media, copy);
+    card.addEventListener("click", () => openWatchItem(item));
+    return card;
+  }
+
+  /** 重建列表 DOM（换关键词 / 换线路 / 重载时才用）。 */
+  function renderWatchGrid() {
+    const wrap = $("[data-watch-more]");
+    if (!wrap) return;
+    const list = $("[data-watch-list]");
+    const previous = list ? list.scrollTop : 0;
+    wrap.hidden = true;
+    if (!list) return;
+
+    list.textContent = "";
+    const last = watchProgress()[state.watchKind];
+    state.watchItems.slice(0, state.watchLimit)
+      .forEach((item) => list.appendChild(buildWatchCard(item, last)));
+
+    list.scrollTop = previous;
+    if (state.watchLimit < watchRowCount()) {
+      wrap.hidden = false;
+      const label = $("[data-watch-more-label]");
+      if (label) label.textContent = `加载更多（还剩 ${watchRowCount() - state.watchLimit} 条）`;
+    }
+    const info = $("[data-watch-page-info]");
+    if (info) info.textContent = `已显示 ${Math.min(state.watchLimit, watchRowCount())} / ${watchRowCount()} 条`;
+  }
+
+  async function loadWatch({ force = false } = {}) {
     const kind = state.watchKind;
+    const q = state.watchQuery.trim();
+    const source = currentSource();
     const requestId = ++state.watchRequest;
+    state.watchViewerOpen = false;
+    state.watchViewRequest++;
+    state.watchLimit = WATCH_PAGE_SIZE;
+    const key = `${watchCacheKey(kind, q)}:${source}`;
+    const cached = watchCache.get(key);
+
+    renderWatchTabs();
+    renderWatchSources();
+
+    if (!force && cached && Date.now() - cached.at < WATCH_CACHE_TTL) {
+      state.watchItems = cached.items;
+      state.watchError = "";
+      state.watchLoading = false;
+      renderWatch();
+      setWatchStatus();
+      return;
+    }
+
     state.watchLoading = true;
+    state.watchError = "";
     renderWatch();
     watchStatus(`正在加载${WATCH_KIND_LABELS[kind]}…`);
+
     try {
+      let items = [];
       if (kind === "music") {
-        const q = state.watchQuery.trim();
         const path = q
           ? `/api/watch/music?action=searchV2&q=${encodeURIComponent(q)}`
           : "/api/watch/music?action=getNewestSongsV2";
-        state.watchItems = watchMusicItems(await watchApi(path));
-      } else if (kind === "novel") {
-        const q = state.watchQuery.trim();
-        const path = `/api/watch/novel?action=list${q ? `&q=${encodeURIComponent(q)}` : ""}`;
-        state.watchItems = (await watchApi(path)).items || [];
-      } else if (kind === "manga") {
-        const q = state.watchQuery.trim();
-        const path = `/api/watch/manga?action=list${q ? `&q=${encodeURIComponent(q)}` : ""}`;
-        state.watchItems = (await watchApi(path)).items || [];
-      } else if (kind === "anime") {
-        const q = state.watchQuery.trim();
-        const path = `/api/watch/anime?action=list${q ? `&q=${encodeURIComponent(q)}` : ""}`;
-        state.watchItems = (await watchApi(path)).items || [];
+        items = watchMusicItems(await watchApi(path));
       } else {
-        state.watchItems = [];
+        const params = new URLSearchParams({ action: "list" });
+        if (q) params.set("q", q);
+        if (kind === "manga" && source) params.set("source", source);
+        items = (await watchApi(`/api/watch/${kind}?${params}`)).items || [];
       }
+
       if (requestId !== state.watchRequest) return;
-      watchStatus(state.watchItems.length
-        ? `${WATCH_KIND_LABELS[kind]}：${state.watchItems.length} 条，点击即可在网页内打开。`
-        : `${WATCH_KIND_LABELS[kind]}线路正在适配，当前不提供不稳定或需要登录的来源。`);
+
+      state.watchItems = items;
+      watchCache.set(key, { at: Date.now(), items });
+      setWatchStatus();
     } catch (error) {
       if (requestId !== state.watchRequest) return;
       state.watchItems = [];
-      watchStatus(`加载失败：${error.name === "AbortError" ? "请求超时" : error.message}`, true);
+      state.watchError = error.name === "AbortError" ? "请求超时" : error.message;
+      watchStatus(`加载失败：${state.watchError}`, true);
     } finally {
       if (requestId === state.watchRequest) {
         state.watchLoading = false;
@@ -3478,72 +3769,182 @@
     return src.replace(/^http:/, "https:");
   }
 
+  function watchPlaceholder(kind = state.watchKind) {
+    const node = document.createElement("span");
+    node.className = `watch-cover-placeholder is-${kind}`;
+    node.setAttribute("aria-hidden", "true");
+    node.textContent = { music: "♫", manga: "漫", anime: "动", novel: "文" }[kind] || "墨";
+    return node;
+  }
+
+  function renderWatchMessage(grid, text, action = null) {
+    const box = document.createElement("div");
+    box.className = "watch-empty";
+    const message = document.createElement("p");
+    message.textContent = text;
+    box.appendChild(message);
+    if (action) box.appendChild(watchButton(action.label, action.run, "watch-retry"));
+    grid.appendChild(box);
+  }
+
+  /** 分区标签（音乐/漫画/动画/小说）+ 漫画线路选择器。 */
+  function renderWatchSources() {
+    const bar = $("[data-watch-sources]");
+    if (!bar) return;
+    const isManga = state.watchKind === "manga";
+    bar.hidden = !isManga;
+    if (!isManga) return;
+    if (bar.dataset.rendered !== "1") {
+      bar.dataset.rendered = "1";
+      const label = document.createElement("label");
+      label.className = "watch-source-pick";
+      const caption = document.createElement("span");
+      caption.textContent = "漫画线路";
+      const select = document.createElement("select");
+      select.setAttribute("data-watch-source", "");
+      WATCH_MANGA_SOURCES.forEach((source) => {
+        const option = document.createElement("option");
+        option.value = source.id;
+        option.textContent = source.label;
+        select.appendChild(option);
+      });
+      label.append(caption, select);
+      bar.appendChild(label);
+
+      const hint = document.createElement("p");
+      hint.className = "watch-source-hint";
+      hint.setAttribute("data-watch-source-hint", "");
+      bar.appendChild(hint);
+
+      select.addEventListener("change", () => {
+        state.watchSource = select.value;
+        state.watchItems = [];
+        state.watchLimit = WATCH_PAGE_SIZE;
+        loadWatch({ force: true });
+      });
+    }
+    const select = $("[data-watch-source]");
+    if (select && select.value !== currentSource()) select.value = currentSource();
+    const hint = $("[data-watch-source-hint]");
+    if (hint) {
+      hint.textContent = currentSource()
+        ? "已锁定该线路，标题加载不出来或章节缺失时换一条试试。"
+        : "自动模式会按顺序尝试各条线路，某条挂了会自动跳到下一条。";
+    }
+  }
+
+  function renderWatchTabs() {
+    const bar = $("[data-watch-tabs]");
+    if (!bar) return;
+    bar.textContent = "";
+    Object.entries(WATCH_KIND_LABELS).forEach(([id, label]) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "watch-tab";
+      btn.setAttribute("role", "tab");
+      btn.setAttribute("aria-selected", String(state.watchKind === id));
+      btn.textContent = label;
+      btn.addEventListener("click", () => {
+        if (state.watchKind === id) return;
+        closeWatchViewer();
+        state.watchKind = id;
+        state.sub = id;
+        state.watchItems = [];
+        state.watchError = "";
+        state.watchQuery = "";
+        state.watchSource = "";
+        state.watchLimit = WATCH_PAGE_SIZE;
+        const input = $("[data-watch-query]");
+        if (input) input.value = "";
+        renderWatchTabs();
+        loadWatch();
+      });
+      bar.appendChild(btn);
+    });
+  }
+
   function renderWatch() {
     const grid = $("[data-watch-grid]");
     const viewer = $("[data-watch-viewer]");
     if (!grid || !viewer) return;
+    grid.setAttribute("aria-busy", String(state.watchLoading));
+    if (state.watchViewerOpen) {
+      grid.hidden = true;
+      viewer.hidden = false;
+      return;
+    }
     viewer.hidden = true;
     grid.hidden = false;
-    grid.textContent = "";
+
+    const list = $("[data-watch-list]");
+    if (!list) return;
+    const wrap = $("[data-watch-more]");
+
     if (state.watchLoading) {
-      grid.innerHTML = '<p class="watch-empty">加载中…</p>';
-      return;
-    }
-    if (!state.watchItems.length) {
-      grid.innerHTML = `<p class="watch-empty">${WATCH_KIND_LABELS[state.watchKind]}暂无可显示内容</p>`;
-      return;
-    }
-    state.watchItems.forEach((item) => {
-      const card = document.createElement("button");
-      card.type = "button";
-      card.className = "watch-card";
-      if (item.cover) {
-        const img = document.createElement("img");
-        img.src = watchMediaUrl(item.cover);
-        img.alt = "";
-        img.loading = "lazy";
-        img.referrerPolicy = "no-referrer";
-        card.appendChild(img);
+      list.textContent = "";
+      if (wrap) wrap.hidden = true;
+      for (let i = 0; i < 8; i++) {
+        const card = document.createElement("div");
+        card.className = "watch-skeleton";
+        card.setAttribute("aria-hidden", "true");
+        card.innerHTML = '<span></span><i></i><i></i>';
+        list.appendChild(card);
       }
-      const copy = document.createElement("span");
-      copy.className = "watch-card-copy";
-      const title = document.createElement("strong");
-      title.textContent = item.title;
-      const sub = document.createElement("small");
-      sub.textContent = item.subtitle || WATCH_KIND_LABELS[state.watchKind];
-      copy.append(title, sub);
-      card.appendChild(copy);
-      card.addEventListener("click", () => openWatchItem(item));
-      grid.appendChild(card);
-    });
+      return;
+    }
+
+    if (state.watchError) {
+      list.textContent = "";
+      if (wrap) wrap.hidden = true;
+      renderWatchMessage(list, `暂时没能加载${WATCH_KIND_LABELS[state.watchKind]}：${state.watchError}`, {
+        label: "重新加载", run: () => loadWatch({ force: true }),
+      });
+      return;
+    }
+
+    if (!state.watchItems.length) {
+      list.textContent = "";
+      if (wrap) wrap.hidden = true;
+      renderWatchMessage(list, state.watchQuery
+        ? `没有找到“${state.watchQuery}”相关内容，换个关键词试试。`
+        : `${WATCH_KIND_LABELS[state.watchKind]}暂无可显示内容。`);
+      return;
+    }
+
+    renderWatchGrid();
   }
 
   async function openWatchItem(item) {
     const grid = $("[data-watch-grid]");
     const viewer = $("[data-watch-viewer]");
     const body = $("[data-watch-viewer-body]");
+    const kind = state.watchKind;
+    const requestId = ++state.watchViewRequest;
+    state.watchViewerOpen = true;
     $("[data-watch-viewer-title]").textContent = item.title;
     grid.hidden = true;
     viewer.hidden = false;
-    body.textContent = "正在获取播放地址…";
-    if (state.watchKind === "music") return openWatchMusic(item, body);
-    if (state.watchKind === "novel") return openWatchNovel(item, body);
-    if (state.watchKind === "manga") return openWatchManga(item, body);
-    if (state.watchKind === "anime") return openWatchAnime(item, body);
-    body.innerHTML = '<p class="watch-empty">该线路尚未开放网页播放。</p>';
+    body.innerHTML = '<p class="watch-loading">正在获取内容…</p>';
+    saveWatchProgress(kind, item);
+    if (kind === "music") return openWatchMusic(item, body, requestId);
+    if (kind === "novel") return openWatchNovel(item, body, requestId);
+    if (kind === "manga") return openWatchManga(item, body, requestId);
+    if (kind === "anime") return openWatchAnime(item, body, requestId);
+    renderWatchMessage(body, "该线路尚未开放网页播放。");
   }
 
-  function watchError(body, prefix, error) {
+  const watchViewCurrent = (requestId) => requestId === state.watchViewRequest;
+
+  function watchError(body, prefix, error, retry = null) {
     const message = error?.name === "AbortError" ? "请求超时" : (error?.message || String(error));
-    const note = document.createElement("p");
-    note.className = "watch-empty";
-    note.textContent = `${prefix}：${message}`;
-    body.replaceChildren(note);
+    body.textContent = "";
+    renderWatchMessage(body, `${prefix}：${message}`, retry ? { label: "重试", run: retry } : null);
   }
 
-  async function openWatchMusic(item, body) {
+  async function openWatchMusic(item, body, requestId) {
     try {
       const data = await watchApi(`/api/watch/music?action=getAlgerListenUrl&id=${encodeURIComponent(item.id)}`);
+      if (!watchViewCurrent(requestId)) return;
       const remote = typeof data?.data === "string" ? data.data : data?.data?.url || data?.url || "";
       if (!remote) throw new Error("上游没有返回播放地址");
       const audio = document.createElement("audio");
@@ -3551,11 +3952,32 @@
       audio.controls = true;
       audio.autoplay = true;
       audio.preload = "metadata";
-      audio.src = `${apiBase()}/api/watch/audio?url=${encodeURIComponent(remote.replace(/^http:/, "https:"))}`;
-      body.replaceChildren(audio);
-      localStorage.setItem("mo-watch-last", JSON.stringify({ kind: "music", id: item.id, title: item.title, at: Date.now() }));
+      audio.src = watchProxyAudio(remote);
+      const bar = document.createElement("div");
+      bar.className = "watch-action-bar";
+      bar.appendChild(watchButton("下载音频", async (event) => {
+        const button = event.currentTarget;
+        const original = button.textContent;
+        button.disabled = true;
+        button.textContent = "下载中…";
+        try {
+          const response = await fetch(watchProxyAudio(remote), { cache: "force-cache" });
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          const blob = await response.blob();
+          watchSaveBlob(blob, watchDownloadName(item, ".mp3"));
+          button.textContent = "已下载";
+        } catch (error) {
+          button.textContent = "失败";
+          watchStatus(`下载失败：${error.message}`, true);
+        } finally {
+          button.disabled = false;
+          setTimeout(() => { button.textContent = original; }, 1800);
+        }
+      }, "watch-download"));
+      body.replaceChildren(bar, audio);
+      saveWatchProgress("music", item);
     } catch (error) {
-      watchError(body, "播放失败", error);
+      if (watchViewCurrent(requestId)) watchError(body, "播放失败", error, () => openWatchItem(item));
     }
   }
 
@@ -3568,9 +3990,10 @@
     return button;
   }
 
-  async function openWatchNovel(item, body) {
+  async function openWatchNovel(item, body, requestId) {
     try {
       const detail = await watchApi(`/api/watch/novel?action=detail&novel=${encodeURIComponent(item.id)}`);
+      if (!watchViewCurrent(requestId)) return;
       $(`[data-watch-viewer-title]`).textContent = detail.title || item.title;
       body.textContent = "";
       if (detail.description) {
@@ -3579,74 +4002,208 @@
         description.textContent = detail.description;
         body.appendChild(description);
       }
-      const chapters = document.createElement("div");
-      chapters.className = "watch-chapters";
-      (detail.chapters || []).forEach((chapter) => chapters.appendChild(watchButton(chapter.title, async () => {
-        body.textContent = "正在读取正文…";
-        try {
-          const data = await watchApi(`/api/watch/novel?action=chapter&novel=${encodeURIComponent(item.id)}&chapter=${encodeURIComponent(chapter.id)}`);
-          $(`[data-watch-viewer-title]`).textContent = data.title || chapter.title;
-          const reader = document.createElement("div");
-          reader.className = "watch-reader";
-          (data.blocks || []).forEach((block) => {
-            if (block.type === "image") {
-              const image = document.createElement("img");
-              image.src = watchMediaUrl(block.src);
-              image.alt = "";
-              image.loading = "lazy";
-              image.referrerPolicy = "no-referrer";
-              reader.appendChild(image);
-            } else if (block.text) {
-              const paragraph = document.createElement("p");
-              paragraph.textContent = block.text;
-              reader.appendChild(paragraph);
+
+      const chapters = detail.chapters || [];
+
+      // 目录工具栏：章节数 + 一键下载全本（逐章抓正文后打包成 txt）。
+      const tools = document.createElement("div");
+      tools.className = "watch-dir-tools";
+      const count = document.createElement("span");
+      count.className = "watch-dir-count";
+      count.textContent = chapters.length ? `共 ${chapters.length} 章` : "没有取到目录";
+      tools.appendChild(count);
+      if (chapters.length) {
+        tools.appendChild(watchButton(`下载全本（${chapters.length} 章）`, async (event) => {
+          const button = event.currentTarget;
+          const original = button.textContent;
+          button.disabled = true;
+          const texts = [];
+          try {
+            for (let i = 0; i < chapters.length; i++) {
+              button.textContent = `抓取正文 ${i + 1}/${chapters.length}…`;
+              const data = await watchApi(
+                `/api/watch/novel?action=chapter&novel=${encodeURIComponent(item.id)}&chapter=${encodeURIComponent(chapters[i].id)}`
+              );
+              texts.push({
+                title: chapters[i].title,
+                text: (data.blocks || [])
+                  .map((block) => (block.type === "image" ? `[图片] ${block.src}` : block.text))
+                  .join("\n\n"),
+              });
             }
-          });
-          body.replaceChildren(watchButton("← 返回目录", () => openWatchNovel(item, body), "watch-inline-back"), reader);
-        } catch (error) { watchError(body, "阅读失败", error); }
-      })));
-      body.appendChild(chapters);
-    } catch (error) { watchError(body, "目录加载失败", error); }
+            button.textContent = "打包中…";
+            const full = watchNovelText({ ...detail, chapters: texts }, item);
+            watchSaveBlob(
+              new Blob([full], { type: "text/plain;charset=utf-8" }),
+              watchDownloadName(item, ` 全本 ${chapters.length}章.txt`)
+            );
+            button.textContent = "已下载";
+          } catch (error) {
+            button.textContent = "失败";
+            watchStatus(`下载失败：${error.message}`, true);
+          } finally {
+            button.disabled = false;
+            setTimeout(() => { button.textContent = original; }, 1800);
+          }
+        }, "watch-download"));
+      }
+      body.appendChild(tools);
+
+      // 目录按「卷 / 章节」分列，避免几百章挤成一坨。
+      const list = document.createElement("div");
+      list.className = "watch-chapter-list";
+      chapters.forEach((chapter, index) => {
+        const row = document.createElement("div");
+        row.className = "watch-chapter-row";
+
+        const open = document.createElement("button");
+        open.type = "button";
+        open.className = "watch-chapter-open";
+        const order = document.createElement("span");
+        order.className = "watch-chapter-index";
+        order.textContent = String(index + 1);
+        const name = document.createElement("span");
+        name.className = "watch-chapter-name";
+        name.textContent = chapter.title;
+        open.append(order, name);
+        open.addEventListener("click", async () => {
+          body.innerHTML = '<p class="watch-loading">正在读取正文…</p>';
+          try {
+            const data = await watchApi(`/api/watch/novel?action=chapter&novel=${encodeURIComponent(item.id)}&chapter=${encodeURIComponent(chapter.id)}`);
+            if (!watchViewCurrent(requestId)) return;
+            $(`[data-watch-viewer-title]`).textContent = data.title || chapter.title;
+            const reader = document.createElement("div");
+            reader.className = "watch-reader";
+            (data.blocks || []).forEach((block) => {
+              if (block.type === "image") {
+                const image = document.createElement("img");
+                image.src = watchMediaUrl(block.src);
+                image.alt = "";
+                image.loading = "lazy";
+                image.referrerPolicy = "no-referrer";
+                reader.appendChild(image);
+              } else if (block.text) {
+                const paragraph = document.createElement("p");
+                paragraph.textContent = block.text;
+                reader.appendChild(paragraph);
+              }
+            });
+            saveWatchProgress("novel", item, chapter);
+
+            const bar = document.createElement("div");
+            bar.className = "watch-action-bar";
+            bar.appendChild(watchButton("← 返回目录", () => openWatchNovel(item, body, requestId), "watch-inline-back"));
+            const download = watchButton("下载本章", null, "watch-download");
+            download.addEventListener("click", () => downloadNovelChapterView(item, chapter, data, download));
+            bar.appendChild(download);
+            body.replaceChildren(bar, reader);
+            body.scrollIntoView({ block: "start" });
+          } catch (error) {
+            if (watchViewCurrent(requestId)) watchError(body, "阅读失败", error, () => openWatchNovel(item, body, requestId));
+          }
+        });
+
+        const save = watchButton("下载", null, "watch-chapter-download");
+        save.addEventListener("click", () => downloadNovelChapter(item, chapter, save));
+
+        row.append(open, save);
+        list.appendChild(row);
+      });
+      body.appendChild(list);
+    } catch (error) {
+      if (watchViewCurrent(requestId)) watchError(body, "目录加载失败", error, () => openWatchItem(item));
+    }
   }
 
-  async function openWatchManga(item, body) {
+  async function openWatchManga(item, body, requestId) {
     try {
-      const detail = await watchApi(`/api/watch/manga?action=detail&comic=${encodeURIComponent(item.id)}`);
+      const source = currentSource();
+      const params = new URLSearchParams({ action: "detail", comic: item.id });
+      if (source) params.set("source", source);
+      const detail = await watchApi(`/api/watch/manga?${params}`);
+      if (!watchViewCurrent(requestId)) return;
+      $(`[data-watch-viewer-title]`).textContent = detail.title || item.title;
       body.textContent = "";
+
+      const meta = document.createElement("p");
+      meta.className = "watch-source-line";
+      meta.textContent = `当前线路：${sourceLabel()}${detail.description ? ` · ${detail.description}` : ""}`;
+      body.appendChild(meta);
+
       const chapters = document.createElement("div");
       chapters.className = "watch-chapters";
       (detail.chapters || []).forEach((chapter) => chapters.appendChild(watchButton(chapter.title, async () => {
-        body.textContent = "正在读取漫画…";
+        body.innerHTML = '<p class="watch-loading">正在读取漫画…</p>';
         try {
-          const data = await watchApi(`/api/watch/manga?action=chapter&comic=${encodeURIComponent(item.id)}&chapter=${encodeURIComponent(chapter.id)}`);
+          const chapterParams = new URLSearchParams({ action: "chapter", comic: item.id, chapter: chapter.id });
+          if (source) chapterParams.set("source", source);
+          const data = await watchApi(`/api/watch/manga?${chapterParams}`);
+          if (!watchViewCurrent(requestId)) return;
           const reader = document.createElement("div");
           reader.className = "watch-manga-reader";
           (data.images || []).forEach((src, index) => {
             const image = document.createElement("img");
             image.src = watchMediaUrl(src);
             image.alt = `${chapter.title} 第 ${index + 1} 页`;
-            image.loading = "lazy";
+            image.loading = index < 2 ? "eager" : "lazy";
+            image.decoding = "async";
+            image.referrerPolicy = "no-referrer";
             reader.appendChild(image);
           });
-          body.replaceChildren(watchButton("← 返回目录", () => openWatchManga(item, body), "watch-inline-back"), reader);
-        } catch (error) { watchError(body, "漫画加载失败", error); }
+          saveWatchProgress("manga", item, chapter);
+
+          const bar = document.createElement("div");
+          bar.className = "watch-action-bar";
+          bar.appendChild(watchButton("← 返回目录", () => openWatchManga(item, body, requestId), "watch-inline-back"));
+          const download = watchButton(`下载本话（${(data.images || []).length} 张）`, null, "watch-download");
+          download.addEventListener("click", async () => {
+            const original = download.textContent;
+            download.disabled = true;
+            try {
+              const files = await watchDownloadImages(data.images || [], item, (text) => { download.textContent = text; });
+              download.textContent = "打包中…";
+              const blob = await watchPackZip(files);
+              watchSaveBlob(blob, watchDownloadName({ title: `${item.title} ${chapter.title}` }, ".zip"));
+              download.textContent = "已下载";
+            } catch (error) {
+              download.textContent = "失败";
+              watchStatus(`下载失败：${error.message}`, true);
+            } finally {
+              download.disabled = false;
+              setTimeout(() => { download.textContent = original; }, 1800);
+            }
+          });
+          bar.appendChild(download);
+          body.replaceChildren(bar, reader);
+          body.scrollIntoView({ block: "start" });
+        } catch (error) {
+          if (watchViewCurrent(requestId)) watchError(body, "漫画加载失败", error, () => openWatchManga(item, body, requestId));
+        }
       })));
       body.appendChild(chapters);
-      if (!detail.chapters?.length) body.innerHTML = '<p class="watch-empty">当前线路没有返回章节，请稍后刷新。</p>';
-    } catch (error) { watchError(body, "目录加载失败", error); }
+      if (!detail.chapters?.length) {
+        renderWatchMessage(body, source
+          ? "这条线路没有返回章节，换一条线路再试。"
+          : "当前线路没有返回章节，请稍后刷新。");
+      }
+    } catch (error) {
+      if (watchViewCurrent(requestId)) watchError(body, "目录加载失败", error, () => openWatchItem(item));
+    }
   }
 
-  async function openWatchAnime(item, body) {
+  async function openWatchAnime(item, body, requestId) {
     try {
       const detail = await watchApi(`/api/watch/anime?action=detail&anime=${encodeURIComponent(item.id)}`);
+      if (!watchViewCurrent(requestId)) return;
       $(`[data-watch-viewer-title]`).textContent = detail.title || item.title;
       body.textContent = "";
       const episodes = document.createElement("div");
       episodes.className = "watch-chapters";
       (detail.episodes || []).forEach((episode) => episodes.appendChild(watchButton(episode.title, async () => {
-        body.textContent = "正在获取播放器…";
+        body.innerHTML = '<p class="watch-loading">正在获取播放器…</p>';
         try {
           const data = await watchApi(`/api/watch/anime?action=play&anime=${encodeURIComponent(item.id)}&episode=${encodeURIComponent(episode.id)}`);
+          if (!watchViewCurrent(requestId)) return;
           const frame = document.createElement("iframe");
           frame.className = "watch-video";
           frame.src = data.embedUrl;
@@ -3654,27 +4211,71 @@
           frame.allow = "autoplay; fullscreen; encrypted-media; picture-in-picture";
           frame.allowFullscreen = true;
           frame.referrerPolicy = "origin";
-          body.replaceChildren(watchButton("← 返回选集", () => openWatchAnime(item, body), "watch-inline-back"), frame);
-        } catch (error) { body.innerHTML = `<p class="watch-empty">播放失败：${escapeHtml(error.message)}</p>`; }
+          saveWatchProgress("anime", item, episode);
+          const bar = document.createElement("div");
+          bar.className = "watch-action-bar";
+          bar.appendChild(watchButton("← 返回选集", () => openWatchAnime(item, body, requestId), "watch-inline-back"));
+          const link = document.createElement("a");
+          link.className = "watch-download";
+          link.href = data.embedUrl;
+          link.target = "_blank";
+          link.rel = "noopener";
+          link.textContent = "新窗口打开";
+          bar.appendChild(link);
+          body.replaceChildren(bar, frame);
+        } catch (error) {
+          if (watchViewCurrent(requestId)) watchError(body, "播放失败", error, () => openWatchAnime(item, body, requestId));
+        }
       })));
       body.appendChild(episodes);
-    } catch (error) { body.innerHTML = `<p class="watch-empty">选集加载失败：${escapeHtml(error.message)}</p>`; }
+      if (!detail.episodes?.length) renderWatchMessage(body, "当前线路没有返回选集，请稍后刷新。");
+    } catch (error) {
+      if (watchViewCurrent(requestId)) watchError(body, "选集加载失败", error, () => openWatchItem(item));
+    }
+  }
+
+  function closeWatchViewer() {
+    state.watchViewRequest++;
+    state.watchViewerOpen = false;
+    const viewer = $("[data-watch-viewer]");
+    const body = $("[data-watch-viewer-body]");
+    const media = body?.querySelector("audio, video");
+    if (media) media.pause();
+    if (body) body.textContent = "";
+    if (viewer) viewer.hidden = true;
+    if (state.section === "watch") renderWatch();
   }
 
   function bindWatch() {
     const form = $("[data-watch-search]");
     const input = $("[data-watch-query]");
-    form?.addEventListener("submit", (event) => {
-      event.preventDefault();
+    const runSearch = () => {
       state.watchQuery = input.value.trim();
       state.watchItems = [];
-      loadWatch();
+      state.watchLimit = WATCH_PAGE_SIZE;
+      loadWatch({ force: true });
+    };
+    // 手机键盘上「搜索」是 enterkeyhint，不一定会提交表单，按键也要兜住。
+    form?.addEventListener("submit", (event) => {
+      event.preventDefault();
+      runSearch();
     });
-    $("[data-watch-refresh]")?.addEventListener("click", () => loadWatch());
-    $("[data-watch-back]")?.addEventListener("click", () => {
-      $("[data-watch-viewer]").hidden = true;
-      $("[data-watch-grid]").hidden = false;
+    input?.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        runSearch();
+      }
     });
+    $("[data-watch-clear]")?.addEventListener("click", () => {
+      input.value = "";
+      state.watchQuery = "";
+      state.watchItems = [];
+      state.watchLimit = WATCH_PAGE_SIZE;
+      loadWatch({ force: true });
+    });
+    $(`[data-watch-refresh]`)?.addEventListener("click", () => loadWatch({ force: true }));
+    $(`[data-watch-back]`)?.addEventListener("click", closeWatchViewer);
+    $("[data-watch-more-btn]")?.addEventListener("click", showMoreWatch);
   }
 
   /* ---------- 成年 / 未成年模式 ---------- */

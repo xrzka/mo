@@ -9,11 +9,11 @@
       content="墨小说漫画 · 小说、漫画、动画、游戏、AI 资源导航，分区整理，点击直达。"
     />
     <title>墨小说漫画 · 资源导航</title>
-    <script src="config.js?v=20260912d"></script>
-    <link rel="stylesheet" href="styles.css?v=20260912d" />
+    <script src="config.js?v=20260912e"></script>
+    <link rel="stylesheet" href="styles.css?v=20260912e" />
     <!-- EPUB 本质是 zip。固定版本并随站点托管，不依赖第三方 CDN 运行。 -->
     <script src="vendor/jszip.min.js?v=3.10.1" defer></script>
-    <script src="app.js?v=20260912d" defer></script>
+    <script src="app.js?v=20260912e" defer></script>
   </head>
   <body>
     <a class="skip-link" href="#feed">跳到资源列表</a>
@@ -165,25 +165,41 @@
           <div>
             <p class="eyebrow">WATCH IN BROWSER</p>
             <h2 id="watch-title">观看区</h2>
-            <p>由薄荷梨子移动端适配。支持在当前网页搜索、选集、播放和阅读。</p>
+            <p>由薄荷梨子移动端适配。支持在当前网页搜索、选集、播放、阅读和下载。</p>
           </div>
           <span class="watch-source">多设备网页端</span>
         </div>
+
+        <nav class="watch-tabs" role="tablist" aria-label="观看分区" data-watch-tabs></nav>
+
         <div class="watch-toolbar">
           <form data-watch-search role="search">
-            <input data-watch-query type="search" maxlength="80" placeholder="搜索音乐、漫画、动画或小说" autocomplete="off" />
+            <input data-watch-query type="search" maxlength="80" enterkeyhint="search"
+                   placeholder="搜索音乐、漫画、动画或小说" autocomplete="off" />
             <button type="submit">搜索</button>
+            <button type="button" data-watch-clear>清空</button>
           </form>
           <button type="button" data-watch-refresh>刷新</button>
         </div>
-        <p class="watch-status" data-watch-status aria-live="polite">选择上方小分区开始浏览。</p>
-        <div class="watch-grid" data-watch-grid></div>
+
+        <div class="watch-sources" data-watch-sources hidden></div>
+
+        <p class="watch-status" data-watch-status aria-live="polite">选择上方分区开始浏览。</p>
+
+        <div class="watch-grid" data-watch-grid>
+          <div class="watch-list" data-watch-list></div>
+          <div class="watch-more-wrap" data-watch-more hidden>
+            <span class="watch-page-info" data-watch-page-info></span>
+            <button type="button" class="watch-more" data-watch-more-btn data-watch-more-label>加载更多</button>
+          </div>
+        </div>
+
         <article class="watch-viewer" data-watch-viewer hidden>
           <div class="watch-viewer-head">
             <button type="button" data-watch-back>← 返回列表</button>
             <h3 data-watch-viewer-title></h3>
           </div>
-          <div data-watch-viewer-body></div>
+          <div class="watch-viewer-body" data-watch-viewer-body></div>
         </article>
       </section>
 

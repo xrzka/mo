@@ -327,6 +327,8 @@ const WATCH_MANGA_API_ORIGINS = [
   "http://crm.weichu.asia", "http://meiwenti.xn--vhqr42drhf5k7b.com",
   "http://bkbfblh.xn--vhqr42drhf5k7b.com",
 ];
+// 前端「漫画线路」下拉用这些 key 锁定单条线路；不带 source 就按上面的顺序自动回落。
+const WATCH_MANGA_SOURCE_KEYS = ["crm", "meiwenti", "bkbfblh"];
 const WATCH_MANGA_IMAGE_ORIGIN = "https://i.lzimg.xyz";
 const WATCH_MANGA_PACK = "com.hbsclj.uth";
 const WATCH_MANGA_SIGN = "CDD266DF8B2399C24DA38E408B6D9825C7BD2AF073229847F551EA653EA096E1";
@@ -445,9 +447,18 @@ function mangaId(value) {
   return /^\d{1,18}$/.test(text) ? text : "";
 }
 
-async function fetchMangaJson(path, params = new URLSearchParams()) {
+/** 按 source 参数把线路收敛成一家；没有有效 source 就保留全部，逐个回落。 */
+function mangaOrigins(source) {
+  const key = watchText(source, 24).toLowerCase();
+  const index = WATCH_MANGA_SOURCE_KEYS.indexOf(key);
+  if (index < 0) return WATCH_MANGA_API_ORIGINS;
+  const origin = WATCH_MANGA_API_ORIGINS[index];
+  return origin ? [origin] : WATCH_MANGA_API_ORIGINS;
+}
+
+async function fetchMangaJson(path, params = new URLSearchParams(), source = "") {
   const errors = [];
-  for (const origin of WATCH_MANGA_API_ORIGINS) {
+  for (const origin of mangaOrigins(source)) {
     const url = new URL(`app/api/${path.replace(/^\/+/, "")}`, `${origin}/`);
     params.forEach((value, key) => url.searchParams.set(key, value));
     try {
@@ -518,20 +529,21 @@ function mangaGroups(value) {
 
 async function watchManga(request, url) {
   const action = watchText(url.searchParams.get("action") || "list", 24);
+  const source = watchText(url.searchParams.get("source"), 24);
   if (action === "list") {
     const q = watchText(url.searchParams.get("q"));
     const data = q
-      ? await fetchMangaJson("search/suggest", new URLSearchParams({ q }))
-      : await fetchMangaJson("home/data");
-    const source = q
+      ? await fetchMangaJson("search/suggest", new URLSearchParams({ q }), source)
+      : await fetchMangaJson("home/data", new URLSearchParams(), source);
+    const upstream = q
       ? data?.data?.search_suggest
       : (data?.data?.home_content_list || []).flatMap((block) => block?.comic_list || []);
-    return json({ items: collectMangaComics(source) }, request);
+    return json({ items: collectMangaComics(upstream) }, request);
   }
   const comicId = mangaId(url.searchParams.get("comic"));
   if (!comicId) return json({ error: "bad comic id" }, request, 400);
   if (action === "detail") {
-    const data = await fetchMangaJson(`detail/${comicId}`);
+    const data = await fetchMangaJson(`detail/${comicId}`, new URLSearchParams(), source);
     const raw = data?.data || {};
     const comic = mangaComic(raw) || { id: comicId, title: `漫画 ${comicId}`, subtitle: "漫画", cover: "" };
     const directChapters = (Array.isArray(raw.chapters) ? raw.chapters : []).map((item, index) => ({
@@ -547,7 +559,7 @@ async function watchManga(request, url) {
     const chapterId = mangaId(url.searchParams.get("chapter"));
     if (!chapterId) return json({ error: "bad chapter id" }, request, 400);
     const params = new URLSearchParams({ packname: WATCH_MANGA_PACK, appsign256: WATCH_MANGA_SIGN });
-    const data = await fetchMangaJson(`chapter/v2/${chapterId}`, params);
+    const data = await fetchMangaJson(`chapter/v2/${chapterId}`, params, source);
     const images = (Array.isArray(data?.data?.pics) ? data.data.pics : [])
       .map(mangaImageUrl).filter(Boolean).slice(0, 300);
     if (!images.length) return json({ error: "章节没有可用图片" }, request, 502);
