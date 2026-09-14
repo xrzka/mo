@@ -1593,17 +1593,17 @@ h1 {
   gap: 12px;
   min-width: 0;
 }
-/* 列表单独滚动：卡片多了也不会把整页撑长，翻页按钮始终在列表下方可见。
-   点「加载更多」后自动滚到列表底部。 */
+/* 列表跟随页面自然滚动。
+   注意：这里不要加 max-height + overflow:auto —— .watch-list 自己是 grid，
+   父级 .watch-grid 也是 grid，一旦拿到确定高度，行会被压扁到装得下为止
+   （卡片 overflow:hidden，于是封面被裁掉），而且 scrollHeight 等于 clientHeight，
+   滚动条根本不出现。桌面端会变成「卡片被压扁又滚不动」。 */
 .watch-list {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   gap: 12px;
-  max-height: min(66vh, 620px);
-  overflow: auto;
-  overscroll-behavior: contain;
   padding: 2px;
-  scroll-behavior: smooth;
+  align-content: start;
 }
 .watch-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0 2px; }
 .watch-tab {
@@ -1678,14 +1678,13 @@ h1 {
   margin-bottom: 10px;
 }
 .watch-dir-count { color: var(--text-muted); font-size: 14px; }
-/* 小说目录：一行一章，序号 + 标题 + 单独的下载按钮，避免几百章挤成一坨 */
+/* 小说目录：一行一章，序号 + 标题 + 单独的下载按钮，避免几百章挤成一坨。
+   同上，不要用 max-height + overflow:auto：grid 行会被压缩，行内容被裁。 */
 .watch-chapter-list {
   display: grid;
   gap: 6px;
-  max-height: min(60vh, 560px);
-  overflow: auto;
-  overscroll-behavior: contain;
   padding: 2px;
+  align-content: start;
 }
 .watch-chapter-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
 .watch-chapter-open {
@@ -1791,7 +1790,7 @@ h1 {
   .watch-source-pick { width: 100%; }
   .watch-source-pick select { flex: 1; min-height: 40px; }
   .watch-source-hint { flex-basis: 100%; }
-  .watch-list { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; max-height: none; overflow: visible; }
+  .watch-list { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
   .watch-card-copy { padding: 9px; }
   .watch-card-copy strong { font-size: 13px; }
   .watch-viewer-head { align-items: flex-start; flex-wrap: wrap; }
@@ -1802,7 +1801,6 @@ h1 {
   .watch-chapter-row { grid-template-columns: minmax(0, 1fr); }
   .watch-chapter-open { grid-template-columns: 36px minmax(0, 1fr); min-height: 44px; }
   .watch-chapter-download { min-height: 40px; }
-  .watch-chapter-list { max-height: none; overflow: visible; }
   .watch-action-bar { position: static; }
   .watch-more { flex: 1 1 100%; min-height: 44px; }
   .watch-more-wrap { flex-direction: column; }

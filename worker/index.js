@@ -616,7 +616,10 @@ async function manga3rDetail(comicId) {
   const html = await watchFetchHtml(url, `${WATCH_R_BASE}/`);
   const title = mangaRText(html.match(/class="detail-main-info-title[^"]*"[^>]*>([\s\S]*?)<\//i)?.[1] || "")
     || mangaRText(html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i)?.[1] || "");
-  const description = mangaRText(html.match(/class="detail-desc[^"]*"[^>]*>([\s\S]*?)<\/div>/i)?.[1] || "");
+  const description = mangaRText(
+    html.match(/<p[^>]*class="detail-desc[^"]*"[^>]*>([\s\S]*?)<\/p>/i)?.[1]
+    || html.match(/class="detail-desc[^"]*"[^>]*>([\s\S]*?)<\/p>/i)?.[1] || ""
+  );
   const cover = mangaRImage(html.match(/class="detail-main-cover[^"]*"[^>]*>[\s\S]{0,400}?<img[^>]+(?:data-original|data-src|src)="([^"]+)"/i)?.[1]
     || `/static/upload/book/${comicId}/cover.jpg`);
   const chapters = [];

@@ -3615,16 +3615,19 @@
     watchStatus(`${parts.join(" · ")}${q ? ` · 关键词“${q}”` : ""}，点击卡片即可在网页内打开。`);
   }
 
-  /** 只做分页计数 + 状态行，不动 DOM 列表，避免滚动位置被重置。 */
+  /** 只做分页计数 + 状态行，不动已渲染的卡片，避免页面滚动位置被重置。 */
   function showMoreWatch() {
     const list = $("[data-watch-list]");
     const before = state.watchLimit;
     state.watchLimit = Math.min(state.watchLimit + WATCH_PAGE_SIZE, watchRowCount());
     // 只追加新露出的那一段，已渲染的卡片保持原节点，滚动位置不会跳。
+    let firstNew = null;
     if (list) {
       const last = watchProgress()[state.watchKind];
       state.watchItems.slice(before, state.watchLimit).forEach((item) => {
-        list.appendChild(buildWatchCard(item, last));
+        const card = buildWatchCard(item, last);
+        if (!firstNew) firstNew = card;
+        list.appendChild(card);
       });
     }
     setWatchStatus();
@@ -3635,7 +3638,8 @@
     if (label) label.textContent = `加载更多（还剩 ${watchRowCount() - state.watchLimit} 条）`;
     const info = $("[data-watch-page-info]");
     if (info) info.textContent = `已显示 ${Math.min(state.watchLimit, watchRowCount())} / ${watchRowCount()} 条`;
-    if (list) list.scrollTop = list.scrollHeight;
+    // 列表跟随页面滚动，所以把第一张新卡片滚进视野，而不是设置列表的 scrollTop。
+    if (firstNew) firstNew.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }
 
   /** 单张卡片。renderWatchGrid 与 showMoreWatch 共用，保证追加的卡片和首批一致。 */
