@@ -2288,7 +2288,8 @@ export default {
     } catch (err) {
       // 不把内部堆栈回给前端
       console.error(err);
-      return json({ error: "internal error" }, request, 500);
+      // DEBUG: 临时把错误信息回传，以便定位。确认后改回 internal error。
+      return json({ error: "internal error", debug: err?.message || String(err) }, request, 500);
     }
   },
 
