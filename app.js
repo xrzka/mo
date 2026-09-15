@@ -398,6 +398,9 @@
     watchViewerOpen: false,
     watchLimit: 20,
     watchSource: "", // 漫画线路，空字符串 = 自动
+    // 动画区按上游页翻页（上游有 306 页，每页 20 部），本地不再累加。
+    animePage: 1,
+    animeTotalPages: 1,
     // items.json 的原始数据。改完覆盖层要用它重建 items，不必重新发请求。
     rawItems: [],
     // 后台新增的条目（来自 /api/items）。和 rawItems 拼起来才是完整数据源。
@@ -716,6 +719,8 @@
             state.watchItems = [];
             state.watchError = "";
             state.watchQuery = "";
+            state.animePage = 1;
+            state.animeTotalPages = 1;
             const input = $("[data-watch-query]");
             if (input) input.value = "";
           }
@@ -3689,16 +3694,36 @@
     updateWatchPager();
   }
 
-  /** 翻页条状态：页码指示 + 上一页/下一页可用性 + 剩余条数。 */
+  /** 翻页条状态：页码指示 + 上一页/下一页可用性 + 剩余条数。
+   *  动画区是「上游页」模式（20 部/页、共数百页、每次按页拉取），
+   *  其余分区是「本地累加」模式（一次拉全量、分页展示）。 */
   function updateWatchPager() {
     const wrap = $("[data-watch-more]");
     if (!wrap) return;
+
+    if (isAnimePagedMode()) {
+      wrap.hidden = false;
+      const now = $("[data-watch-page-now]");
+      if (now) now.textContent = `第 ${state.animePage} / ${state.animeTotalPages} 页`;
+      const prev = $("[data-watch-prev]");
+      if (prev) prev.disabled = state.animePage <= 1;
+      const next = $("[data-watch-next]");
+      if (next) next.disabled = !state.animeHasNext && state.animePage >= state.animeTotalPages;
+      const more = $("[data-watch-more-btn]");
+      if (more) more.parentElement && (more.hidden = true);
+      const info = $("[data-watch-page-info]");
+      if (info) info.textContent = `第 ${state.animePage} 页 · 共 ${state.animeTotalPages} 页`;
+      return;
+    }
+
     const total = watchRowCount();
     const shown = Math.min(state.watchLimit, total);
     const page = Math.ceil(shown / WATCH_PAGE_SIZE) || 1;
     const pages = Math.ceil(total / WATCH_PAGE_SIZE) || 1;
 
     wrap.hidden = total <= WATCH_PAGE_SIZE;
+    const more = $("[data-watch-more-btn]");
+    if (more) more.hidden = false;
     const now = $("[data-watch-page-now]");
     if (now) now.textContent = `第 ${page} / ${pages} 页`;
     const prev = $("[data-watch-prev]");
@@ -3711,9 +3736,24 @@
     if (info) info.textContent = `已显示 ${shown} / ${total} 条`;
   }
 
+  /** 动画区且没在搜索时，用上游分页。 */
+  function isAnimePagedMode() {
+    return state.watchKind === "anime" && !state.watchQuery.trim();
+  }
+
+  /** 动画区翻页：直接拉上游对应页。 */
+  function gotoAnimePage(page) {
+    const target = Math.min(Math.max(1, page), 400);
+    if (target === state.animePage && state.watchItems.length) return;
+    state.animePage = target;
+    loadWatch({ force: true });
+    document.querySelector("[data-watch-grid]")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
   /** 翻到指定页（1 起）。只渲染到该页末尾：向后翻就追加新卡片，
    *  向前翻则重建到该页（数量少，重建比逐个删更省事）。 */
   function gotoWatchPage(page) {
+    if (isAnimePagedMode()) { gotoAnimePage(page); return; }
     const total = watchRowCount();
     const pages = Math.ceil(total / WATCH_PAGE_SIZE) || 1;
     const target = Math.min(Math.max(1, page), pages);
@@ -3758,7 +3798,9 @@
     state.watchViewerOpen = false;
     state.watchViewRequest++;
     state.watchLimit = WATCH_PAGE_SIZE;
-    const key = `${watchCacheKey(kind, q)}:${source}`;
+    // 动画翻页：换页时由 gotoAnimePage 设置 animePage 再调用这里。
+    const page = state.animePage;
+    const key = `${watchCacheKey(kind, q)}:${source}:${kind === "anime" ? page : ""}`;
     const cached = watchCache.get(key);
 
     renderWatchTabs();
@@ -3791,7 +3833,14 @@
         const params = new URLSearchParams({ action: "list" });
         if (q) params.set("q", q);
         if (kind === "manga" && source) params.set("source", source);
-        items = (await watchApi(`/api/watch/${kind}?${params}`)).items || [];
+        if (kind === "anime" && !q) params.set("page", String(page));
+        const payload = await watchApi(`/api/watch/${kind}?${params}`);
+        items = payload.items || [];
+        // 动画区：上游分页信息（306 页）
+        if (kind === "anime" && !q && payload.totalPages) {
+          state.animeTotalPages = Math.max(1, Math.min(payload.totalPages, 400));
+          state.animeHasNext = !!payload.hasNext;
+        }
       }
 
       if (requestId !== state.watchRequest) return;
@@ -3904,6 +3953,8 @@
         state.watchQuery = "";
         state.watchSource = "";
         state.watchLimit = WATCH_PAGE_SIZE;
+        state.animePage = 1;
+        state.animeTotalPages = 1;
         const input = $("[data-watch-query]");
         if (input) input.value = "";
         renderWatchTabs();
@@ -4274,9 +4325,12 @@
         try {
           const data = await watchApi(`/api/watch/anime?action=play&anime=${encodeURIComponent(item.id)}&episode=${encodeURIComponent(episode.id)}`);
           if (!watchViewCurrent(requestId)) return;
+          // 播放器校验 Referer：iframe 直接指过去会被回 3 字节空页，
+          // 所以走 Worker 代理（服务端带上游 Referer 取回播放器页）。
+          const frameUrl = watchMediaUrl(`/api/watch/frame?src=${encodeURIComponent(data.embedUrl)}`);
           const frame = document.createElement("iframe");
           frame.className = "watch-video";
-          frame.src = data.embedUrl;
+          frame.src = frameUrl;
           frame.title = episode.title;
           frame.allow = "autoplay; fullscreen; encrypted-media; picture-in-picture";
           frame.allowFullscreen = true;
@@ -4287,7 +4341,7 @@
           bar.appendChild(watchButton("← 返回选集", () => openWatchAnime(item, body, requestId), "watch-inline-back"));
           const link = document.createElement("a");
           link.className = "watch-download";
-          link.href = data.embedUrl;
+          link.href = frameUrl;
           link.target = "_blank";
           link.rel = "noopener";
           link.textContent = "新窗口打开";

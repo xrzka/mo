@@ -1193,8 +1193,23 @@ async function watchAnime(request, url) {
       }
       throw new Error("animation search unavailable");
     }
-    const { html, origin } = await fetchFirstWatchHtml(WATCH_ANIME_ORIGINS, "/type/dongman.html");
-    return json({ items: parseAnimeCards(html, origin) }, request);
+    // 分页：上游 dongman 分类有 306 页、每页 20 部，地址是 /type/dongman_N.html。
+    // 之前只抓首页，前端 <=24 条就隐藏翻页条，动画区看起来「没有翻页」。
+    const page = Math.min(Math.max(parseInt(url.searchParams.get("page") || "1", 10) || 1, 1), 400);
+    const listPath = page <= 1 ? "/type/dongman.html" : `/type/dongman_${page}.html`;
+    const { html, origin } = await fetchFirstWatchHtml(WATCH_ANIME_ORIGINS, listPath);
+    // 页码控件里挖总页数（href="/type/dongman_N.html" 的最大 N）
+    const pageNumbers = [...html.matchAll(/\/type\/dongman_(\d+)\.html/g)].map((m) => Number(m[1]));
+    const totalPages = Math.min(Math.max(...pageNumbers, page), 400);
+    const hasPrev = page > 1;
+    const hasNext = pageNumbers.some((n) => n > page);
+    return json({
+      items: parseAnimeCards(html, origin),
+      page,
+      totalPages,
+      hasPrev,
+      hasNext,
+    }, request);
   }
   const animeId = watchText(url.searchParams.get("anime"), 20);
   if (!/^\d+$/.test(animeId)) return json({ error: "bad anime id" }, request, 400);
@@ -1213,6 +1228,73 @@ async function watchAnime(request, url) {
     return json({ id: episode, embedUrl }, request);
   }
   return json({ error: "unsupported anime action" }, request, 400);
+}
+
+/* ---------- 动画播放器代理 ----------
+ *
+ * 播放器（yun.92cj.com/yunbox）校验 Referer：来自动画站（lmm85.com）才给
+ * 真页面，来自 xrzka.github.io 只回 3 字节 "pir"。iframe 没法带上游 Referer，
+ * 所以由 Worker 代取播放器 HTML 原样返回，页面里的相对请求 vxdev.php
+ * 也经 /api/watch/vxdev.php 代理回播放器（带同样的 Referer）。页面内部的
+ * token 计算是混淆 JS，在用户浏览器里原样执行，Worker 不碰。
+ */
+
+const WATCH_PLAYER_ORIGIN = "https://yun.92cj.com";
+const WATCH_PLAYER_REFERER = "https://www.lmm85.com/";
+// 播放器页引用的第三方资源（DPlayer/hls/jQuery 等），按路径转发。
+const WATCH_PLAYER_ASSET_HOSTS = new Set([
+  "registry.npmmirror.com", "work-order.b0.upaiyun.com",
+]);
+
+/** 校验代理目标必须是播放器域，防止变成开放代理。 */
+function playerProxyTarget(value) {
+  let target;
+  try { target = new URL(String(value || "")); } catch { return null; }
+  if (target.protocol !== "https:" || target.hostname !== new URL(WATCH_PLAYER_ORIGIN).hostname) return null;
+  return target;
+}
+
+/** 播放器页 HTML 代理：改写相对的 vxdev.php 成同域代理路由。 */
+async function watchPlayerFrame(request, url) {
+  const target = playerProxyTarget(url.searchParams.get("src"));
+  if (!target) return json({ error: "bad player url" }, request, 400);
+  const response = await watchFetch(target, { headers: {
+    "User-Agent": "Mozilla/5.0", Referer: WATCH_PLAYER_REFERER, Accept: "text/html,*/*",
+  } }, 25000);
+  if (!response.ok) return json({ error: `player HTTP ${response.status}` }, request, 502);
+  let html = await response.text();
+  // 相对请求 vxdev.php / vxcd.php 改写成绝对代理地址
+  html = html.replace(/(["'(=])(vxdev|vxcd)\.php/g,
+    `$1/api/watch/$2.php?src=${encodeURIComponent(WATCH_PLAYER_ORIGIN + "/yunbox/")}`);
+  return new Response(html, { status: 200, headers: {
+    "Content-Type": "text/html; charset=utf-8",
+    "Cache-Control": "no-store",
+    ...corsHeaders(request).headers,
+  } });
+}
+
+/** vxdev.php / vxcd.php 的 POST 代理（表单字段原样透传）。 */
+async function watchPlayerApi(request, url) {
+  const base = url.searchParams.get("src") || `${WATCH_PLAYER_ORIGIN}/yunbox/`;
+  const api = url.pathname.endsWith("vxcd.php") ? "vxcd.php" : "vxdev.php";
+  const form = await request.formData().catch(() => new FormData());
+  const body = new URLSearchParams();
+  form.forEach((value, key) => body.set(key, String(value)));
+  const response = await watchFetch(`${base}${api}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+      "User-Agent": "Mozilla/5.0", Referer: WATCH_PLAYER_REFERER,
+      Origin: WATCH_PLAYER_ORIGIN,
+    },
+    body: body.toString(),
+  }, 25000);
+  const text = await response.text();
+  return new Response(text, { status: response.status, headers: {
+    "Content-Type": response.headers.get("Content-Type") || "application/json",
+    "Cache-Control": "no-store",
+    ...corsHeaders(request).headers,
+  } });
 }
 
 async function watchAsset(request, url) {
@@ -2049,6 +2131,15 @@ export default {
 
       if (url.pathname === "/api/watch/asset" && request.method === "GET") {
         return await watchAsset(request, url);
+      }
+
+      // 动画播放器页 / 播放器内部接口的代理（解决 iframe Referer 被拒）
+      if (url.pathname === "/api/watch/frame" && request.method === "GET") {
+        return await watchPlayerFrame(request, url);
+      }
+      if ((url.pathname === "/api/watch/vxdev.php" || url.pathname === "/api/watch/vxcd.php")
+          && request.method === "POST") {
+        return await watchPlayerApi(request, url);
       }
 
       if (url.pathname === "/api/stats" && request.method === "GET") {
