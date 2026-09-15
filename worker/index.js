@@ -255,7 +255,7 @@ function watchText(value, max = WATCH_QUERY_MAX) {
   return String(value || "").replace(/[\x00-\x1f\x7f]/g, " ").trim().slice(0, max);
 }
 
-async function watchFetch(url, init = {}, timeoutMs = 15000, allowedHosts = null) {
+async function watchFetch(url, init = {}, timeoutMs = 15000, allowedHosts = null, allowedFn = null) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
@@ -263,9 +263,12 @@ async function watchFetch(url, init = {}, timeoutMs = 15000, allowedHosts = null
     const allowed = allowedHosts
       ? new Set([...allowedHosts].map((host) => String(host).toLowerCase()))
       : new Set([target.hostname.toLowerCase()]);
+    const allowedCheck = allowedFn
+      ? (host) => allowed.has(String(host).toLowerCase()) || allowedFn(String(host).toLowerCase())
+      : (host) => allowed.has(String(host).toLowerCase());
     for (let redirects = 0; redirects <= 3; redirects++) {
       if (!["http:", "https:"].includes(target.protocol)
-          || !allowed.has(target.hostname.toLowerCase())) {
+          || !allowedCheck(target.hostname)) {
         throw new Error("upstream redirect host not allowed");
       }
       const response = await fetch(target, {
@@ -381,7 +384,7 @@ async function watchAudio(request, url) {
   const range = request.headers.get("Range") || "";
   const headers = { Referer: "https://music.163.com/", "User-Agent": "Mozilla/5.0" };
   if (/^bytes=\d*-\d*$/.test(range)) headers.Range = range;
-  const upstream = await watchFetch(target, { headers }, 25000, WATCH_AUDIO_HOSTS);
+  const upstream = await watchFetch(target, { headers }, 25000, WATCH_AUDIO_HOSTS, audioHostAllowed);
   if (!upstream.ok && upstream.status !== 206) return json({ error: `audio upstream HTTP ${upstream.status}` }, request, 502);
   const out = new Headers(corsHeaders(request).headers);
   out.set("Content-Type", upstream.headers.get("Content-Type") || "audio/mpeg");
