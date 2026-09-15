@@ -3575,7 +3575,19 @@
 
   function watchMusicItems(data) {
     const root = data?.data;
-    const list = Array.isArray(root) ? root : root?.result || root?.songs || data?.result || data?.items || [];
+    // 兼容多种上游形状：
+    //  - searchV2 原始结构：data.result.songs = 网易云标准数组（root.result 是 {songs:[]} 对象）
+    //  - explore 经 Worker 归一化：{items:[...]}
+    //  - 其它：data.result / data.songs / data.items 为数组
+    const list = Array.isArray(root) ? root
+      : root?.result?.songs
+      || root?.songs
+      || root?.result
+      || data?.items
+      || data?.result?.songs
+      || data?.result
+      || data?.songs
+      || [];
     return (Array.isArray(list) ? list : []).map((entry) => {
       // explore 模式（Worker 归一化过）已经是 {id,name,artists,cover}
       if (entry?.name && entry?.artists && entry?.cover) {
