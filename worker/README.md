@@ -469,6 +469,9 @@ printf '%s' '第一站密码' | node ../gen_admin_hash.mjs | ../wr.sh pages secr
 后台新增卡片直接删除，静态卡片用 `board_overrides.fields_json` 里的 `deleted` 标记
 软删除，并可在第一站后台的「已删除卡片」中恢复。
 
+废站标记走覆盖层的 `dead`（布尔）与 `dead_note`（≤200 字，白名单字段，无需建表）：
+后台展开卡片一键「☠ 加入废站」，或用「☠ 新增废站」快速表单直接录一条废站。
+
 接口前缀均为 `/api/board`：公开读 `/overrides`、`/items`；登录与写接口在
 `/admin/login`、`/admin/override`、`/admin/item`、`/admin/item/delete`。
 本地后端验证运行 `node test_board_admin.mjs`。

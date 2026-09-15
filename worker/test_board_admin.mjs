@@ -134,6 +134,27 @@ check("静态卡片可恢复", result.status === 200, JSON.stringify(result.data
 result = await call("/api/board/overrides");
 check("恢复后清除删除标记", !("deleted" in result.data.overrides.agentrouter));
 
+result = await call("/api/board/admin/override", {
+  method: "POST", token,
+  body: { item_id: "agentrouter", fields: { dead: true, dead_note: "已无模型可用" } },
+});
+check("废站标记可保存", result.status === 200, JSON.stringify(result.data));
+result = await call("/api/board/overrides");
+check("废站标记公开读回", result.data.overrides.agentrouter.dead === true);
+check("废站原因公开读回", result.data.overrides.agentrouter.dead_note === "已无模型可用");
+result = await call("/api/board/admin/override", {
+  method: "POST", token,
+  body: { item_id: "agentrouter", fields: { dead: "yes" } },
+});
+check("废站标记拒绝字符串", result.status === 400, JSON.stringify(result.data));
+result = await call("/api/board/admin/override", {
+  method: "POST", token,
+  body: { item_id: "agentrouter", fields: {}, clear_fields: ["dead", "dead_note"] },
+});
+check("移出废站成功", result.status === 200, JSON.stringify(result.data));
+result = await call("/api/board/overrides");
+check("移出废站后标记被清除", !("dead" in result.data.overrides.agentrouter) && !("dead_note" in result.data.overrides.agentrouter));
+
 result = await call("/api/board/admin/item/delete", {
   method: "POST", token, body: { id: "agentrouter" },
 });
