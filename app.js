@@ -467,6 +467,39 @@
     setTimeout(() => (btn.textContent = original), 1500);
   }
 
+  /** 图片大图查看：CS 截图在窄列里看不清，点图放大。
+   *  点图=下一张，点背景/按 Esc=关闭。遮罩盖住一切但只由本组件创建。 */
+  function openLightbox(srcs, start) {
+    let box = document.getElementById("lightbox");
+    if (!box) {
+      box = document.createElement("div");
+      box.id = "lightbox";
+      box.className = "lightbox";
+      const img = document.createElement("img");
+      img.className = "lightbox-img";
+      box.appendChild(img);
+      box.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (e.target === box) { box.remove(); document.body.classList.remove("no-scroll"); return; }
+        const list = (box._srcs || []).slice();
+        if (!list.length) return;
+        box._i = ((box._i || 0) + 1) % list.length;
+        img.src = list[box._i];
+      });
+      document.body.appendChild(box);
+    }
+    box._srcs = srcs;
+    box._i = start;
+    box.querySelector("img").src = srcs[start];
+    document.body.classList.add("no-scroll");
+    const onKey = (e) => {
+      if (e.key === "Escape") { box.remove(); document.body.classList.remove("no-scroll"); document.removeEventListener("keydown", onKey); }
+    };
+    document.removeEventListener("keydown", openLightbox._onKey || (() => {}));
+    openLightbox._onKey = onKey;
+    document.addEventListener("keydown", onKey);
+  }
+
   /** 收敛原始数据，缺字段给安全默认值；未知分区归到「收录 / 杂类」以免丢卡片。
    *
    *  ov 是后台编辑的覆盖层（来自 /api/overrides）。站点是纯静态的，浏览器改不了
@@ -570,6 +603,10 @@
       sections,
       icon: raw.icon || SECTION_MAP.get(section).icon,
       image: pick("image", raw.image || ""),
+      // 多图条目（CS 挂人记录这类，一次发几张截图 = 一张卡）：归一化裁掉坏值，最多 12 张。
+      images: Array.isArray(raw.images)
+        ? raw.images.filter((s) => typeof s === "string" && s).slice(0, 12)
+        : [],
       tags: Array.isArray(raw.tags) ? raw.tags.slice(0, 6) : [],
       kind: raw.kind || "网站",
       needLogin: raw.need_login === true,
@@ -758,6 +795,26 @@
       node.prepend(img);
     }
 
+    // 多图（CS 挂人记录：四张截图 = 一张卡）。点开可看大图，再点任意处关闭。
+    if (item.images.length) {
+      node.classList.add("has-image");
+      const gal = document.createElement("div");
+      gal.className = "cs-gallery";
+      item.images.forEach((src, gi) => {
+        const img = document.createElement("img");
+        img.src = src;
+        img.alt = (item.name || "图片") + " " + (gi + 1);
+        img.loading = "lazy";
+        img.addEventListener("error", () => img.remove());
+        img.addEventListener("click", (e) => {
+          e.stopPropagation();
+          openLightbox(item.images, gi);
+        });
+        gal.appendChild(img);
+      });
+      node.prepend(gal);
+    }
+
     // 标签跟着当前所在分区走：同一份「小说+漫画」资源，在小说区显示「韩轻」，
     // 在漫画区显示「韩漫」，比永远显示主分区更符合用户此刻的语境。
     const shownSec = state.section !== "all" && inSection(item, state.section)
@@ -812,6 +869,8 @@
     field("login").textContent = item.needLogin ? "需要" : "不需要";
     field("updateInfo").textContent = item.updateInfo;
     field("note").textContent = item.note;
+    // CS 文字记录这类多行 note：pre-wrap 保住换行，普通单行 note 不受影响。
+    field("note").classList.toggle("cs-note-text", item.note.includes("\n"));
 
     // 后台改过的条目给个标记 —— 只对已登录的自己显示，访客看不到，
     // 免得让人以为站里的内容被人动过手脚。

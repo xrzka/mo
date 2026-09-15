@@ -1918,6 +1918,27 @@ h1 {
   .bgm-playing .bgm-fab { animation: none; }
 }
 
+/* CS 多图卡片：一次挂几张截图就几张，两张并排、单张整宽，点开看大图 */
+.cs-gallery { display: grid; grid-template-columns: repeat(2, 1fr); gap: 2px; background: var(--border); }
+.cs-gallery img { display: block; width: 100%; height: 190px; object-fit: cover; cursor: zoom-in; }
+.cs-gallery:has(> img:only-child) { grid-template-columns: 1fr; }
+.cs-gallery:has(> img:only-child) img { height: auto; max-height: 62vh; object-fit: contain; }
+.cs-note-text { white-space: pre-wrap; }
+
+/* 大图查看遮罩 */
+.lightbox {
+  position: fixed; inset: 0; z-index: 300;
+  background: rgba(0, 0, 0, 0.88);
+  display: flex; align-items: center; justify-content: center;
+  cursor: zoom-out;
+}
+.lightbox-img { max-width: 96vw; max-height: 92vh; object-fit: contain; }
+body.no-scroll { overflow: hidden; }
+@media (max-width: 640px) {
+  .cs-gallery { grid-template-columns: 1fr; }
+  .cs-gallery img { height: auto; max-height: 58vh; object-fit: contain; }
+}
+
 
 
 
