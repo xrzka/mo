@@ -241,6 +241,15 @@ const WATCH_AUDIO_HOSTS = new Set([
   "music.163.com", "music.126.net", "m7.music.126.net", "m8.music.126.net",
   "m701.music.126.net", "m801.music.126.net",
 ]);
+// 音频代理宿主判定：如主集合；另放行上游 getAlgerListenUrl 会真实返回的
+// CDN（酷我曲库中转 bd-*.kuwo.cn），按「基础域名 + 任意子域」匹配，避免
+// 酷我换区域子域又要逐个加白名单。白名单仍兜底开放代理风险 —— 只放行
+// 播放链路里真实出现过的域名。
+function audioHostAllowed(host) {
+  const name = String(host || "").toLowerCase();
+  if (WATCH_AUDIO_HOSTS.has(name)) return true;
+  return name === "kuwo.cn" || name.endsWith(".kuwo.cn");
+}
 
 function watchText(value, max = WATCH_QUERY_MAX) {
   return String(value || "").replace(/[\x00-\x1f\x7f]/g, " ").trim().slice(0, max);
@@ -366,7 +375,7 @@ async function watchMusicUpstream(job) {
 async function watchAudio(request, url) {
   let target;
   try { target = new URL(url.searchParams.get("url") || ""); } catch { return json({ error: "bad audio url" }, request, 400); }
-  if (target.protocol !== "https:" || !WATCH_AUDIO_HOSTS.has(target.hostname.toLowerCase())) {
+  if (target.protocol !== "https:" || !audioHostAllowed(target.hostname)) {
     return json({ error: "audio host not allowed" }, request, 403);
   }
   const range = request.headers.get("Range") || "";
@@ -2288,8 +2297,7 @@ export default {
     } catch (err) {
       // 不把内部堆栈回给前端
       console.error(err);
-      // DEBUG: 临时把错误信息回传，以便定位。确认后改回 internal error。
-      return json({ error: "internal error", debug: err?.message || String(err) }, request, 500);
+      return json({ error: "internal error" }, request, 500);
     }
   },
 
