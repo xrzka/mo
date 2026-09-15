@@ -1768,6 +1768,11 @@ h1 {
 .watch-viewer-head { margin-bottom: 14px; justify-content: flex-start; }
 .watch-viewer-body { display: grid; gap: 14px; }
 .watch-player { width: 100%; max-height: 68vh; border-radius: 12px; background: #000; }
+/* 动画区嵌入原站 iframe：整格替换 grid，占满可用高度 */
+.watch-anime-embed { display: block; width: 100%; height: 72vh; min-height: 480px; border: 1px solid var(--border); border-radius: 12px; background: #0b0b0f; }
+.watch-anime-embed-bar { display: flex; align-items: center; gap: 8px; margin: 10px 0 0; }
+.watch-anime-embed-bar .watch-page-btn { padding: 7px 14px; border: 1px solid var(--border); border-radius: 9px; background: var(--bg); color: var(--text); cursor: pointer; text-decoration: none; font-size: 13px; }
+.watch-anime-embed-bar .watch-page-btn:hover { border-color: var(--accent); color: var(--accent); }
 .watch-reader { width: min(100%, 760px); margin: auto; font-size: 17px; line-height: 2; }
 .watch-reader p { margin: 0 0 1.15em; white-space: pre-wrap; }
 .watch-reader img, .watch-manga-reader img { display: block; width: 100%; height: auto; margin: 0 auto; }
