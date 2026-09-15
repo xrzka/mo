@@ -3818,6 +3818,7 @@
     }
 
     const key = `${watchCacheKey(kind, q)}:${source}:${kind === "anime" ? page : ""}`;
+    const cached = watchCache.get(key);
 
     if (!force && cached && Date.now() - cached.at < WATCH_CACHE_TTL) {
       state.watchItems = cached.items;
