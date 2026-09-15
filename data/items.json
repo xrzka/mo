@@ -13830,6 +13830,18 @@
       "need_login": false,
       "update_info": "长期",
       "note": ""
+    },
+    {
+      "id": "tool-lightc-1",
+      "name": "LightC | C盘清理（开源免费）",
+      "section": "tool",
+      "description": "开源免费的 Windows C盘清理利器：12 个模块（垃圾清理 / 社交软件专清 / 大文件清理 / 系统瘦身 / AI模型空间等），零广告零捆绑，聊天记录永久锁死不删。",
+      "url": "https://www.lightc.app/",
+      "tags": ["C盘清理", "开源", "免费", "Windows", "GitHub"],
+      "kind": "工具 / 网站",
+      "need_login": false,
+      "update_info": "长期更新",
+      "note": "开源：github.com/Chunyu33/light-c；清理前自动锁定系统文件与聊天记录，拿不准的一律不勾。"
     }
   ]
 }
