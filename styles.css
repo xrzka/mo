@@ -360,6 +360,17 @@ h1 {
   box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
+/* CS 区图片型卡片：图片作为主视觉占满整卡宽度，图下仍是名称/简介 */
+.feed-card.has-image .cs-image {
+  display: block;
+  width: 100%;
+  max-height: 62vh;
+  object-fit: contain;
+  background: #000;
+  border-radius: var(--radius) var(--radius) 0 0;
+}
+.feed-card.has-image .card-main { border-top: 1px solid var(--border); }
+
 .card-desc {
   margin: 0 0 8px;
   color: var(--text-muted);

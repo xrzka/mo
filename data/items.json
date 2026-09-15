@@ -13819,6 +13819,17 @@
       "need_login": true,
       "update_info": "每日可签到",
       "note": "需要用户名 + 密码（无需邮箱验证）。 使用条款第 3、4 条明写「脚本签到视为滥用」「禁止自动签到」，违规会取消奖励、扣回额度或封禁 —— 这个站请手动签到，不要挂进自动签到工具。另有公告：长时间不使用的账号余额将被清零，所以别只签到不调用。 可用模型：gpt-5.6-sol。 Base URL 为 https://motomoto.lol/v1（OpenAI 兼容 /v1/chat/completions），令牌在控制台创建。签到与登录都挂着 Cloudflare Turnstile，需真人过一次验证。邀请奖励约 $40，需对方产生约 $2 真实消耗后结算，每天最多 3 笔、累计 20 笔。站点提供工单与 /appeal 申诉通道。额度是站内记账单位，不可提现，官方不承诺可用性。另可在「数据授权」页选择是否授权训练数据。"
+    },
+    {
+      "id": "cs-skl-1",
+      "name": "CS 记录占位",
+      "section": "cs",
+      "description": "把要展示的图放进 cs/ 目录并把 image 改成实际文件名。当前为占位条目。",
+      "image": "cs/cs-skl-1.png",
+      "tags": [],
+      "need_login": false,
+      "update_info": "长期",
+      "note": ""
     }
   ]
 }

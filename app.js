@@ -100,6 +100,9 @@
         { id: "guide", label: "教程" },
       ],
     },
+    // CS 区：以图片为主（只展示发布过的图）。条目里带 image 字段时，
+    // 卡片主体直接展示那张图，不做链接型卡片。
+    { id: "cs", label: "CS", icon: "🩹" },
   ];
 
   const SECTION_MAP = new Map(SECTIONS.map((s) => [s.id, s]));
@@ -566,6 +569,7 @@
       sub,
       sections,
       icon: raw.icon || SECTION_MAP.get(section).icon,
+      image: pick("image", raw.image || ""),
       tags: Array.isArray(raw.tags) ? raw.tags.slice(0, 6) : [],
       kind: raw.kind || "网站",
       needLogin: raw.need_login === true,
@@ -740,6 +744,19 @@
     field("icon").textContent = item.icon;
     field("name").textContent = item.name;
     field("description").textContent = item.description;
+
+    // CS 区以图片为主：条目带 image 字段时，把该图作为卡片主视觉（图下方
+    // 仍是名称/简介）。图片加载失败或留空就回落成普通图标卡片。
+    if (item.image) {
+      node.classList.add("has-image");
+      const img = document.createElement("img");
+      img.className = "cs-image";
+      img.src = item.image;
+      img.alt = item.name || "图片";
+      img.loading = "lazy";
+      img.addEventListener("error", () => img.remove());
+      node.prepend(img);
+    }
 
     // 标签跟着当前所在分区走：同一份「小说+漫画」资源，在小说区显示「韩轻」，
     // 在漫画区显示「韩漫」，比永远显示主分区更符合用户此刻的语境。
