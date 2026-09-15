@@ -9,11 +9,11 @@
       content="墨小说漫画 · 小说、漫画、动画、游戏、AI 资源导航，分区整理，点击直达。"
     />
     <title>墨小说漫画 · 资源导航</title>
-    <script src="config.js?v=20260915d"></script>
-    <link rel="stylesheet" href="styles.css?v=20260915d" />
+    <script src="config.js?v=20260915e"></script>
+    <link rel="stylesheet" href="styles.css?v=20260915e" />
     <!-- EPUB 本质是 zip。固定版本并随站点托管，不依赖第三方 CDN 运行。 -->
     <script src="vendor/jszip.min.js?v=3.10.1" defer></script>
-    <script src="app.js?v=20260915d" defer></script>
+    <script src="app.js?v=20260915e" defer></script>
   </head>
   <body>
     <a class="skip-link" href="#feed">跳到资源列表</a>
@@ -409,6 +409,70 @@
         </div>
       </article>
     </template>
+
+    <!-- 背景音乐《东方城墙》：浮动控制，桌面+移动都能 播放/暂停/隐藏。
+         自包含脚本，不依赖 app.js，避免牵连主逻辑。 -->
+    <div class="bgm" data-bgm hidden>
+      <audio id="bgm-audio" src="assets/bgm.mp3" loop preload="none" playsinline></audio>
+      <button type="button" class="bgm-fab" data-bgm-toggle aria-label="播放背景音乐">♪</button>
+      <button type="button" class="bgm-close" data-bgm-hide aria-label="隐藏背景音乐">×</button>
+      <span class="bgm-tip" data-bgm-tip>《东方城墙》</span>
+    </div>
+    <script>
+      (function () {
+        var KEY_PLAY = "mo-bgm-on";
+        var KEY_HIDE = "mo-bgm-hidden";
+        var wrap = document.querySelector("[data-bgm]");
+        if (!wrap) return;
+        var audio = document.getElementById("bgm-audio");
+        var toggle = wrap.querySelector("[data-bgm-toggle]");
+        var hideBtn = wrap.querySelector("[data-bgm-hide]");
+        var tip = wrap.querySelector("[data-bgm-tip]");
+        var hidden = localStorage.getItem(KEY_HIDE) === "1";
+
+        // 默认收起为右下角小圆点；点一下展开，再点 播放/暂停。
+        wrap.hidden = false;
+        wrap.classList.add("bgm-collapsed");
+
+        function setPlaying(on) {
+          wrap.classList.toggle("bgm-playing", on);
+          toggle.setAttribute("aria-label", on ? "暂停背景音乐" : "播放背景音乐");
+        }
+        function collapse() {
+          wrap.classList.add("bgm-collapsed");
+          hidden = true;
+          localStorage.setItem(KEY_HIDE, "1");
+        }
+        function expand() {
+          wrap.classList.remove("bgm-collapsed");
+          hidden = false;
+          localStorage.removeItem(KEY_HIDE);
+        }
+        function play() {
+          var p = audio.play();
+          if (p && p.then) { p.then(function () { setPlaying(true); }).catch(function () { setPlaying(false); }); }
+        }
+        function pause() { audio.pause(); setPlaying(false); }
+
+        toggle.addEventListener("click", function () {
+          if (wrap.classList.contains("bgm-collapsed")) { expand(); return; }
+          if (audio.paused) {
+            try { localStorage.setItem(KEY_PLAY, "1"); } catch (e) {}
+            play();
+          } else {
+            try { localStorage.removeItem(KEY_PLAY); } catch (e) {}
+            pause();
+          }
+        });
+        hideBtn.addEventListener("click", function () {
+          pause(); collapse();
+        });
+        audio.addEventListener("play", function () { setPlaying(true); });
+        audio.addEventListener("pause", function () { setPlaying(false); });
+        // 记住上次是否开启：仅在用户之前点过播放时尝试恢复，浏览器策略可能仍拦，由点一下兜底。
+        if (localStorage.getItem(KEY_PLAY) === "1") { try { play(); } catch (e) {} }
+      })();
+    </script>
   </body>
 </html>
 

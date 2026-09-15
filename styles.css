@@ -1852,6 +1852,72 @@ h1 {
   .watch-skeleton > *::after { animation: none; }
 }
 
+/* 背景音乐《东方城墙》浮动控件：右下角，桌面+移动通用 */
+.bgm {
+  position: fixed;
+  right: calc(14px + env(safe-area-inset-right));
+  bottom: calc(14px + env(safe-area-inset-bottom));
+  z-index: 70;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.bgm > * { display: inline-flex; }
+.bgm-fab {
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  color: var(--text);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: var(--shadow);
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s, background 0.15s, color 0.15s, border-color 0.15s;
+}
+.bgm-fab:hover { transform: translateY(-2px); border-color: var(--accent); color: var(--accent); }
+.bgm-playing .bgm-fab {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  animation: bgm-pulse 1.6s ease-in-out infinite;
+}
+@keyframes bgm-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 55%, transparent); }
+  50% { box-shadow: 0 0 0 9px transparent; }
+}
+.bgm-close {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  color: var(--text-muted);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+}
+.bgm-close:hover { color: var(--danger); border-color: var(--danger); }
+.bgm-tip {
+  padding: 5px 11px;
+  border-radius: 999px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 12px;
+  white-space: nowrap;
+  box-shadow: var(--shadow);
+}
+/* 收起态：只留圆点，藏掉 × 与曲名 */
+.bgm-collapsed .bgm-close,
+.bgm-collapsed .bgm-tip { display: none; }
+@media (prefers-reduced-motion: reduce) {
+  .bgm-playing .bgm-fab { animation: none; }
+}
+
 
 
 
