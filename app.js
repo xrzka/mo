@@ -3894,16 +3894,8 @@
     renderWatchTabs();
     renderWatchSources();
 
-    // 动画区直接嵌入原站（浏览器直连能过 challenge），不走 Worker 抓取，
-    // 因为 Worker 数据中心 IP 被 lmm85 的 Cloudflare challenge 恒定 403。
-    if (kind === "anime") {
-      state.watchItems = [];
-      state.watchError = "";
-      state.watchLoading = false;
-      renderWatch();
-      watchStatus(q ? `已在原站搜索“${q}”，在下方嵌入窗口里浏览。` : "已嵌入原站（路漫漫），可直接浏览、搜索、播放。");
-      return;
-    }
+    // 动画区已改为量子资源 API（自建 hls.js 播放器），走下面的通用列表流程。
+    // 原来的「整站 iframe 嵌入」因上游强推 APK 且 Worker 被其 CF 挑战而废弃。
 
     const key = `${watchCacheKey(kind, q)}:${source}:${kind === "anime" ? page : ""}`;
     const cached = watchCache.get(key);
@@ -4239,6 +4231,70 @@
     return button;
   }
 
+  /* ---------- 阅读器工具条（小说 / 漫画） ----------
+   * 小说：字号 A-/A+（14–28px）+ 主题（白/纸/暗）；漫画：适应宽度/原始大小 + 回顶部。
+   * 偏好记 localStorage，换章后保持。 */
+  const READ_KEYS = {
+    novelSize: "mo-read-novel-size",
+    novelTheme: "mo-read-novel-theme",
+    mangaFit: "mo-read-manga-fit",
+  };
+  const NOVEL_THEME_LABEL = { "": "白", paper: "纸", dark: "暗" };
+
+  function watchReadStore(key, fallback) {
+    try {
+      const v = localStorage.getItem(key);
+      return v == null ? fallback : v;
+    } catch { return fallback; }
+  }
+  function watchReadSave(key, value) {
+    try { localStorage.setItem(key, String(value)); } catch { /* 隐私模式忽略 */ }
+  }
+
+  function watchNovelTools(reader) {
+    const bar = document.createElement("div");
+    bar.className = "watch-read-tools";
+    let size = Math.min(28, Math.max(14, parseInt(watchReadStore(READ_KEYS.novelSize, "17"), 10) || 17));
+    let theme = NOVEL_THEME_LABEL[watchReadStore(READ_KEYS.novelTheme, "")] !== undefined
+      ? watchReadStore(READ_KEYS.novelTheme, "") : "";
+    const apply = () => {
+      reader.style.fontSize = `${size}px`;
+      reader.dataset.theme = theme;
+    };
+    const minus = watchButton("A−", () => { size = Math.max(14, size - 1); apply(); try { localStorage.setItem(READ_KEYS.novelSize, String(size)); } catch {} }, "watch-tool-btn");
+    const plus = watchButton("A+", () => { size = Math.min(28, size + 1); apply(); try { localStorage.setItem(READ_KEYS.novelSize, String(size)); } catch {} }, "watch-tool-btn");
+    const themeBtn = watchButton(`主题：${NOVEL_THEME_LABEL[theme] || "白"}`, () => {
+      const order = ["", "paper", "dark"];
+      theme = order[(order.indexOf(theme) + 1) % order.length];
+      themeBtn.textContent = `主题：${NOVEL_THEME_LABEL[theme] || "白"}`;
+      apply();
+      try { localStorage.setItem(READ_KEYS.novelTheme, theme); } catch {}
+    }, "watch-tool-btn");
+    apply();
+    bar.append(minus, plus, themeBtn);
+    return bar;
+  }
+
+  function watchMangaTools(reader) {
+    const bar = document.createElement("div");
+    bar.className = "watch-read-tools";
+    const fit = () => reader.dataset.fit || "fit";
+    const apply = () => { reader.dataset.fit = fit(); topBtn.textContent = fit() === "fit" ? "原始大小" : "适应宽度"; };
+    const fitBtn = watchButton("", () => {
+      reader.dataset.fit = fit() === "fit" ? "orig" : "fit";
+      try { localStorage.setItem(READ_KEYS.mangaFit, fit()); } catch {}
+      apply();
+    }, "watch-tool-btn");
+    const topBtn = watchButton("↑ 回顶部", () => bar.scrollIntoView({ block: "start" }), "watch-tool-btn");
+    try {
+      const saved = localStorage.getItem(READ_KEYS.mangaFit);
+      if (saved) reader.dataset.fit = saved;
+    } catch {}
+    apply();
+    bar.append(fitBtn, topBtn);
+    return bar;
+  }
+
   async function openWatchNovel(item, body, requestId) {
     try {
       const detail = await watchApi(`/api/watch/novel?action=detail&novel=${encodeURIComponent(item.id)}`);
@@ -4354,7 +4410,7 @@
             const download = watchButton("下载本章", null, "watch-download");
             download.addEventListener("click", () => downloadNovelChapterView(item, chapter, data, download));
             bar.appendChild(download);
-            body.replaceChildren(bar, reader);
+            body.replaceChildren(bar, watchNovelTools(reader), reader);
             body.scrollIntoView({ block: "start" });
           } catch (error) {
             if (watchViewCurrent(requestId)) watchError(body, "阅读失败", error, () => openWatchNovel(item, body, requestId));
@@ -4443,7 +4499,7 @@
             }
           });
           bar.appendChild(download);
-          body.replaceChildren(bar, reader);
+          body.replaceChildren(bar, watchMangaTools(reader), reader);
           body.scrollIntoView({ block: "start" });
         } catch (error) {
           if (watchViewCurrent(requestId)) watchError(body, "漫画加载失败", error, () => openWatchManga(item, body, requestId));
@@ -4460,47 +4516,152 @@
     }
   }
 
+  /* 动画播放器：hls.js（vendor 本地）直连 m3u8，桌面 Chrome/Firefox 用 MSE，
+     iOS Safari 用原生 HLS。流 CDN ACAO=*，无需代理。 */
+  function watchMountVideo(container, srcUrl, onError) {
+    const video = document.createElement("video");
+    video.className = "watch-player watch-video";
+    video.controls = true;
+    video.playsInline = true;
+    video.preload = "metadata";
+    let hls = null;
+    if (video.canPlayType("application/vnd.apple.mpegurl")) {
+      video.src = srcUrl; // Safari/iOS 原生 HLS
+    } else if (window.Hls && window.Hls.isSupported()) {
+      hls = new Hls({ maxBufferLength: 24, manifestLoadingTimeOut: 20000, fragLoadingMaxRetry: 4 });
+      hls.loadSource(srcUrl);
+      hls.attachMedia(video);
+      hls.on(Hls.Events.ERROR, (_evt, data) => {
+        if (!data?.fatal) return;
+        if (data.type === Hls.ErrorTypes.NETWORK_ERROR && data.details !== "manifestLoadError") {
+          hls.startLoad(); // 网络抖动自动重试
+          return;
+        }
+        onError?.();
+      });
+    } else {
+      video.src = srcUrl; // 极老浏览器最后兜底
+    }
+    container.replaceChildren(video);
+    const p = video.play();
+    if (p && p.catch) p.catch(() => {});
+    return video;
+  }
+
   async function openWatchAnime(item, body, requestId) {
     try {
       const detail = await watchApi(`/api/watch/anime?action=detail&anime=${encodeURIComponent(item.id)}`);
       if (!watchViewCurrent(requestId)) return;
       $(`[data-watch-viewer-title]`).textContent = detail.title || item.title;
       body.textContent = "";
-      const episodes = document.createElement("div");
-      episodes.className = "watch-chapters";
-      (detail.episodes || []).forEach((episode) => episodes.appendChild(watchButton(episode.title, async () => {
-        body.innerHTML = '<p class="watch-loading">正在获取播放器…</p>';
-        try {
-          const data = await watchApi(`/api/watch/anime?action=play&anime=${encodeURIComponent(item.id)}&episode=${encodeURIComponent(episode.id)}`);
-          if (!watchViewCurrent(requestId)) return;
-          // 播放器校验 Referer：iframe 直接指过去会被回 3 字节空页，
-          // 所以走 Worker 代理（服务端带上游 Referer 取回播放器页）。
-          const frameUrl = watchMediaUrl(`/api/watch/frame?src=${encodeURIComponent(data.embedUrl)}`);
-          const frame = document.createElement("iframe");
-          frame.className = "watch-video";
-          frame.src = frameUrl;
-          frame.title = episode.title;
-          frame.allow = "autoplay; fullscreen; encrypted-media; picture-in-picture";
-          frame.allowFullscreen = true;
-          frame.referrerPolicy = "origin";
-          saveWatchProgress("anime", item, episode);
-          const bar = document.createElement("div");
-          bar.className = "watch-action-bar";
-          bar.appendChild(watchButton("← 返回选集", () => openWatchAnime(item, body, requestId), "watch-inline-back"));
-          const link = document.createElement("a");
-          link.className = "watch-download";
-          link.href = frameUrl;
-          link.target = "_blank";
-          link.rel = "noopener";
-          link.textContent = "新窗口打开";
-          bar.appendChild(link);
-          body.replaceChildren(bar, frame);
-        } catch (error) {
-          if (watchViewCurrent(requestId)) watchError(body, "播放失败", error, () => openWatchAnime(item, body, requestId));
-        }
-      })));
-      body.appendChild(episodes);
-      if (!detail.episodes?.length) renderWatchMessage(body, "当前线路没有返回选集，请稍后刷新。");
+      const lines = (detail.lines || []).filter((line) => line.eps.length);
+      if (detail.description) {
+        const desc = document.createElement("p");
+        desc.className = "watch-description";
+        desc.textContent = detail.description;
+        body.appendChild(desc);
+      }
+      if (!lines.length) {
+        const link = document.createElement("a");
+        link.className = "watch-download";
+        link.href = `${detail.sourceSite || "https://www.lmm85.com"}/detail/${item.id}.html`;
+        link.target = "_blank";
+        link.rel = "noopener";
+        link.textContent = "到原站播放 →";
+        const tip = document.createElement("p");
+        tip.className = "watch-source-line";
+        tip.textContent = "资源站这会儿没给出可播放的线路（m3u8），可以稍后重试，或去原站看：";
+        body.append(tip, link);
+        return;
+      }
+
+      // 播放状态：线路 / 集下标，播放器与选集共用。
+      const cur = { li: 0, ei: 0 };
+      const status = document.createElement("p");
+      status.className = "watch-loading";
+      status.hidden = true;
+
+      const lineRow = document.createElement("div");
+      lineRow.className = "watch-line-row";
+      const lineLabel = document.createElement("span");
+      lineLabel.className = "watch-source-line";
+      lineLabel.textContent = "线路";
+      const lineBtns = lines.map((line, li) => {
+        const btn = watchButton(line.label, () => playEp(li, 0), "watch-line-btn");
+        lineRow.append(btn);
+        return btn;
+      });
+      lineRow.prepend(lineLabel);
+      if (lines.length > 1) body.appendChild(lineRow);
+
+      const eps = document.createElement("div");
+      eps.className = "watch-chapters";
+      const epBtns = [];
+      function renderEps() {
+        eps.textContent = "";
+        epBtns.length = 0;
+        (lines[cur.li].eps).forEach((episode, ei) => {
+          const btn = watchButton(episode.ep, () => playEp(cur.li, ei), "watch-chapter-open");
+          epBtns.push(btn);
+          eps.appendChild(btn);
+        });
+        syncEpsActive();
+      }
+      function syncEpsActive() {
+        epBtns.forEach((btn, i) => btn.classList.toggle("is-current", i === cur.ei));
+        lineBtns.forEach((btn, i) => btn.classList.toggle("is-current", i === cur.li));
+      }
+
+      function playEp(li, ei) {
+        cur.li = li; cur.ei = ei;
+        const ep = lines[li].eps[ei];
+        syncEpsActive();
+        body.querySelectorAll("video").forEach((v) => v.pause());
+        status.hidden = false;
+        status.textContent = "正在连接视频流…";
+        const video = watchMountVideo(playerWrap, ep.url, () => {
+          status.textContent = "该集视频加载失败，换一条线路试试。";
+          status.hidden = false;
+        });
+        video.addEventListener("playing", () => { status.hidden = true; });
+        video.addEventListener("error", () => {
+          status.textContent = "视频流加载失败（可能被上游下架），换线路或稍后再试。";
+          status.hidden = false;
+        });
+        saveWatchProgress("anime", item, { title: ep.ep });
+        $(`[data-watch-viewer-title]`).textContent = `${detail.title || item.title} · ${ep.ep}`;
+        prevBtn.disabled = ei <= 0;
+        nextBtn.disabled = ei >= lines[li].eps.length - 1;
+        prevBtn.onclick = () => playEp(li, ei - 1);
+        nextBtn.onclick = () => playEp(li, ei + 1);
+      }
+
+      const playerWrap = document.createElement("div");
+      playerWrap.className = "watch-anime-player";
+      body.appendChild(playerWrap);
+
+      const bar = document.createElement("div");
+      bar.className = "watch-action-bar";
+      const prevBtn = watchButton("← 上一集", null, "watch-download");
+      const nextBtn = watchButton("下一集 →", null, "watch-download");
+      bar.append(prevBtn, nextBtn);
+      if (detail.sourceSite) {
+        const link = document.createElement("a");
+        link.className = "watch-download";
+        link.href = `${detail.sourceSite}/detail/${item.id}.html`;
+        link.target = "_blank";
+        link.rel = "noopener";
+        link.textContent = "原站打开";
+        bar.appendChild(link);
+      }
+      body.appendChild(bar);
+      body.appendChild(status);
+
+      // 选集网格（当前线路）
+      body.appendChild(eps);
+      renderEps();
+      // 默认从第 1 集开始播放
+      playEp(0, 0);
     } catch (error) {
       if (watchViewCurrent(requestId)) watchError(body, "选集加载失败", error, () => openWatchItem(item));
     }

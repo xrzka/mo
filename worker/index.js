@@ -1184,60 +1184,76 @@ function parseAnimePlayer(html, origin, episode) {
   return animeEmbedUrl(embedUrl, origin);
 }
 
+/* ---------- 动画区：量子资源 API（cj.lziapi.com） ----------
+ *
+ * 之前上游是 lmm85（路漫漫）网页抓取 + yun.92cj 播放器代理。lmm85 对
+ * Worker 数据中心 IP 恒定挂 Cloudflare challenge（403/520），且其手机站
+ * 现在把播放强推到 APK，网页端基本播不了。现换成资源站 JSON API：
+ * 这是专门给聚合站用的开放接口，无 CF 挑战、直接返回每集 m3u8（lzm3u8
+ * 线路），CORS ACAO=*，浏览器 hls.js 可直连，Worker 只透传 JSON。
+ */
+const WATCH_ANIME_API = "https://cj.lziapi.com/api.php/provide/vod/";
+const WATCH_ANIME_TYPE = "30"; // 日韩动漫（量子把子类挂细分 id，父类 4 只有 1 部）
+
+async function watchAnimeJson(params) {
+  const target = new URL(WATCH_ANIME_API);
+  target.search = new URLSearchParams(params);
+  const response = await watchFetch(target, { headers: { "User-Agent": "Mozilla/5.0", Accept: "application/json" } }, 20000);
+  if (!response.ok) throw new Error(`anime upstream HTTP ${response.status}`);
+  return await response.json();
+}
+
+/** vod_play_url 形如 "线路1$$$线路2"，每段内 "第01集$url#第02集$url"。
+ *  只保留直连 m3u8 的线路（lzm3u8），share 页线路（liangzi）前端播不了，丢弃。 */
+function parseAnimeLines(entry) {
+  const froms = String(entry?.vod_play_from || "").split("$$$");
+  const chunks = String(entry?.vod_play_url || "").split("$$$");
+  const lines = [];
+  froms.forEach((label, i) => {
+    const eps = (chunks[i] || "").split("#").filter(Boolean).map((pair) => {
+      const idx = pair.indexOf("$");
+      if (idx < 0) return null;
+      return { ep: watchText(pair.slice(0, idx), 60), url: watchText(pair.slice(idx + 1), 600) };
+    }).filter((e) => e && /^https?:\/\/.+\.m3u8/i.test(e.url)).slice(0, 2000);
+    if (eps.length) lines.push({ label: stripTags(label) || `线路${i + 1}`, eps });
+  });
+  return lines;
+}
+
 async function watchAnime(request, url) {
   const action = watchText(url.searchParams.get("action") || "list", 24);
   if (action === "list") {
     const q = watchText(url.searchParams.get("q"));
-    if (q) {
-      for (const origin of WATCH_ANIME_ORIGINS) {
-        try {
-          const target = new URL("/index.php/ajax/suggest", origin);
-          target.search = new URLSearchParams({ mid: "1", wd: q, limit: "36" });
-          const response = await watchFetch(target, { headers: { "X-Requested-With": "XMLHttpRequest", "User-Agent": "Mozilla/5.0" } }, 20000);
-          const data = await response.json();
-          const items = (data?.list || []).map((entry) => {
-            const id = watchText(entry?.id || entry?.vod_id, 20);
-            const coverUrl = absoluteWatchUrl(entry?.pic || entry?.vod_pic || "", origin);
-            return { id, title: stripTags(entry?.name || entry?.vod_name) || `动画 ${id}`, subtitle: stripTags(entry?.remarks || entry?.en) || "在线动画", cover: coverUrl ? proxyWatchAsset(coverUrl, "anime") : "" };
-          }).filter((item) => /^\d+$/.test(item.id));
-          if (items.length) return json({ items }, request);
-        } catch { /* try mirror */ }
-      }
-      throw new Error("animation search unavailable");
-    }
-    // 分页：上游 dongman 分类有 306 页、每页 20 部，地址是 /type/dongman_N.html。
-    // 之前只抓首页，前端 <=24 条就隐藏翻页条，动画区看起来「没有翻页」。
-    const page = Math.min(Math.max(parseInt(url.searchParams.get("page") || "1", 10) || 1, 1), 400);
-    const listPath = page <= 1 ? "/type/dongman.html" : `/type/dongman_${page}.html`;
-    const { html, origin } = await fetchFirstWatchHtml(WATCH_ANIME_ORIGINS, listPath);
-    // 页码控件里挖总页数（href="/type/dongman_N.html" 的最大 N）
-    const pageNumbers = [...html.matchAll(/\/type\/dongman_(\d+)\.html/g)].map((m) => Number(m[1]));
-    const totalPages = Math.min(Math.max(...pageNumbers, page), 400);
-    const hasPrev = page > 1;
-    const hasNext = pageNumbers.some((n) => n > page);
-    return json({
-      items: parseAnimeCards(html, origin),
-      page,
-      totalPages,
-      hasPrev,
-      hasNext,
-    }, request);
+    const page = Math.min(Math.max(parseInt(url.searchParams.get("page") || "1", 10) || 1, 1), 500);
+    const data = q
+      ? await watchAnimeJson({ ac: "videolist", wd: q, pg: String(page) })
+      : await watchAnimeJson({ ac: "videolist", t: WATCH_ANIME_TYPE, pg: String(page) });
+    const totalPages = Math.min(Number(data?.pagecount) || page, 500);
+    const items = (data?.list || []).map((entry) => ({
+      id: watchText(entry?.vod_id, 20),
+      title: stripTags(entry?.vod_name) || `动画 ${entry?.vod_id}`,
+      subtitle: stripTags(entry?.vod_remarks) || stripTags(entry?.vod_class) || "在线动画",
+      cover: watchText(entry?.vod_pic, 500),
+      year: watchText(entry?.vod_year, 16),
+      description: stripTags(entry?.vod_blurb).slice(0, 160),
+    })).filter((item) => /^\d+$/.test(item.id));
+    return json({ items, page, totalPages, hasPrev: page > 1, hasNext: page < totalPages }, request);
   }
-  const animeId = watchText(url.searchParams.get("anime"), 20);
-  if (!/^\d+$/.test(animeId)) return json({ error: "bad anime id" }, request, 400);
   if (action === "detail") {
-    const { html } = await fetchFirstWatchHtml(WATCH_ANIME_ORIGINS, `/detail/${animeId}.html`);
-    const title = stripTags(html.match(/<(?:h1|div)[^>]*class=["'][^"']*(?:page-title|video-title)[^"']*["'][^>]*>([\s\S]*?)<\//i)?.[1] || `动画 ${animeId}`);
-    const episodes = parseAnimeEpisodes(html);
-    return json({ id: animeId, title, episodes }, request);
-  }
-  if (action === "play") {
-    const episode = watchText(url.searchParams.get("episode"), 60);
-    if (!new RegExp(`^${animeId}_\\d+_\\d+$`).test(episode)) return json({ error: "bad episode id" }, request, 400);
-    const { html, origin } = await fetchFirstWatchHtml(WATCH_ANIME_ORIGINS, `/play/${episode}.html`);
-    const embedUrl = parseAnimePlayer(html, origin, episode);
-    if (!embedUrl) return json({ error: "未解析到受信任的播放器" }, request, 502);
-    return json({ id: episode, embedUrl }, request);
+    const animeId = watchText(url.searchParams.get("anime"), 20);
+    if (!/^\d+$/.test(animeId)) return json({ error: "bad anime id" }, request, 400);
+    const data = await watchAnimeJson({ ac: "videolist", ids: animeId });
+    const entry = data?.list?.[0];
+    if (!entry) return json({ error: "动画不存在或已下架" }, request, 404);
+    return json({
+      id: animeId,
+      title: stripTags(entry.vod_name) || `动画 ${animeId}`,
+      cover: watchText(entry.vod_pic, 500),
+      year: watchText(entry.vod_year, 16),
+      description: stripTags(entry.vod_content).slice(0, 600),
+      lines: parseAnimeLines(entry),
+      sourceSite: "https://www.lmm85.com",
+    }, request);
   }
   return json({ error: "unsupported anime action" }, request, 400);
 }

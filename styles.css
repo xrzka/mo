@@ -1939,6 +1939,29 @@ body.no-scroll { overflow: hidden; }
   .cs-gallery img { height: auto; max-height: 58vh; object-fit: contain; }
 }
 
+/* 动画自建播放器 + 阅读器工具条 */
+.watch-anime-player video {
+  display: block; width: 100%; aspect-ratio: 16 / 9;
+  background: #000; border-radius: 12px;
+}
+.watch-line-row { display: flex; align-items: center; gap: 8px; margin: 0 0 10px; flex-wrap: wrap; }
+.watch-line-btn, .watch-tool-btn {
+  min-height: 36px; padding: 5px 14px;
+  border-radius: 999px; border: 1px solid var(--border);
+  background: var(--bg-elevated); color: var(--text);
+  cursor: pointer; font-size: 13px;
+}
+.watch-line-btn:hover, .watch-tool-btn:hover { border-color: var(--accent); color: var(--accent); }
+.watch-line-btn.is-current, .watch-chapters .watch-chapter-open.is-current {
+  border-color: var(--accent); color: var(--accent); font-weight: 600;
+}
+.watch-read-tools { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 10px; }
+.watch-reader { transition: background 0.2s ease, color 0.2s ease; }
+.watch-reader[data-theme="paper"] { background: #f6eddc; color: #40372a; }
+.watch-reader[data-theme="dark"] { background: #14161b; color: #c9cfd8; }
+.watch-manga-reader img { display: block; width: 100%; margin: 0 auto 6px; border-radius: 6px; }
+.watch-manga-reader[data-fit="orig"] img { width: auto; max-width: 100%; }
+
 
 
 
