@@ -4249,6 +4249,234 @@
     return bar;
   }
 
+  /* ---------- 沉浸式阅读模式 ----------
+   * 「专门适配阅读」：全屏遮罩里只留当前这本书的正文 + 上下章 + 目录抽屉，
+   * 站点其它 UI（分区 tab / 卡片流 / 搜索）全部让位，长文阅读不被打断。
+   * 小说和漫画共用同一个壳，正文内容由各自渲染函数灌进去。 */
+  const { mountReadingMode, closeReadingMode, isReadingModeOpen } = (() => {
+    let overlay = null;
+    let host = null;         // 正文容器
+    let titleNode = null;
+    let stepNode = null;
+    let headHost = null;     // 工具条容器
+    let drawer = null;       // 目录抽屉
+    let onPrev = null, onNext = null;
+
+    function build() {
+      overlay = document.createElement("div");
+      overlay.className = "read-mode";
+      overlay.hidden = true;
+      overlay.setAttribute("role", "dialog");
+      overlay.setAttribute("aria-modal", "true");
+      overlay.setAttribute("aria-label", "阅读模式");
+
+      const top = document.createElement("div");
+      top.className = "read-mode-top";
+      const close = document.createElement("button");
+      close.type = "button";
+      close.className = "read-mode-close";
+      close.textContent = "✕ 退出阅读";
+      close.addEventListener("click", closeReadingMode);
+      titleNode = document.createElement("h2");
+      titleNode.className = "read-mode-title";
+      stepNode = document.createElement("span");
+      stepNode.className = "read-mode-step";
+      const tocBtn = document.createElement("button");
+      tocBtn.type = "button";
+      tocBtn.className = "read-mode-toc-btn";
+      tocBtn.textContent = "☰ 目录";
+      tocBtn.addEventListener("click", () => {
+        if (!drawer) return;
+        drawer.hidden = !drawer.hidden;
+      });
+      top.append(close, titleNode, stepNode, tocBtn);
+
+      headHost = document.createElement("div");
+      headHost.className = "read-mode-tools";
+
+      drawer = document.createElement("div");
+      drawer.className = "read-mode-drawer";
+      drawer.hidden = true;
+
+      host = document.createElement("div");
+      host.className = "read-mode-body";
+
+      const nav = document.createElement("div");
+      nav.className = "read-mode-nav";
+      const prev = document.createElement("button");
+      prev.type = "button";
+      prev.className = "read-mode-step-btn";
+      prev.textContent = "← 上一章";
+      prev.addEventListener("click", () => onPrev && onPrev());
+      const next = document.createElement("button");
+      next.type = "button";
+      next.className = "read-mode-step-btn";
+      next.textContent = "下一章 →";
+      next.addEventListener("click", () => onNext && onNext());
+      nav.append(prev, next);
+
+      overlay.append(top, drawer, headHost, host, nav);
+      overlay.addEventListener("click", (event) => { if (event.target === overlay) closeReadingMode(); });
+      document.body.appendChild(overlay);
+    }
+
+    function ensure() { if (!overlay) build(); return overlay; }
+
+    function mount({ title, step, content, tools, chapters, activeId, onPick, prev, next }) {
+      ensure();
+      titleNode.textContent = title || "";
+      stepNode.textContent = step || "";
+      onPrev = prev || null;
+      onNext = next || null;
+      headHost.textContent = "";
+      if (tools) headHost.appendChild(tools);
+
+      // 目录抽屉：只列这本书的章节，点一下直接跳
+      drawer.textContent = "";
+      if (chapters && chapters.length) {
+        const head = document.createElement("div");
+        head.className = "read-mode-drawer-head";
+        head.textContent = `目录 · 共 ${chapters.length} 章`;
+        drawer.appendChild(head);
+        const grid = document.createElement("div");
+        grid.className = "read-mode-drawer-grid";
+        chapters.forEach((chapter, index) => {
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "read-mode-drawer-item";
+          if (chapter.id === activeId) btn.classList.add("is-current");
+          btn.textContent = `${index + 1}. ${chapter.title}`;
+          btn.addEventListener("click", () => { drawer.hidden = true; onPick && onPick(chapter, index); });
+          grid.appendChild(btn);
+        });
+        drawer.appendChild(grid);
+        drawer.hidden = true;
+      }
+
+      host.textContent = "";
+      host.appendChild(content);
+      host.scrollTop = 0;
+      overlay.hidden = false;
+      document.body.classList.add("no-scroll");
+      window.scrollTo({ top: 0 });
+    }
+
+    function closeReadingMode() {
+      if (!overlay) return;
+      overlay.hidden = true;
+      document.body.classList.remove("no-scroll");
+      onPrev = onNext = null;
+    }
+
+    return { mountReadingMode: mount, closeReadingMode, isReadingModeOpen: () => !!overlay && !overlay.hidden };
+  })();
+
+  // Esc 退出阅读模式（比找 ✕ 按钮顺手）；用捕获阶段，避免被其它键盘逻辑吞掉。
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape") return;
+    const overlay = document.querySelector(".read-mode");
+    if (overlay && !overlay.hidden) {
+      event.preventDefault();
+      closeReadingMode();
+    }
+  }, true);
+
+  /** 把 blocks 渲染成阅读用的正文节点（小说/漫画共用）。 */
+  function renderNovelBlocks(blocks, className = "watch-reader") {
+    const reader = document.createElement("div");
+    reader.className = className;
+    (blocks || []).forEach((block) => {
+      if (block.type === "image") {
+        const image = document.createElement("img");
+        image.src = watchMediaUrl(block.src);
+        image.alt = "";
+        image.loading = "lazy";
+        image.referrerPolicy = "no-referrer";
+        reader.appendChild(image);
+      } else if (block.text) {
+        const paragraph = document.createElement("p");
+        paragraph.textContent = block.text;
+        reader.appendChild(paragraph);
+      }
+    });
+    return reader;
+  }
+
+  /**
+   * 渲染某一章正文（内嵌阅读 + 沉浸模式共用同一份实现）。
+   * immersive=true 时进全屏阅读模式：只留这本书的正文、上下章和目录抽屉。
+   */
+  async function showNovelChapter(item, body, requestId, chapters, index, immersive = false) {
+    const chapter = chapters[index];
+    if (!chapter) return;
+    if (!immersive) body.innerHTML = '<p class="watch-loading">正在读取正文…</p>';
+    let data;
+    try {
+      data = await watchApi(`/api/watch/novel?action=chapter&novel=${encodeURIComponent(item.id)}&chapter=${encodeURIComponent(chapter.id)}`);
+    } catch (error) {
+      if (watchViewCurrent(requestId)) watchError(body, "阅读失败", error, () => openWatchNovel(item, body, requestId));
+      return;
+    }
+    if (!watchViewCurrent(requestId) && !immersive) return;
+
+    const title = data.title || chapter.title;
+    const chapterTitle = `${item.title || ""} · ${title}`;
+    saveWatchProgress("novel", item, chapter);
+
+    const reader = renderNovelBlocks(data.blocks);
+    const tools = watchNovelTools(reader);
+
+    // 沉浸模式：内容已是同一份 reader/tools，直接挂进全屏壳，切章不丢偏好
+    const stepInto = (nextIndex) => {
+      if (nextIndex < 0 || nextIndex >= chapters.length) return;
+      showNovelChapter(item, body, requestId, chapters, nextIndex, true);
+    };
+    const enterMode = () => showNovelChapter(item, body, requestId, chapters, index, true);
+
+    if (immersive) {
+      $(`[data-watch-viewer-title]`).textContent = chapterTitle;
+      document.title = `${title} - ${item.title || "墨小说漫画"}`;
+      mountReadingMode({
+        title: chapterTitle,
+        step: `第 ${index + 1} / ${chapters.length} 章`,
+        content: reader,
+        tools,
+        chapters,
+        activeId: chapter.id,
+        onPick: (picked) => {
+          const at = chapters.findIndex((c) => c.id === picked.id);
+          if (at >= 0) stepInto(at);
+        },
+        prev: index > 0 ? () => stepInto(index - 1) : null,
+        next: index < chapters.length - 1 ? () => stepInto(index + 1) : null,
+      });
+      return;
+    }
+
+    $(`[data-watch-viewer-title]`).textContent = title;
+
+    // 内嵌阅读：阅读模式入口 + 返回目录 + 上/下一章 + 下载
+    const bar = document.createElement("div");
+    bar.className = "watch-action-bar";
+    bar.appendChild(watchButton("← 返回目录", () => openWatchNovel(item, body, requestId), "watch-inline-back"));
+    bar.appendChild(watchButton("📖 阅读模式", () => enterMode(), "watch-download"));
+    if (index > 0) bar.appendChild(watchButton("← 上一章", () => showNovelChapter(item, body, requestId, chapters, index - 1), "watch-download"));
+    if (index < chapters.length - 1) bar.appendChild(watchButton("下一章 →", () => showNovelChapter(item, body, requestId, chapters, index + 1), "watch-download"));
+    const download = watchButton("下载本章", null, "watch-download");
+    download.addEventListener("click", () => downloadNovelChapterView(item, chapter, data, download));
+    bar.appendChild(download);
+
+    body.replaceChildren(bar, tools, reader);
+
+    // 正文底部再放一组切章按钮，读完不用滚回去
+    const tail = document.createElement("div");
+    tail.className = "watch-action-bar watch-chapter-tail";
+    if (index > 0) tail.appendChild(watchButton("← 上一章", () => showNovelChapter(item, body, requestId, chapters, index - 1), "watch-download"));
+    if (index < chapters.length - 1) tail.appendChild(watchButton("下一章 →", () => showNovelChapter(item, body, requestId, chapters, index + 1), "watch-download"));
+    if (tail.children.length) body.appendChild(tail);
+    body.scrollIntoView({ block: "start" });
+  }
+
   async function openWatchNovel(item, body, requestId) {
     try {
       const detail = await watchApi(`/api/watch/novel?action=detail&novel=${encodeURIComponent(item.id)}`);
@@ -4335,40 +4563,7 @@
         name.textContent = chapter.title;
         open.append(order, name);
         open.addEventListener("click", async () => {
-          body.innerHTML = '<p class="watch-loading">正在读取正文…</p>';
-          try {
-            const data = await watchApi(`/api/watch/novel?action=chapter&novel=${encodeURIComponent(item.id)}&chapter=${encodeURIComponent(chapter.id)}`);
-            if (!watchViewCurrent(requestId)) return;
-            $(`[data-watch-viewer-title]`).textContent = data.title || chapter.title;
-            const reader = document.createElement("div");
-            reader.className = "watch-reader";
-            (data.blocks || []).forEach((block) => {
-              if (block.type === "image") {
-                const image = document.createElement("img");
-                image.src = watchMediaUrl(block.src);
-                image.alt = "";
-                image.loading = "lazy";
-                image.referrerPolicy = "no-referrer";
-                reader.appendChild(image);
-              } else if (block.text) {
-                const paragraph = document.createElement("p");
-                paragraph.textContent = block.text;
-                reader.appendChild(paragraph);
-              }
-            });
-            saveWatchProgress("novel", item, chapter);
-
-            const bar = document.createElement("div");
-            bar.className = "watch-action-bar";
-            bar.appendChild(watchButton("← 返回目录", () => openWatchNovel(item, body, requestId), "watch-inline-back"));
-            const download = watchButton("下载本章", null, "watch-download");
-            download.addEventListener("click", () => downloadNovelChapterView(item, chapter, data, download));
-            bar.appendChild(download);
-            body.replaceChildren(bar, watchNovelTools(reader), reader);
-            body.scrollIntoView({ block: "start" });
-          } catch (error) {
-            if (watchViewCurrent(requestId)) watchError(body, "阅读失败", error, () => openWatchNovel(item, body, requestId));
-          }
+          await showNovelChapter(item, body, requestId, chapters, index);
         });
 
         const save = watchButton("下载", null, "watch-chapter-download");
@@ -4381,6 +4576,103 @@
     } catch (error) {
       if (watchViewCurrent(requestId)) watchError(body, "目录加载失败", error, () => openWatchItem(item));
     }
+  }
+
+  /**
+   * 渲染某一话漫画（内嵌 + 沉浸模式共用）。
+   * ctx 带上出详情那条线的 source/remoteId/apiHost，换线才不会撞 id。
+   */
+  async function showMangaChapter(item, body, requestId, chapters, index, ctx, immersive = false) {
+    const chapter = chapters[index];
+    if (!chapter) return;
+    if (!immersive) body.innerHTML = '<p class="watch-loading">正在读取漫画…</p>';
+    const params = new URLSearchParams({ action: "chapter", comic: item.id, chapter: chapter.id });
+    if (ctx.effectiveSource) params.set("source", ctx.effectiveSource);
+    if (ctx.remoteId) params.set("remoteId", ctx.remoteId);
+    if (ctx.apiHost) params.set("apiHost", ctx.apiHost);
+
+    let data;
+    try {
+      data = await watchApi(`/api/watch/manga?${params}`);
+    } catch (error) {
+      if (watchViewCurrent(requestId)) watchError(body, "漫画加载失败", error, () => openWatchManga(item, body, requestId));
+      return;
+    }
+    if (!watchViewCurrent(requestId) && !immersive) return;
+
+    const images = data.images || [];
+    const reader = document.createElement("div");
+    reader.className = "watch-manga-reader";
+    images.forEach((src, i) => {
+      const image = document.createElement("img");
+      image.src = watchMediaUrl(src);
+      image.alt = `${chapter.title} 第 ${i + 1} 页`;
+      image.loading = i < 2 ? "eager" : "lazy";
+      image.decoding = "async";
+      image.referrerPolicy = "no-referrer";
+      reader.appendChild(image);
+    });
+    saveWatchProgress("manga", item, chapter);
+    const tools = watchMangaTools(reader);
+    const chapterTitle = `${item.title || ""} · ${chapter.title}`;
+    const stepInto = (n) => {
+      if (n < 0 || n >= chapters.length) return;
+      showMangaChapter(item, body, requestId, chapters, n, ctx, true);
+    };
+
+    if (immersive) {
+      $(`[data-watch-viewer-title]`).textContent = chapterTitle;
+      document.title = `${chapter.title} - ${item.title || "墨小说漫画"}`;
+      mountReadingMode({
+        title: chapterTitle,
+        step: `第 ${index + 1} / ${chapters.length} 话 · ${images.length} 页`,
+        content: reader,
+        tools,
+        chapters,
+        activeId: chapter.id,
+        onPick: (picked) => {
+          const at = chapters.findIndex((c) => c.id === picked.id);
+          if (at >= 0) stepInto(at);
+        },
+        prev: index > 0 ? () => stepInto(index - 1) : null,
+        next: index < chapters.length - 1 ? () => stepInto(index + 1) : null,
+      });
+      return;
+    }
+
+    const bar = document.createElement("div");
+    bar.className = "watch-action-bar";
+    bar.appendChild(watchButton("← 返回目录", () => openWatchManga(item, body, requestId), "watch-inline-back"));
+    bar.appendChild(watchButton("📖 阅读模式", () => showMangaChapter(item, body, requestId, chapters, index, ctx, true), "watch-download"));
+    if (index > 0) bar.appendChild(watchButton("← 上一话", () => showMangaChapter(item, body, requestId, chapters, index - 1, ctx), "watch-download"));
+    if (index < chapters.length - 1) bar.appendChild(watchButton("下一话 →", () => showMangaChapter(item, body, requestId, chapters, index + 1, ctx), "watch-download"));
+    const download = watchButton(`下载本话（${images.length} 张）`, null, "watch-download");
+    download.addEventListener("click", async () => {
+      const original = download.textContent;
+      download.disabled = true;
+      try {
+        const files = await watchDownloadImages(images, item, (text) => { download.textContent = text; });
+        download.textContent = "打包中…";
+        const blob = await watchPackZip(files);
+        watchSaveBlob(blob, watchDownloadName({ title: `${item.title} ${chapter.title}` }, ".zip"));
+        download.textContent = "已下载";
+      } catch (error) {
+        download.textContent = "失败";
+        watchStatus(`下载失败：${error.message}`, true);
+      } finally {
+        download.disabled = false;
+        setTimeout(() => { download.textContent = original; }, 1800);
+      }
+    });
+    bar.appendChild(download);
+    body.replaceChildren(bar, tools, reader);
+
+    const tail = document.createElement("div");
+    tail.className = "watch-action-bar watch-chapter-tail";
+    if (index > 0) tail.appendChild(watchButton("← 上一话", () => showMangaChapter(item, body, requestId, chapters, index - 1, ctx), "watch-download"));
+    if (index < chapters.length - 1) tail.appendChild(watchButton("下一话 →", () => showMangaChapter(item, body, requestId, chapters, index + 1, ctx), "watch-download"));
+    if (tail.children.length) body.appendChild(tail);
+    body.scrollIntoView({ block: "start" });
   }
 
   async function openWatchManga(item, body, requestId) {
@@ -4409,55 +4701,9 @@
 
       const chapters = document.createElement("div");
       chapters.className = "watch-chapters";
-      (detail.chapters || []).forEach((chapter) => chapters.appendChild(watchButton(chapter.title, async () => {
-        body.innerHTML = '<p class="watch-loading">正在读取漫画…</p>';
-        try {
-          const chapterParams = new URLSearchParams({ action: "chapter", comic: item.id, chapter: chapter.id });
-          if (effectiveSource) chapterParams.set("source", effectiveSource);
-          if (remoteId) chapterParams.set("remoteId", remoteId);
-          if (apiHost) chapterParams.set("apiHost", apiHost);
-          const data = await watchApi(`/api/watch/manga?${chapterParams}`);
-          if (!watchViewCurrent(requestId)) return;
-          const reader = document.createElement("div");
-          reader.className = "watch-manga-reader";
-          (data.images || []).forEach((src, index) => {
-            const image = document.createElement("img");
-            image.src = watchMediaUrl(src);
-            image.alt = `${chapter.title} 第 ${index + 1} 页`;
-            image.loading = index < 2 ? "eager" : "lazy";
-            image.decoding = "async";
-            image.referrerPolicy = "no-referrer";
-            reader.appendChild(image);
-          });
-          saveWatchProgress("manga", item, chapter);
-
-          const bar = document.createElement("div");
-          bar.className = "watch-action-bar";
-          bar.appendChild(watchButton("← 返回目录", () => openWatchManga(item, body, requestId), "watch-inline-back"));
-          const download = watchButton(`下载本话（${(data.images || []).length} 张）`, null, "watch-download");
-          download.addEventListener("click", async () => {
-            const original = download.textContent;
-            download.disabled = true;
-            try {
-              const files = await watchDownloadImages(data.images || [], item, (text) => { download.textContent = text; });
-              download.textContent = "打包中…";
-              const blob = await watchPackZip(files);
-              watchSaveBlob(blob, watchDownloadName({ title: `${item.title} ${chapter.title}` }, ".zip"));
-              download.textContent = "已下载";
-            } catch (error) {
-              download.textContent = "失败";
-              watchStatus(`下载失败：${error.message}`, true);
-            } finally {
-              download.disabled = false;
-              setTimeout(() => { download.textContent = original; }, 1800);
-            }
-          });
-          bar.appendChild(download);
-          body.replaceChildren(bar, watchMangaTools(reader), reader);
-          body.scrollIntoView({ block: "start" });
-        } catch (error) {
-          if (watchViewCurrent(requestId)) watchError(body, "漫画加载失败", error, () => openWatchManga(item, body, requestId));
-        }
+      (detail.chapters || []).forEach((chapter, chapterIndex) => chapters.appendChild(watchButton(chapter.title, async () => {
+        await showMangaChapter(item, body, requestId, detail.chapters || [], chapterIndex,
+          { effectiveSource, remoteId, apiHost }, false);
       })));
       body.appendChild(chapters);
       if (!detail.chapters?.length) {
@@ -4624,6 +4870,8 @@
   function closeWatchViewer() {
     state.watchViewRequest++;
     state.watchViewerOpen = false;
+    closeReadingMode();
+    document.title = "墨小说漫画 · 资源导航";
     const viewer = $("[data-watch-viewer]");
     const body = $("[data-watch-viewer-body]");
     const media = body?.querySelector("audio, video");

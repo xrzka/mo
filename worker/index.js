@@ -425,6 +425,34 @@ function mangaImageHostAllowed(host) {
 }
 const WATCH_VIDEO_HOSTS = /(?:^|\.)(?:92cj\.com|upaiyun\.com|bcebos\.com|qpic\.cn|qq\.com)$/i;
 
+/* 小说正文插图走独立图床（lazysizes 的 data-src），域名跟正文站不同。
+ * 之前只放行正文站自身域名，导致插图一律 403「asset host not allowed」。
+ * 按「基础域名 + 子域」放行，新图床只需往这里加一项。 */
+const WATCH_NOVEL_IMAGE_DOMAINS = [
+  "readpai.com",     // linovelib / bilinovel 正文插图 CDN（img3.readpai.com）
+  "linovelib.com", "bilinovel.com",
+];
+
+function novelImageHostAllowed(host) {
+  const name = String(host || "").toLowerCase();
+  if (WATCH_NOVEL_ORIGINS.some((origin) => name === new URL(origin).hostname)) return true;
+  return WATCH_NOVEL_IMAGE_DOMAINS.some((domain) => name === domain || name.endsWith(`.${domain}`));
+}
+
+/** 站徽/图标/懒加载占位这类装饰图，不是正文插图。
+ *  只检查路径与文件名，避开域名误判（readpai.com 含 "ad"）。 */
+function isNovelDecorationImage(value) {
+  let path = String(value || "");
+  try {
+    const parsed = new URL(path);
+    path = `${parsed.pathname}${parsed.search}`;
+  } catch { /* 相对路径原样判断 */ }
+  const name = path.split("/").pop() || "";
+  return /(?:^|\/)(?:logo|icon|avatar|sloading|loading|blank|spacer|placeholder)[^/]*$/i.test(path)
+    || /(?:^|[-_.])(?:logo|icon|avatar|ads?|banner)(?:[-_.]|$)/i.test(name)
+    || /\.svg(?:$|\?)/i.test(name);
+}
+
 const WATCH_ENTITIES = {
   nbsp: " ", amp: "&", quot: '"', apos: "'", lt: "<", gt: ">",
   hellip: "…", mdash: "—", ndash: "–", middot: "·", times: "×",
@@ -1091,7 +1119,9 @@ function parseNovelChapter(html, origin, novelId, chapterId) {
   while ((token = tokenRe.exec(raw)) && blocks.length < 500) {
     if (token[1]) {
       const imageUrl = absoluteWatchUrl(token[1], origin);
-      if (imageUrl && !/logo|icon|avatar|ads?/i.test(imageUrl)) {
+      // 只按「路径 + 文件名」判广告/图标，绝不能拿整条 URL 判：
+      // readpai.com 里的 "re-ad-pai" 含 "ad"，裸子串匹配会把所有插图误杀。
+      if (imageUrl && !isNovelDecorationImage(imageUrl)) {
         blocks.push({ type: "image", src: proxyWatchAsset(imageUrl, "novel") });
       }
     } else {
@@ -1331,7 +1361,7 @@ async function watchAsset(request, url) {
   try { target = new URL(url.searchParams.get("url") || ""); } catch { return json({ error: "bad asset url" }, request, 400); }
   const host = target.hostname.toLowerCase();
   const allowed = target.protocol === "https:" && (
-    (kind === "novel" && WATCH_NOVEL_ORIGINS.some((origin) => host === new URL(origin).hostname))
+    (kind === "novel" && novelImageHostAllowed(host))
     || (kind === "manga" && mangaImageHostAllowed(host))
     || (kind === "anime" && (WATCH_VIDEO_HOSTS.test(host) || WATCH_ANIME_ORIGINS.some((origin) => host === new URL(origin).hostname)))
   );
@@ -2358,6 +2388,8 @@ export const _internal = {
   mangaImageUrl,
   parseNovelCards,
   parseNovelChapter,
+  isNovelDecorationImage,
+  novelImageHostAllowed,
   collectMangaComics,
   parseAnimeCards,
   parseAnimeEpisodes,
