@@ -467,6 +467,140 @@
     setTimeout(() => (btn.textContent = original), 1500);
   }
 
+  /** 百分比加载进度图片：小说插图 / 漫画页 / CS 封面与截图共用。
+   *
+   *  为什么要 fetch 流式读：<img> 只有 onload/onerror，没有进度事件；要拿到
+   *  「已下载/总大小」只能自己 fetch + ReadableStream 累加 chunk。两条路各有代价：
+   *   - 图床给了 Content-Length 且 CORS 放行 → 精确百分比；
+   *   - 不给长度 / 不给 CORS → 拿不到字节数，退化成「不确定态」进度条（照样转圈），
+   *     并且在 fetch 失败时**直接回落给 <img> 自己加载**（可能是跨域没放开，
+   *     但 <img> 不吃 CORS，能正常显示），保证图一定显示得出来。
+   *
+   *  行为按需求：到 100% 或加载失败才「完整展示」（淡入），中途只显示进度。
+   */
+  function loadImageWithProgress(src, opts = {}) {
+    const {
+      alt = "", className = "", wrapClass = "img-progress-wrap",
+      onDone = null, retryOnFail = false, lazy = false,
+    } = opts;
+    const wrap = document.createElement("div");
+    wrap.className = wrapClass;
+
+    const bar = document.createElement("div");
+    bar.className = "img-progress";
+    const fill = document.createElement("i");
+    fill.className = "img-progress-fill";
+    const pct = document.createElement("span");
+    pct.className = "img-progress-pct";
+    pct.textContent = "0%";
+    bar.append(fill, pct);
+
+    const img = document.createElement("img");
+    img.className = className;
+    img.alt = alt;
+    img.decoding = "async";
+    img.referrerPolicy = "no-referrer";   // 图床（linovelib 等）认 referer，浏览器直载也要挡
+    img.hidden = true;                    // 没到 100% 不显示（避免半张图闪）
+    wrap.append(bar, img);
+
+    let settled = true;                   // 先 true：lazy 未 arm 前不会被 12s 兜底误判
+    let idleTimer = 0;
+    let failBox = null;
+    let observer = null;
+
+    const setPct = (p) => {
+      const v = Math.max(0, Math.min(100, Math.round(p)));
+      fill.style.width = v + "%";
+      pct.textContent = v + "%";
+    };
+    const finish = (ok) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(idleTimer);
+      bar.remove();
+      if (ok) {
+        img.hidden = false;
+      } else if (retryOnFail) {
+        // 失败态也算「完整展示」：占位 + 点击重试，不给半张图
+        failBox = document.createElement("button");
+        failBox.type = "button";
+        failBox.className = "img-progress-fail";
+        failBox.textContent = "图片加载失败 · 点击重试";
+        failBox.addEventListener("click", () => retry());
+        wrap.appendChild(failBox);
+      }
+      wrap.classList.add(ok ? "is-loaded" : "is-failed");
+      onDone && onDone(ok);
+    };
+
+    function loadDirect() {
+      if (img.getAttribute("src")) return;
+      img.src = src;
+      img.addEventListener("load", () => finish(true), { once: true });
+      img.addEventListener("error", () => finish(false), { once: true });
+    }
+
+    function begin() {
+      if (typeof fetch !== "function" || !window.ReadableStream) { loadDirect(); return; }
+      (async () => {
+        let res;
+        try {
+          res = await fetch(src, { mode: "cors", credentials: "omit", referrerPolicy: "no-referrer" });
+        } catch { loadDirect(); return; }
+        if (!res.ok || !res.body || !res.body.getReader) { loadDirect(); return; }
+        const total = Number(res.headers.get("content-length")) || 0;
+        try {
+          const reader = res.body.getReader();
+          const chunks = [];
+          let got = 0;
+          for (;;) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            chunks.push(value);
+            got += value.length;
+            if (total) setPct((got / total) * 100);
+            else setPct(Math.min(95, (got / 262144) * 100)); // 无长度：按 256KB 估一个渐进值，封顶 95%
+          }
+          setPct(100);
+          const blob = new Blob(chunks, { type: res.headers.get("content-type") || "image/*" });
+          img.src = URL.createObjectURL(blob);
+          img.addEventListener("load", () => finish(true), { once: true });
+          img.addEventListener("error", () => finish(false), { once: true });
+        } catch { loadDirect(); }
+      })();
+      // 兜底：流式读卡住不动时，交给 <img> 自己加载，别让图永远不出现
+      idleTimer = setTimeout(() => { if (!settled && !img.getAttribute("src")) loadDirect(); }, 12000);
+    }
+
+    function retry() {
+      settled = false;
+      wrap.classList.remove("is-loaded", "is-failed");
+      if (failBox) { failBox.remove(); failBox = null; }
+      img.removeAttribute("src");
+      img.hidden = true;
+      if (!bar.isConnected) wrap.prepend(bar);
+      setPct(0);
+      begin();
+    }
+
+    // lazy：一章漫画二三十张图，别把流量一次性打满；滚到视口附近才开始计进度
+    if (lazy && typeof IntersectionObserver === "function") {
+      observer = new IntersectionObserver((entries) => {
+        if (!entries.some((e) => e.isIntersecting)) return;
+        observer.disconnect();
+        observer = null;
+        settled = false;
+        begin();
+      }, { rootMargin: "250% 0px" });
+      observer.observe(wrap);
+    } else {
+      settled = false;
+      begin();
+    }
+
+    return wrap;
+  }
+
   /** 图片大图查看：CS 截图在窄列里看不清，点图放大。
    *  点图=下一张，点背景/按 Esc=关闭。遮罩盖住一切但只由本组件创建。 */
   function openLightbox(srcs, start) {
@@ -783,16 +917,17 @@
     field("description").textContent = item.description;
 
     // CS 区以图片为主：条目带 image 字段时，把该图作为卡片主视觉（图下方
-    // 仍是名称/简介）。图片加载失败或留空就回落成普通图标卡片。
+    // 仍是名称/简介）。带百分比进度，加载失败或留空就回落成普通图标卡片。
     if (item.image) {
       node.classList.add("has-image");
-      const img = document.createElement("img");
-      img.className = "cs-image";
-      img.src = item.image;
-      img.alt = item.name || "图片";
-      img.loading = "lazy";
-      img.addEventListener("error", () => img.remove());
-      node.prepend(img);
+      const holder = loadImageWithProgress(item.image, {
+        alt: item.name || "图片",
+        className: "cs-image",
+        onDone: (ok) => {
+          if (!ok) { holder.remove(); node.classList.remove("has-image"); }
+        },
+      });
+      node.prepend(holder);
     }
 
     // 多图（CS 挂人记录：四张截图 = 一张卡）。点开可看大图，再点任意处关闭。
@@ -801,16 +936,19 @@
       const gal = document.createElement("div");
       gal.className = "cs-gallery";
       item.images.forEach((src, gi) => {
-        const img = document.createElement("img");
-        img.src = src;
-        img.alt = (item.name || "图片") + " " + (gi + 1);
-        img.loading = "lazy";
-        img.addEventListener("error", () => img.remove());
-        img.addEventListener("click", (e) => {
+        const holder = loadImageWithProgress(src, {
+          alt: (item.name || "图片") + " " + (gi + 1),
+          wrapClass: "img-progress-wrap cs-gallery-cell",
+          onDone: (ok) => {
+            if (!ok) holder.remove();
+          },
+        });
+        holder.addEventListener("click", (e) => {
+          if (e.target.closest(".img-progress")) return; // 还在加载中，点了不放大
           e.stopPropagation();
           openLightbox(item.images, gi);
         });
-        gal.appendChild(img);
+        gal.appendChild(holder);
       });
       node.prepend(gal);
     }
@@ -3497,14 +3635,26 @@
     } catch { return {}; }
   }
 
-  function saveWatchProgress(kind, item, part = null) {
+  function saveWatchProgress(kind, item, part = null, partIndex = null) {
     try {
       const all = watchProgress();
-      all[kind] = {
+      const prev = all[kind];
+      const rec = {
         id: String(item.id), title: item.title,
         partId: part ? String(part.id) : "",
-        partTitle: part?.title || "", at: Date.now(),
+        partTitle: part?.title || "",
+        // 记下标，恢复时不用靠标题匹配（标题可能重名或带卷名变动）
+        partIndex: Number.isInteger(partIndex) && partIndex >= 0 ? partIndex : null,
+        at: Date.now(),
       };
+      // 根因修复：打开条目（卡片点击处不带 part）时沿用原章节进度。
+      // 之前是整条覆盖 → 刷新后一点开书，partId 先被抹成 ""，「继续阅读」条永远出不来。
+      if (!part && prev && String(prev.id) === rec.id) {
+        rec.partId = prev.partId || "";
+        rec.partTitle = prev.partTitle || "";
+        rec.partIndex = Number.isInteger(prev.partIndex) ? prev.partIndex : null;
+      }
+      all[kind] = rec;
       localStorage.setItem(WATCH_PROGRESS_KEY, JSON.stringify(all));
     } catch { /* 无痕模式下不影响观看 */ }
   }
@@ -4261,6 +4411,31 @@
     let headHost = null;     // 工具条容器
     let drawer = null;       // 目录抽屉
     let onPrev = null, onNext = null;
+    let hintTimer = null;
+
+    /** 沉浸/常规切换：点正文区域收起或叫回顶栏+工具条+底栏。
+     *  点链接、按钮、图片之外的空白（或正文段落）才算切换，避免误收起后点不到东西。 */
+    function setImmersive(on) {
+      if (!overlay) return;
+      overlay.classList.toggle("is-immersive", !!on);
+      if (on) {
+        const hint = document.createElement("div");
+        hint.className = "read-mode-hint";
+        hint.textContent = "已进入沉浸模式 · 点一下正文可叫回工具栏";
+        overlay.appendChild(hint);
+        clearTimeout(hintTimer);
+        hintTimer = setTimeout(() => hint.remove(), 2700);
+      } else {
+        overlay.querySelectorAll(".read-mode-hint").forEach((n) => n.remove());
+      }
+    }
+
+    function toggleImmersive() {
+      if (!overlay) return;
+      // 目录抽屉开着的时候不切换，否则用户看不清自己点了什么
+      if (drawer && !drawer.hidden) return;
+      setImmersive(!overlay.classList.contains("is-immersive"));
+    }
 
     function build() {
       overlay = document.createElement("div");
@@ -4289,7 +4464,14 @@
         if (!drawer) return;
         drawer.hidden = !drawer.hidden;
       });
-      top.append(close, titleNode, stepNode, tocBtn);
+      // 显式入口：桌面端不像手机那样下意识「点一下」，给个按钮
+      const immBtn = document.createElement("button");
+      immBtn.type = "button";
+      immBtn.className = "read-mode-toc-btn";
+      immBtn.textContent = "⤢ 沉浸";
+      immBtn.title = "隐藏顶栏/底栏，只留正文（点正文可来回切换）";
+      immBtn.addEventListener("click", () => setImmersive(true));
+      top.append(close, titleNode, stepNode, tocBtn, immBtn);
 
       headHost = document.createElement("div");
       headHost.className = "read-mode-tools";
@@ -4316,7 +4498,12 @@
       nav.append(prev, next);
 
       overlay.append(top, drawer, headHost, host, nav);
-      overlay.addEventListener("click", (event) => { if (event.target === overlay) closeReadingMode(); });
+      overlay.addEventListener("click", (event) => { if (event.target === overlay) setImmersive(false); });
+      // 点正文区域（不含工具栏/目录/按钮/链接）= 切换沉浸；图片点击仍走自己的逻辑
+      host.addEventListener("click", (event) => {
+        if (event.target.closest("button, a, .read-mode-drawer, .read-mode-top, .read-mode-nav, .read-mode-tools")) return;
+        toggleImmersive();
+      });
       document.body.appendChild(overlay);
     }
 
@@ -4357,6 +4544,7 @@
       host.appendChild(content);
       host.scrollTop = 0;
       overlay.hidden = false;
+      setImmersive(false); // 每次进/换章都先显示工具栏，避免一片空白不知道能点什么
       document.body.classList.add("no-scroll");
       window.scrollTo({ top: 0 });
     }
@@ -4364,6 +4552,7 @@
     function closeReadingMode() {
       if (!overlay) return;
       overlay.hidden = true;
+      setImmersive(false);
       document.body.classList.remove("no-scroll");
       onPrev = onNext = null;
     }
@@ -4381,18 +4570,37 @@
     }
   }, true);
 
+  /* 当前正在读的内容上下文：给 ← / → 翻章用。
+   * 内嵌阅读和沉浸模式都会登记，退出目录/关闭观看区时清掉，避免误翻。 */
+  let readingContext = null;
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+    const target = event.target;
+    // 正在搜索框/输入框里打字时不要抢方向键
+    if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)) return;
+    const ctx = readingContext;
+    if (!ctx || !ctx.chapters?.length) return;
+    const next = ctx.index + (event.key === "ArrowLeft" ? -1 : 1);
+    if (next < 0 || next >= ctx.chapters.length) return;
+    event.preventDefault();
+    ctx.go(next);
+  });
+
   /** 把 blocks 渲染成阅读用的正文节点（小说/漫画共用）。 */
   function renderNovelBlocks(blocks, className = "watch-reader") {
     const reader = document.createElement("div");
     reader.className = className;
     (blocks || []).forEach((block) => {
       if (block.type === "image") {
-        const image = document.createElement("img");
-        image.src = watchMediaUrl(block.src);
-        image.alt = "";
-        image.loading = "lazy";
-        image.referrerPolicy = "no-referrer";
-        reader.appendChild(image);
+        // 小说插图 / 漫画页：百分比进度，100% 或失败才完整展示（失败可点击重试）。
+        // lazy=视口附近才拉，省流量；worker asset 带 ACAO，能走流式精确百分比。
+        reader.appendChild(loadImageWithProgress(watchMediaUrl(block.src), {
+          alt: "",
+          wrapClass: "img-progress-wrap reader-image",
+          lazy: true,
+          retryOnFail: true,
+        }));
       } else if (block.text) {
         const paragraph = document.createElement("p");
         paragraph.textContent = block.text;
@@ -4421,7 +4629,7 @@
 
     const title = data.title || chapter.title;
     const chapterTitle = `${item.title || ""} · ${title}`;
-    saveWatchProgress("novel", item, chapter);
+    saveWatchProgress("novel", item, chapter, index);
 
     const reader = renderNovelBlocks(data.blocks);
     const tools = watchNovelTools(reader);
@@ -4432,6 +4640,8 @@
       showNovelChapter(item, body, requestId, chapters, nextIndex, true);
     };
     const enterMode = () => showNovelChapter(item, body, requestId, chapters, index, true);
+    // 登记给 ← / → 用：不论内嵌还是沉浸模式，方向键都能翻章
+    readingContext = { chapters, index, go: (n) => showNovelChapter(item, body, requestId, chapters, n, immersive) };
 
     if (immersive) {
       $(`[data-watch-viewer-title]`).textContent = chapterTitle;
@@ -4545,12 +4755,47 @@
       }
       body.appendChild(tools);
 
+      // 「继续阅读」：这本书上次读到哪一章。
+      // 匹配顺序 = partId（权威，两边都 String() 归一化，上游数字/字符串混返都不会误判）
+      //          → partIndex（下标兜底，要求下标处标题也对得上，防章节表变动后跳错）
+      //          → partTitle（老记录兜底：早期版本没存下标，partId 也可能为空）。
+      const saved = watchProgress().novel;
+      let resumeAt = -1;
+      if (saved && String(saved.id) === String(item.id) && chapters.length) {
+        const sameId = (a, b) => a != null && b != null && String(a) === String(b);
+        if (saved.partId) {
+          const byId = chapters.findIndex((c) => sameId(c.id, saved.partId));
+          if (byId >= 0) resumeAt = byId;
+        }
+        if (resumeAt < 0
+            && Number.isInteger(saved.partIndex)
+            && saved.partIndex >= 0 && saved.partIndex < chapters.length) {
+          const at = chapters[saved.partIndex];
+          if (!saved.partTitle || String(at.title) === String(saved.partTitle)) resumeAt = saved.partIndex;
+        }
+        if (resumeAt < 0 && saved.partTitle) {
+          const byTitle = chapters.findIndex((c) => String(c.title) === String(saved.partTitle));
+          if (byTitle >= 0) resumeAt = byTitle;
+        }
+      }
+      if (resumeAt >= 0) {
+        const resume = document.createElement("div");
+        resume.className = "watch-resume";
+        const text = document.createElement("span");
+        text.className = "watch-resume-text";
+        text.textContent = `上次读到 第 ${resumeAt + 1} 章「${chapters[resumeAt].title}」`;
+        const go = watchButton("继续阅读 →", () => showNovelChapter(item, body, requestId, chapters, resumeAt), "watch-resume-btn");
+        resume.append(text, go);
+        body.appendChild(resume);
+      }
+
       // 目录按「卷 / 章节」分列，避免几百章挤成一坨。
       const list = document.createElement("div");
       list.className = "watch-chapter-list";
       chapters.forEach((chapter, index) => {
         const row = document.createElement("div");
         row.className = "watch-chapter-row";
+        if (index === resumeAt) row.classList.add("is-current");
 
         const open = document.createElement("button");
         open.type = "button";
@@ -4612,13 +4857,14 @@
       image.referrerPolicy = "no-referrer";
       reader.appendChild(image);
     });
-    saveWatchProgress("manga", item, chapter);
+    saveWatchProgress("manga", item, chapter, index);
     const tools = watchMangaTools(reader);
     const chapterTitle = `${item.title || ""} · ${chapter.title}`;
     const stepInto = (n) => {
       if (n < 0 || n >= chapters.length) return;
       showMangaChapter(item, body, requestId, chapters, n, ctx, true);
     };
+    readingContext = { chapters, index, go: (n) => showMangaChapter(item, body, requestId, chapters, n, ctx, immersive) };
 
     if (immersive) {
       $(`[data-watch-viewer-title]`).textContent = chapterTitle;
@@ -4699,12 +4945,49 @@
       meta.textContent = `当前线路：${shownSource}${detail.description ? ` · ${detail.description}` : ""}`;
       body.appendChild(meta);
 
+      const mangaChapters = detail.chapters || [];
+      const mangaCtx = { effectiveSource, remoteId, apiHost };
+      // 「继续阅读」：和小说同一套匹配顺序（partId → partIndex → partTitle），
+      // 类型一律 String() 归一化，避免数字/字符串 id 比较误判导致整条不出现。
+      const savedManga = watchProgress().manga;
+      let mangaResumeAt = -1;
+      if (savedManga && String(savedManga.id) === String(item.id) && mangaChapters.length) {
+        const sameId = (a, b) => a != null && b != null && String(a) === String(b);
+        if (savedManga.partId) {
+          const byId = mangaChapters.findIndex((c) => sameId(c.id, savedManga.partId));
+          if (byId >= 0) mangaResumeAt = byId;
+        }
+        if (mangaResumeAt < 0
+            && Number.isInteger(savedManga.partIndex)
+            && savedManga.partIndex >= 0 && savedManga.partIndex < mangaChapters.length) {
+          const at = mangaChapters[savedManga.partIndex];
+          if (!savedManga.partTitle || String(at.title) === String(savedManga.partTitle)) mangaResumeAt = savedManga.partIndex;
+        }
+        if (mangaResumeAt < 0 && savedManga.partTitle) {
+          const byTitle = mangaChapters.findIndex((c) => String(c.title) === String(savedManga.partTitle));
+          if (byTitle >= 0) mangaResumeAt = byTitle;
+        }
+      }
+      if (mangaResumeAt >= 0) {
+        const resume = document.createElement("div");
+        resume.className = "watch-resume";
+        const text = document.createElement("span");
+        text.className = "watch-resume-text";
+        text.textContent = `上次看到「${mangaChapters[mangaResumeAt].title}」`;
+        resume.append(text, watchButton("继续阅读 →", () =>
+          showMangaChapter(item, body, requestId, mangaChapters, mangaResumeAt, mangaCtx, false), "watch-resume-btn"));
+        body.appendChild(resume);
+      }
+
       const chapters = document.createElement("div");
       chapters.className = "watch-chapters";
-      (detail.chapters || []).forEach((chapter, chapterIndex) => chapters.appendChild(watchButton(chapter.title, async () => {
-        await showMangaChapter(item, body, requestId, detail.chapters || [], chapterIndex,
-          { effectiveSource, remoteId, apiHost }, false);
-      })));
+      mangaChapters.forEach((chapter, chapterIndex) => {
+        const btn = watchButton(chapter.title, async () => {
+          await showMangaChapter(item, body, requestId, mangaChapters, chapterIndex, mangaCtx, false);
+        });
+        if (chapterIndex === mangaResumeAt) btn.classList.add("is-current");
+        chapters.appendChild(btn);
+      });
       body.appendChild(chapters);
       if (!detail.chapters?.length) {
         renderWatchMessage(body, source
@@ -4870,6 +5153,7 @@
   function closeWatchViewer() {
     state.watchViewRequest++;
     state.watchViewerOpen = false;
+    readingContext = null;
     closeReadingMode();
     document.title = "墨小说漫画 · 资源导航";
     const viewer = $("[data-watch-viewer]");
