@@ -3529,7 +3529,7 @@
 
   const WATCH_PAGE_SIZE = 24;
   // 动画区嵌入原站的地址（与 APK 的 MOBILE_ANIMATION_BASE 一致）
-  const WATCH_ANIME_EMBED_BASE = "https://www.lmm85.com";
+  // 动画区走量子资源 API + 自建 hls.js 播放器（见 openWatchAnime / watchMountVideo）。
 
   function currentSource() {
     if (state.watchKind !== "manga") return "";
@@ -4058,19 +4058,6 @@
     });
   }
 
-  /** 动画区嵌入原站（lmm85）。Worker 的数据中心 IP 被上游 Cloudflare
-   *  challenge 拦住（403），但真实浏览器直连能过 —— 这就是 APK 用
-   *  WebView 能看的原理。所以动画区不渲染 Worker 卡片，直接 iframe
-   *  嵌入原站，浏览器直连，用户在原站里看列表/搜索/选集/播放。 */
-  function watchAnimeEmbedUrl(q) {
-    const base = WATCH_ANIME_EMBED_BASE || "https://www.lmm85.com";
-    const keyword = String(q || "").trim();
-    if (!keyword) return `${base}/type/dongman.html`;
-    // MacCMS 搜索：/index.php/ajax/suggest 是 JSON，页面搜索走 /vodsearch.html 之类；
-    // 统一用 /vodsearch/ 段式路由（MacCMS 常见），失败兜底回列表。
-    return `${base}/vodsearch/${encodeURIComponent(keyword)}-------------.html`;
-  }
-
   function renderWatch() {
     const grid = $("[data-watch-grid]");
     const viewer = $("[data-watch-viewer]");
@@ -4083,39 +4070,6 @@
     }
     viewer.hidden = true;
     grid.hidden = false;
-
-    // 动画区：iframe 嵌入原站（非搜索、非加载态时）
-    if (state.watchKind === "anime" && !state.watchLoading && !state.watchError) {
-      const existing = grid.querySelector("iframe[data-watch-anime-embed]");
-      const target = watchAnimeEmbedUrl(state.watchQuery);
-      if (existing && existing.dataset.animeTarget === target) return;
-      grid.textContent = "";
-      const frame = document.createElement("iframe");
-      frame.dataset.watchAnimeEmbed = "1";
-      frame.dataset.animeTarget = target;
-      frame.className = "watch-anime-embed";
-      frame.src = target;
-      frame.title = "路漫漫动画（原站嵌入）";
-      frame.allow = "autoplay; fullscreen; encrypted-media; picture-in-picture";
-      grid.appendChild(frame);
-      const bar = document.createElement("div");
-      bar.className = "watch-anime-embed-bar";
-      const open = document.createElement("a");
-      open.href = target;
-      open.target = "_blank";
-      open.rel = "noopener";
-      open.textContent = "新窗口打开";
-      open.className = "watch-page-btn";
-      const refresh = document.createElement("button");
-      refresh.type = "button";
-      refresh.className = "watch-page-btn";
-      refresh.textContent = "刷新";
-      refresh.addEventListener("click", () => { frame.src = target; });
-      bar.appendChild(open);
-      bar.appendChild(refresh);
-      grid.appendChild(bar);
-      return;
-    }
 
     const list = $("[data-watch-list]");
     if (!list) return;
