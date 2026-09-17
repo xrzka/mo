@@ -398,6 +398,10 @@ async function watchAudio(request, url) {
 const WATCH_NOVEL_ORIGINS = [
   "https://tw.linovelib.com", "https://www.bilinovel.com", "https://www.linovelib.com",
 ];
+// 搜索端点是桌面版 www.linovelib.com/S6/（POST）。带 searchkey 的请求会被
+// Cloudflare Managed Challenge 拦下（需要浏览器 JS 计算，纯 HTTP 拿不到结果），
+// 所以这里只做「尝试」，真正兜底靠 searchNovelLocal 抓 wenku 列表本地匹配。
+const WATCH_NOVEL_SEARCH_ORIGINS = ["https://www.linovelib.com"];
 const WATCH_ANIME_ORIGINS = ["https://www.lmm85.com", "https://m.lm6.net"];
 const WATCH_MANGA_API_ORIGINS = [
   "http://crm.weichu.asia", "http://meiwenti.xn--vhqr42drhf5k7b.com",
@@ -430,12 +434,13 @@ const WATCH_VIDEO_HOSTS = /(?:^|\.)(?:92cj\.com|upaiyun\.com|bcebos\.com|qpic\.c
  * 按「基础域名 + 子域」放行，新图床只需往这里加一项。 */
 const WATCH_NOVEL_IMAGE_DOMAINS = [
   "readpai.com",     // linovelib / bilinovel 正文插图 CDN（img3.readpai.com）
-  "linovelib.com", "bilinovel.com",
+  "linovelib.com", "bilinovel.com", "bilinovel.net",
 ];
 
 function novelImageHostAllowed(host) {
   const name = String(host || "").toLowerCase();
   if (WATCH_NOVEL_ORIGINS.some((origin) => name === new URL(origin).hostname)) return true;
+  if (WATCH_NOVEL_SEARCH_ORIGINS.some((origin) => name === new URL(origin).hostname)) return true;
   return WATCH_NOVEL_IMAGE_DOMAINS.some((domain) => name === domain || name.endsWith(`.${domain}`));
 }
 
@@ -501,9 +506,182 @@ async function fetchFirstWatchHtml(origins, path) {
   throw new Error(errors.join("; ") || "upstream unavailable");
 }
 
+/** 小说搜索（桌面版 www.linovelib.com/S6/，POST）。
+ *  带 searchkey 的请求被 Cloudflare Managed Challenge 保护，纯 HTTP 大概率
+ *  拿不到结果（返回 0 字节 challenge 占位页）。这里走完整 guard 流程尝试一次，
+ *  失败由上层回退到 searchNovelLocal 本地 wenku 索引匹配。 */
+async function fetchNovelSearch(q) {
+  const origin = WATCH_NOVEL_SEARCH_ORIGINS[0];
+  const allowed = [origin, ...WATCH_NOVEL_ORIGINS].map((o) => new URL(o).hostname.toLowerCase());
+  const DESKTOP_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+  let cookie = "";
+
+  // 1) search_guard=js 拿 jieqiSearchJs token
+  try {
+    const jsRes = await watchFetch(`${origin}/S6/?search_guard=js`, {
+      headers: { Accept: "*/*", "User-Agent": DESKTOP_UA, "Accept-Language": "zh-CN,zh;q=0.9", Referer: `${origin}/S6/` },
+    }, 12000, allowed);
+    if (jsRes.ok) {
+      const jsBody = await jsRes.text();
+      const token = jsBody.match(/jieqiSearchJs=([^";]+)/)?.[1] || "";
+      if (token) cookie = `jieqiSearchJs=${token}`;
+    }
+  } catch { /* token 拿不到就裸搜 */ }
+
+  // 2) redeem（触发服务端放行）
+  if (cookie) {
+    try {
+      await watchFetch(`${origin}/S6/?search_guard=redeem&r=${Date.now()}`, {
+        headers: { Accept: "*/*", "User-Agent": DESKTOP_UA, Cookie: cookie, "Accept-Language": "zh-CN,zh;q=0.9", Referer: `${origin}/S6/` },
+      }, 12000, allowed);
+    } catch { /* redeem 失败不致命 */ }
+  }
+
+  // 3) POST 搜索
+  const response = await watchFetch(`${origin}/S6/`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+      Accept: "text/html,application/xhtml+xml",
+      "User-Agent": DESKTOP_UA,
+      "Accept-Language": "zh-CN,zh;q=0.9",
+      Referer: `${origin}/S6/`,
+      ...(cookie ? { Cookie: cookie } : {}),
+    },
+    body: `searchkey=${encodeURIComponent(q)}`,
+  }, 25000, allowed);
+  if (!response.ok) throw new Error(`upstream HTTP ${response.status}`);
+  const html = await response.text();
+  if (!html || html.length < 200) throw new Error("empty search result (CF challenge)");
+  return { html, origin };
+}
+
+/** 本地搜索兜底：linovelib 搜索被 CF 拦时，抓 wenku 列表前 N 页做标题/简介匹配。
+ *  wenku 每页 30 本，抓 8 页约 240 本（最新/热门优先），覆盖绝大多数用户搜索。
+ *  索引缓存在 globalThis（Worker 隔离实例内存），10 分钟刷新一次，避免每次搜索
+ *  都抓 8 页触发 linovelib 429 限流。 */
+let novelLocalIndexCache = null;
+async function searchNovelLocal(q) {
+  const keyword = String(q || "").trim();
+  if (!keyword) return [];
+  const pages = 8;
+  const cacheTtl = 10 * 60 * 1000; // 10 分钟
+
+  // 读缓存（跨请求共享，避免 429）
+  if (!novelLocalIndexCache || Date.now() - novelLocalIndexCache.at > cacheTtl) {
+    novelLocalIndexCache = await buildNovelLocalIndex(pages);
+  }
+  const cards = novelLocalIndexCache.cards;
+
+  // 匹配：标题包含关键词（简/繁都试），去掉书名号/空格归一
+  const norm = (s) => String(s || "").replace(/[\s·・《》「」]/g, "");
+  const k = norm(keyword);
+  const kT = norm(novelS2T(keyword));
+  const kS = norm(novelT2S(keyword));
+  const hits = cards.filter((c) => {
+    const t = norm(c.title);
+    return t.includes(k) || t.includes(kT) || t.includes(kS)
+      || (k.length >= 2 && t.includes(k.slice(0, Math.max(2, k.length - 1))));
+  });
+  return hits.slice(0, 30);
+}
+
+/** 构建 wenku 本地索引（抓前 N 页，第 1 页带重试，后续页串行）。 */
+async function buildNovelLocalIndex(pages = 8) {
+  const origin = "https://tw.linovelib.com";
+  const cards = [];
+  const seen = new Set();
+
+  const grabPage = async (page) => {
+    const html = await fetchWatchHtml(`${origin}/wenku/lastupdate_0_0_0_0_0_0_0_${page}_0.html`, `${origin}/wenku/`);
+    const re = /<li[^>]*class=["'][^"']*book-li[^"']*["'][^>]*>([\s\S]*?)<\/li>/gi;
+    const out = [];
+    let m;
+    while ((m = re.exec(html))) {
+      const block = m[1];
+      const href = block.match(/href=["'](\/novel\/(\d+)\.html)["']/i);
+      if (!href) continue;
+      const title = stripTags(block.match(/class=["']book-title["'][^>]*>([\s\S]*?)<\//i)?.[1] || "");
+      if (!title) continue;
+      const images = [...block.matchAll(/(?:data-src|src)=["']([^"']+)["']/gi)]
+        .map((e) => e[1]).filter((v) => v && !/book-cover-no|data:image/i.test(v));
+      const coverUrl = absoluteWatchUrl(images[0] || "", origin);
+      out.push({ id: href[2], title, cover: coverUrl ? proxyWatchAsset(coverUrl, "novel") : "", subtitle: "哔哩轻小说" });
+    }
+    return out;
+  };
+
+  // 第 1 页带重试
+  let page1 = [];
+  for (let attempt = 0; attempt < 2 && !page1.length; attempt++) {
+    try { page1 = await grabPage(1); } catch { /* 重试 */ }
+  }
+  for (const c of page1) if (!seen.has(c.id)) { seen.add(c.id); cards.push(c); }
+
+  // 第 1 页底部的「大家都在搜」标签（jsSearchLink）也纳入索引，
+  // 覆盖 DxD / 春物 这类老热门书（不在「最新更新」列表里）。
+  if (page1.length) {
+    try {
+      const hotHtml = await fetchWatchHtml(`${origin}/wenku/`, `${origin}/wenku/`);
+      const hotRe = /<a[^>]+href=["'](\/novel\/(\d+)\.html)["'][^>]*class=["'][^"']*jsSearchLink[^"']*["'][^>]*>([\s\S]*?)<\/a>/gi;
+      let hm;
+      while ((hm = hotRe.exec(hotHtml))) {
+        const id = hm[2];
+        if (seen.has(id)) continue;
+        const title = stripTags(hm[3]);
+        if (!title) continue;
+        seen.add(id);
+        cards.push({ id, title, cover: "", subtitle: "哔哩轻小说" });
+      }
+    } catch { /* 热门标签抓取失败不致命 */ }
+  }
+
+  // 第 2~pages 页串行
+  for (let page = 2; page <= pages; page++) {
+    try {
+      for (const c of await grabPage(page)) if (!seen.has(c.id)) { seen.add(c.id); cards.push(c); }
+    } catch { /* 某页失败跳过 */ }
+  }
+
+  return { at: Date.now(), cards };
+}
+
+/** 繁体转简体（搜索兜底用，常见高频字映射）。 */
+function novelT2S(text) {
+  const map = {
+    轉: "转", 生: "生", 成: "成", 夾: "夹", 在: "在", 百: "百", 合: "合", 中: "中", 間: "间", 的: "的",
+    男: "男", 人: "人", 了: "了", 女: "女", 主: "主", 角: "角", 小: "小", 說: "说", 愛: "爱", 戀: "恋",
+    後: "后", 宮: "宫", 異: "异", 世: "世", 界: "界", 精: "精", 靈: "灵", 劍: "剑", 舞: "舞", 戰: "战",
+    鬥: "斗", 學: "学", 園: "园", 魔: "魔", 王: "王", 勇: "勇", 者: "者", 龍: "龙", 與: "与", 們: "们",
+    妹: "妹", 姐: "姐", 哥: "哥", 弟: "弟", 家: "家", 族: "族", 血: "血", 劇: "剧", 情: "情", 紹: "绍",
+    天: "天", 使: "使", 惡: "恶", 記: "记", 錄: "录", 傳: "传", 國: "国", 級: "级", 別: "别", 萬: "万",
+    無: "无", 雙: "双", 真: "真", 理: "理", 命: "命", 運: "运", 輪: "轮", 回: "回", 復: "复", 華: "华",
+    語: "语", 書: "书", 庫: "库", 獻: "献", 愛: "爱", 貝: "贝", 賽: "赛", 爾: "尔", 歐: "欧", 羅: "罗",
+  };
+  return String(text || "").split("").map((ch) => map[ch] || ch).join("");
+}
+
+/** 简繁互相转换（用于搜索兜底：用户输简体，源站是繁体，反之亦然）。
+ *  只做常见字符的一对一映射，覆盖轻小说标题高频字。 */
+function novelS2T(text) {
+  const map = {
+    转: "轉", 生: "生", 成: "成", 夹: "夾", 在: "在", 百: "百", 合: "合", 中: "中", 间: "間", 的: "的",
+    男: "男", 人: "人", 了: "了", 女: "女", 主: "主", 角: "角", 小: "小", 说: "說", 爱: "愛", 恋: "戀",
+    后: "後", 宫: "宮", 异: "異", 世: "世", 界: "界", 精: "精", 灵: "靈", 剑: "劍", 舞: "舞", 战: "戰",
+    斗: "鬥", 学: "學", 园: "園", 魔: "魔", 王: "王", 勇: "勇", 者: "者", 龙: "龍", 与: "與", 们: "們",
+    妹: "妹", 姐: "姐", 哥: "哥", 弟: "弟", 家: "家", 族: "族", 血: "血", 剧: "劇", 情: "情", 引: "引",
+    介: "介", 绍: "紹", 天: "天", 使: "使", 惡: "恶", 恶: "惡", 记: "記", 录: "錄", 传: "傳", 国: "國",
+    级: "級", 别: "別", 名: "名", 称: "稱", 万: "萬", 无: "無", 双: "雙", 真: "真", 理: "理", 命: "命",
+    运: "運", 轮: "輪", 回: "回", 复: "復", 活: "活", 死: "死", 亡: "亡", 日: "日", 常: "常", 等: "等",
+    级: "級", 别: "別", 华: "華", 语: "語", 书: "書", 库: "庫", 文: "文", 献: "獻",
+  };
+  return String(text || "").split("").map((ch) => map[ch] || ch).join("");
+}
+
 function parseNovelCards(html, origin) {
   const cards = [];
   const seen = new Set();
+  // 旧版 DOM：<li class="book-li"> 包裹的卡片。
   const re = /<li[^>]*class=["'][^"']*book-li[^"']*["'][^>]*>([\s\S]*?)<\/li>/gi;
   let match;
   while ((match = re.exec(html)) && cards.length < 30) {
@@ -520,6 +698,45 @@ function parseNovelCards(html, origin) {
       cover: coverUrl ? proxyWatchAsset(coverUrl, "novel") : "", subtitle: "哔哩轻小说",
     });
   }
+  // 新版搜索 DOM：结果卡片用 <a href="/novel/{id}.html"> + 附近 .book-title + .book-cover 图，
+  // 不再用 .book-li 包裹。用通用匹配兜底。
+  if (!cards.length) cards.push(...parseNovelSearchCards(html, origin));
+  return cards;
+}
+
+/** 通用搜索卡片解析：遍历所有 /novel/{id}.html 链接，取链接文本或附近标题 + 附近封面图。 */
+function parseNovelSearchCards(html, origin) {
+  const cards = [];
+  const seen = new Set();
+  const linkRe = /<a[^>]+href=["'](\/novel\/(\d+)\.html)["'][^>]*>([\s\S]*?)<\/a>/gi;
+  let m;
+  while ((m = linkRe.exec(html)) && cards.length < 30) {
+    const id = m[2];
+    if (seen.has(id)) continue;
+    seen.add(id);
+    // 标题：同一个 id 可能被封面 <a> 和标题 <a> 引用多次，取文本最长的一次。
+    let title = stripTags(m[3]);
+    // 再找同 id 的其他链接，取更长的文本
+    const idLinkRe = new RegExp(`<a[^>]+href=["']/novel/${id}\\.html["'][^>]*>([\\s\\S]*?)<\\/a>`, "gi");
+    let m2;
+    while ((m2 = idLinkRe.exec(html))) {
+      const t = stripTags(m2[1]);
+      if (t.length > title.length) title = t;
+    }
+    if (!title) {
+      const before = html.slice(Math.max(0, m.index - 800), m.index);
+      title = stripTags(before.match(/book-title["'][^>]*>([\s\S]*?)$/i)?.[1] || "");
+    }
+    // 封面：该 id 链接附近 1200 字符内的图片
+    const around = html.slice(Math.max(0, m.index - 800), m.index + m[0].length + 1200);
+    const imgs = [...around.matchAll(/(?:data-src|data-original|src)=["']([^"']+)["']/gi)]
+      .map((e) => e[1]).filter((v) => v && !/book-cover-no|data:image|sloading|logo|icon/i.test(v));
+    const coverUrl = absoluteWatchUrl(imgs[0] || "", origin);
+    cards.push({
+      id, title: title || `小说 ${id}`,
+      cover: coverUrl ? proxyWatchAsset(coverUrl, "novel") : "", subtitle: "哔哩轻小说",
+    });
+  }
   return cards;
 }
 
@@ -528,9 +745,16 @@ async function watchNovel(request, url) {
   if (action === "list") {
     const q = watchText(url.searchParams.get("q"));
     if (q) {
-      const search = new URLSearchParams({ searchkey: q });
-      const { html, origin } = await fetchFirstWatchHtml(WATCH_NOVEL_ORIGINS, `/search.html?${search}`);
-      return json({ items: parseNovelCards(html, origin) }, request);
+      // 优先上游搜索（桌面版 /S6/ POST，可能被 CF 拦）；失败回退本地 wenku 索引匹配。
+      let items = null;
+      try {
+        const { html, origin } = await fetchNovelSearch(q);
+        items = parseNovelCards(html, origin);
+      } catch { /* 上游被 CF 拦，走本地兜底 */ }
+      if (!items || !items.length) {
+        items = await searchNovelLocal(q);
+      }
+      return json({ items: items || [] }, request);
     }
     const { html, origin } = await fetchFirstWatchHtml(WATCH_NOVEL_ORIGINS, "/wenku/");
     return json({ items: parseNovelCards(html, origin) }, request);
@@ -2452,6 +2676,12 @@ export const _internal = {
   mangaGroups,
   mangaImageUrl,
   parseNovelCards,
+  parseNovelSearchCards,
+  fetchNovelSearch,
+  searchNovelLocal,
+  buildNovelLocalIndex,
+  novelS2T,
+  novelT2S,
   parseNovelChapter,
   parseNovelChapterPage,
   extractNovelReadParams,
