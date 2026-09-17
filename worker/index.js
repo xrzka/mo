@@ -558,10 +558,7 @@ async function watchNovel(request, url) {
   if (action === "chapter") {
     const chapterId = watchText(url.searchParams.get("chapter"), 12);
     if (!/^\d+$/.test(chapterId)) return json({ error: "bad chapter id" }, request, 400);
-    const { html, origin } = await fetchFirstWatchHtml(
-      WATCH_NOVEL_ORIGINS, `/novel/${novelId}/${chapterId}.html`
-    );
-    const chapter = parseNovelChapter(html, origin, novelId, chapterId);
+    const chapter = await fetchNovelChapterAll(novelId, chapterId);
     if (!chapter.blocks.length) return json({ error: "正文为空或被上游保护" }, request, 502);
     return json(chapter, request);
   }
@@ -1111,13 +1108,33 @@ async function watchManga(request, url) {
 }
 
 function parseNovelChapter(html, origin, novelId, chapterId) {
+  return parseNovelChapterPage(html, origin, novelId, chapterId);
+}
+
+/** 提取 ReadParams 里的关键字段：url_next（分页/下一章）、url_previous、page。 */
+function extractNovelReadParams(html) {
+  const raw = html.match(/ReadParams\s*=\s*\{([\s\S]*?)\}/)?.[1] || "";
+  const pick = (key) => {
+    const m = raw.match(new RegExp(`${key}\\s*:\\s*['"]([^'"]*)['"]`));
+    return m ? decodeEntities(m[1]) : "";
+  };
+  return {
+    urlNext: pick("url_next"),
+    urlPrev: pick("url_previous"),
+    page: pick("page"),
+    chapterid: pick("chapterid"),
+  };
+}
+
+/** 解析单页正文（blocks 提取），供 parseNovelChapter 与分页合并共用。 */
+function parseNovelChapterPage(html, origin, novelId, chapterId) {
   const title = stripTags(html.match(/<(?:h1|div)[^>]*class=["'][^"']*(?:chapter-title|read-h1)[^"']*["'][^>]*>([\s\S]*?)<\//i)?.[1]
     || html.match(/chaptername\s*:\s*["']([^"']+)/i)?.[1] || `章节 ${chapterId}`);
   const raw = html.match(/<(?:div|article)[^>]*(?:id=["'](?:acontent|TextContent)["']|class=["'][^"']*(?:acontent|TextContent|read-content|chapter-content)[^"']*["'])[^>]*>([\s\S]*?)<\/(?:div|article)>/i)?.[1] || "";
   const blocks = [];
   const tokenRe = /<img[^>]+(?:data-src|src)=["']([^"']+)["'][^>]*>|<p[^>]*>([\s\S]*?)<\/p>/gi;
   let token;
-  while ((token = tokenRe.exec(raw)) && blocks.length < 500) {
+  while ((token = tokenRe.exec(raw)) && blocks.length < 2000) {
     if (token[1]) {
       const imageUrl = absoluteWatchUrl(token[1], origin);
       // 只按「路径 + 文件名」判广告/图标，绝不能拿整条 URL 判：
@@ -1135,6 +1152,53 @@ function parseNovelChapter(html, origin, novelId, chapterId) {
     if (text) blocks.push({ type: "text", text });
   }
   return { id: chapterId, novelId, title, blocks };
+}
+
+/**
+ * 抓取某一章的全部正文（含所有分页）并合并成一个 { blocks }。
+ *
+ * linovelib 每章约 40 段就拆一页，URL 规律：
+ *   第 1 页  /novel/{novelId}/{chapterId}.html
+ *   第 2 页  /novel/{novelId}/{chapterId}_2.html
+ *   第 3 页  /novel/{novelId}/{chapterId}_3.html
+ *   …直到页面的 ReadParams.url_next 变成下一个章节（无 _N 后缀）为止。
+ *
+ * 之前只抓第 1 页，导致"一话只有半话/三分之一内容"。
+ */
+async function fetchNovelChapterAll(novelId, chapterId) {
+  const pages = [];
+  let path = `/novel/${novelId}/${chapterId}.html`;
+  let origin = "";
+  // 分页安全阀：单章最多 200 页，防死循环。
+  for (let i = 0; i < 200; i++) {
+    const { html, origin: pageOrigin } = await fetchFirstWatchHtml(WATCH_NOVEL_ORIGINS, path);
+    origin = pageOrigin;
+    pages.push(html);
+    const rp = extractNovelReadParams(html);
+    // 下一页仍是本章的分页（/novel/{id}/{chapterId}_N.html）→ 继续抓；
+    // 否则（变成下一章 /novel/{id}/{other}.html 或为空）→ 结束。
+    const nextMatch = rp.urlNext.match(new RegExp(`/novel/${novelId}/${chapterId}_(\\d+)\\.html$`));
+    if (!nextMatch) break;
+    path = rp.urlNext;
+  }
+  // 合并所有页的 blocks，去掉分页间那句「內容加載失敗」占位。
+  const merged = [];
+  for (const pageHtml of pages) {
+    const part = parseNovelChapterPage(pageHtml, origin, novelId, chapterId);
+    for (const block of part.blocks) {
+      if (block.type === "text") {
+        const text = block.text;
+        if (/內容加載失敗|内容加载失败|加載失敗|加载失败/.test(text)) continue;
+        // 去重：分页边界可能重复段落（翻页提示等）
+        if (merged.length && merged[merged.length - 1].type === "text" && merged[merged.length - 1].text === text) continue;
+        merged.push(block);
+      } else {
+        merged.push(block);
+      }
+    }
+  }
+  const first = pages.length ? parseNovelChapterPage(pages[0], origin, novelId, chapterId) : { title: `章节 ${chapterId}` };
+  return { id: chapterId, novelId, title: first.title, blocks: merged, pages: pages.length };
 }
 
 function animationPath(value, pattern) {
@@ -2389,6 +2453,9 @@ export const _internal = {
   mangaImageUrl,
   parseNovelCards,
   parseNovelChapter,
+  parseNovelChapterPage,
+  extractNovelReadParams,
+  fetchNovelChapterAll,
   isNovelDecorationImage,
   novelImageHostAllowed,
   collectMangaComics,
