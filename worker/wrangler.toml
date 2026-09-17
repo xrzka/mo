@@ -8,10 +8,10 @@ binding = "DB"
 database_name = "mo-stats"
 database_id = "784254ea-5aa2-415c-bfd3-945b9cc4bd67"
 
-# KV：只用于 IP 限流计数，可选。不绑定的话限流会自动跳过，其它功能正常。
-# [[kv_namespaces]]
-# binding = "RATE"
-# id = "在这里填 wrangler kv namespace create 返回的 id"
+# KV：小说章节内容预热缓存（由本地 Playwright 脚本批量写入）。
+[[kv_namespaces]]
+binding = "NOVEL_CACHE"
+id = "2ff6340ff11240bf92335633cdd13678"
 
 # 每天清一次过期的访客指纹
 [triggers]

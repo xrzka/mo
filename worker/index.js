@@ -526,7 +526,9 @@ async function fetchFirstWatchHtml(origins, path) {
 }
 
 /** 抓桌面版 www.linovelib.com 的章节 HTML（桌面 UA + Referer 桌面首页）。
- *  桌面版返回 mlfy_main_text 容器的一页全量完整正文。带重试。 */
+ *  桌面版返回 mlfy_main_text 容器的一页全量完整正文。带重试。
+ *  纯 HTTP 可能被反爬返回截断/乱序，因此可回退到本地 Playwright 渲染服务。 */
+const PLAYWRIGHT_RENDER_URL = "http://127.0.0.1:50051/render";
 async function fetchNovelDesktopHtml(path) {
   const url = `${WATCH_NOVEL_DESKTOP_ORIGIN}${path}`;
   let lastError;
@@ -539,16 +541,37 @@ async function fetchNovelDesktopHtml(path) {
         Referer: `${WATCH_NOVEL_DESKTOP_ORIGIN}/`,
       } }, 25000);
       if (!response.ok) throw new Error(`upstream HTTP ${response.status}`);
-      return await response.text();
+      const html = await response.text();
+      // 纯 HTTP 若拿到正文段落少于 20 段，视为反爬截断，回退到 Playwright 渲染。
+      if ((html.match(/<p\b/gi) || []).length >= 20) return html;
+      const rendered = await renderWithPlaywright(url);
+      if (rendered && (rendered.match(/<p\b/gi) || []).length > 0) return rendered;
+      throw new Error(`desktop chapter empty after fallback (${html.length}/${rendered?.length || 0})`);
     } catch (error) {
       lastError = error;
       const msg = String(error?.message || error);
-      const retryable = /upstream HTTP (429|5\d\d)|abort|timeout|fetch failed|internal/i.test(msg);
+      const retryable = /upstream HTTP (429|5\d\d)|abort|timeout|fetch failed|internal|empty after fallback/i.test(msg);
       if (!retryable || attempt === 2) throw error;
       await new Promise((resolve) => setTimeout(resolve, 500 * (attempt + 1)));
     }
   }
   throw lastError;
+}
+
+/** 调用本地 Playwright 渲染服务，获取 JS 渲染后的完整 HTML。 */
+async function renderWithPlaywright(url) {
+  try {
+    const response = await fetch(PLAYWRIGHT_RENDER_URL, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ url }),
+    });
+    if (!response.ok) return "";
+    const payload = await response.json();
+    return payload?.html || "";
+  } catch {
+    return "";
+  }
 }
 
 /** 小说搜索（桌面版 www.linovelib.com/S6/，POST）。
@@ -867,6 +890,12 @@ const WATCH_MOBILE_UA = "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/53
 const WATCH_DESKTOP_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
   + "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 const WATCH_NOVEL_DESKTOP_ORIGIN = "https://www.linovelib.com";
+
+// 小说章节预热缓存：由本地 Playwright 脚本批量抓取后写入 KV。
+// Worker 优先读它，命中就不再打上游（linovelib 反爬会随机截断/乱序纯 HTTP 请求）。
+// 绑定名 NOVEL_CACHE，未绑定时自动跳过，不影响其它功能。
+// 注意：env 只在 fetch() 内可见，这里不能引用；运行时通过函数参数传入。
+const NOVEL_CACHE_BINDING = "NOVEL_CACHE";
 
 const WATCH_R_BASE = "https://www.jjmhw.cc";
 const WATCH_GMH_BASE = "https://m.g-mh.org";
@@ -1452,8 +1481,11 @@ function parseNovelDesktopChapter(html, origin, novelId, chapterId) {
   const title = stripTags(html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i)?.[1]
     || html.match(/chaptername\s*:\s*["']([^"']+)/i)?.[1] || `章节 ${chapterId}`);
   // 桌面版正文在 id="mlfy_main_text" 里；没有就退回 TextContent。
+  // 注意：mlfy_main_text 中的 <p data-k...> 是完整正确顺序的正文段落；
+  // #TextContent 是纯 HTTP 抓取的截断/乱序数据，不能作为正文来源。
   let raw = html.match(/id=["']mlfy_main_text["'][^>]*>([\s\S]*?)<\/div>\s*<\/div>\s*</i)?.[1]
-    || html.match(/id=["']TextContent["'][^>]*>([\s\S]*?)<\/(?:div|article)>/i)?.[1] || "";
+    || html.match(/id=["']mlfy_main_text["'][^>]*>([\s\S]*?)<\/body>/i)?.[1]
+    || "";
   if (!raw) {
     const idx = html.indexOf('id="mlfy_main_text"');
     if (idx >= 0) raw = html.slice(idx);
@@ -1507,12 +1539,25 @@ function parseNovelDesktopChapter(html, origin, novelId, chapterId) {
 const novelChapterCache = new Map(); // key = `${novelId}/${chapterId}` -> { at, value }
 
 async function fetchNovelChapterAll(novelId, chapterId) {
-  const cacheKey = `${novelId}/${chapterId}`;
+  const cacheKey = `novel:${novelId}/${chapterId}`;
   const cached = novelChapterCache.get(cacheKey);
   if (cached && Date.now() - cached.at < 30 * 60 * 1000) return cached.value; // 30 分钟内存缓存
 
+  // 优先读取 KV 预热缓存（本地 Playwright 批量抓取写入），命中直接返回，不再打上游。
+  try {
+    const kvValue = await env.NOVEL_CACHE.get(cacheKey);
+    if (kvValue) {
+      const parsed = JSON.parse(kvValue);
+      if (parsed && parsed.blocks && parsed.blocks.length) {
+        novelChapterCache.set(cacheKey, { at: Date.now(), value: parsed });
+        return parsed;
+      }
+    }
+  } catch { /* KV 读取失败不影响主流程 */ }
+
   // 优先桌面版 www.linovelib.com（桌面 UA + mlfy_main_text 容器）：简体、每页末尾无「內容加載失敗」截断。
   // 桌面版同样分页，但分页信息在 HTML 里的「下一页」链接（_N.html），不在 ReadParams.url_next。
+  // 纯 HTTP 可能被反爬返回截断/乱序，此时回退到本地 Playwright 渲染服务。
   try {
     const desktopPages = [];
     let desktopPath = `/novel/${novelId}/${chapterId}.html`;
@@ -2614,6 +2659,27 @@ export default {
     if (!env.DB) {
       return json({ error: "D1 未绑定，请检查 wrangler.toml 的 [[d1_databases]]" }, request, 500);
     }
+
+    // 小说章节预热缓存写入接口（内部接口，跳过 CORS origin 白名单）。
+    if (url.pathname === "/api/admin/novel-cache" && request.method === "POST") {
+      const ip = request.headers.get("CF-Connecting-IP") || "";
+      if (await rateLimited(env, ip)) return json({ error: "too many requests" }, request, 429);
+      if (!env.NOVEL_CACHE) return json({ error: "NOVEL_CACHE KV 未绑定" }, request, 500);
+      const body = await request.json().catch(() => ({}));
+      const key = typeof body.key === "string" ? body.key.trim() : "";
+      const blocks = Array.isArray(body.blocks) ? body.blocks : null;
+      if (!key || !blocks || !blocks.length) {
+        return json({ error: "需要 key 和非空 blocks 数组" }, request, 400);
+      }
+      const payload = JSON.stringify({
+        key,
+        blocks,
+        ts: Date.now(),
+      });
+      await env.NOVEL_CACHE.put(key, payload, { expirationTtl: 86400 });
+      return json({ ok: true, key, count: blocks.length }, request);
+    }
+
     // 写接口必须来自白名单站点；读接口放开，方便你直接在浏览器里查
     if (request.method === "POST" && !cors.allowed) {
       return json({ error: "origin not allowed" }, request, 403);

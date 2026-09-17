@@ -1,0 +1,38 @@
+{
+  "steps": [
+    "进度壳 0（loaded 0 / failed 0）",
+    "沉浸切换：false → true → false",
+    "阅读后目录条：上次读到 第 6 章「第2話 童年（2）」"
+  ],
+  "resumeBannerAtOpen": "",
+  "progress": {
+    "total": 0,
+    "loaded": 0,
+    "failed": 0,
+    "barVisible": 0,
+    "pcts": []
+  },
+  "beforeTap": {
+    "immersive": false,
+    "topOpacity": "1",
+    "topPE": "auto",
+    "navOpacity": "1"
+  },
+  "afterTap1": {
+    "immersive": true,
+    "topOpacity": "0",
+    "topPE": "none",
+    "navOpacity": "0"
+  },
+  "afterTap2": {
+    "immersive": false,
+    "topOpacity": "1",
+    "topPE": "auto",
+    "navOpacity": "1"
+  },
+  "resumeAfterRead": {
+    "text": "上次读到 第 6 章「第2話 童年（2）」",
+    "currentRow": true
+  },
+  "errors": []
+}

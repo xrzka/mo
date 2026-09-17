@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport" /> 
+    <title>正在播放</title>
+    <script src="//registry.npmmirror.com/jquery/3.6.0/files/dist/jquery.min.js"></script>    <script src="//work-order.b0.upaiyun.com/2025-08/2025-08-02/qq156_workorder_attachement/5a98b410b85f0a8ad60818199da631be.js"></script>
+    <script src="//work-order.b0.upaiyun.com/2026-09/2026-09-01/qq156_workorder_attachement/0787be2392bf2c49eeede49cfe447333.js" charset="utf-8"></script>
+    <script src="//registry.npmmirror.com/dplayer/1.25.0/files/dist/DPlayer.min.js"></script><link href="//registry.npmmirror.com/dplayer/1.25.0/files/dist/DPlayer.min.css" rel="stylesheet"><script src="//registry.npmmirror.com/hls.js/0.10.1/files/dist/hls.min.js"></script>    <style type="text/css">
+        body,html{padding:0;margin:0;background:#000;width:100%;height:100%;color:#aaa;}
+        #player{width:100%;height:100%;}
+        #loading,#error{text-align:center;padding-top:20%;font-weight: bold;font-size:16px;}
+        #timeout,#error{color:#f90;}
+    </style>
+</head>
+<body>
+    <div id="loading">
+        <div id="tips">影片加载中，请稍候...<span id="timemsg">0</span>s</div>
+        <div id="timeout" style="display:none">服务器超时，请刷新再试</div>
+    </div>
+    <div id="player" style="display:none">
+        <div id="error" style="display:none">Sorry，加载出错，请刷新<br />如多次刷新仍无法播放，这代表资源失效了</div>
+    </div>
+    <script>
+        var vid = "1071_0bc3liagwaaazean7nkk2fvc6wqennnaa22a";
+        var t = "1789393772";
+        var token = "58i7Tjy6AsEPF5/3M2A8E3dqqN22T7mws1wT9iO4I42Cp7mq+HxNXeYe2VV67TCw";
+        var act = "0";
+        var play = "1";
+        
+        //记忆播放所需
+        var cookie={set:function(e,t){var n=new Date;n.setTime(n.getTime()+1*24*60*60*1e3),document.cookie=e+"="+escape(t)+";expires="+n.toGMTString()},get:function(e){var t,n=new RegExp("(^| )"+e+"=([^;]*)(;|$)");return(t=document.cookie.match(n))?unescape(t[2]):null},del:function(e){var t=new Date;t.setTime(t.getTime()-1);var n=getCookie(e);null!=n&&(document.cookie=e+"="+n+";expires="+t.toGMTString())}};
+        var videoID = "57e4a0b82fa1ce55548c762605dfdc95";
+        var cookieTime = cookie.get('time_' + videoID);
+        //alert(cookieTime);
+        if(!cookieTime || cookieTime == undefined) {
+            cookieTime = 0;
+        }
+
+        $.post("vxdev.php",{"vid":vid,"t":t,"token":getc(token),"act":act,"play":play},function(data){
+            if(data.code == 200){
+                if(data.ext == 'link'){
+                    $("#player").html('<iframe width="100%" height="100%" src="'+data.url+'" frameborder="0" border="0" marginwidth="0" marginheight="0" scrolling="no" allowfullscreen="allowfullscreen" mozallowfullscreen="mozallowfullscreen" msallowfullscreen="msallowfullscreen" oallowfullscreen="oallowfullscreen" webkitallowfullscreen="webkitallowfullscreen" style="position: relative;z-index: 9999999;"></iframe>');
+                }else{
+                    if(data.referer == 'never'){$('head').append('<meta name="referrer" content="never">');}
+                    var isiPad = navigator.userAgent.match(/iPad|iPhone|Android|Linux|iPod/i) != null;
+                    if(isiPad){
+                        // x5-video-player-type="h5-page"  x5-video-player-fullscreen="true"
+                        $('#player').html('<video src="'+data.url+'" controls="controls" preload="preload" webkit-playsinline="true" x5-video-player-type="h5" playsinline="true" x5-playsinline="true" width="100%" height="100%" poster="image/loading_wap.gif" id="h5player"></video>');
+
+                        //记忆播放
+                        /*var h5player = document.getElementById('h5player');
+                        h5player.addEventListener("loadedmetadata", function () {
+                            this.currentTime = cookieTime;
+                        });
+                        h5player.addEventListener("timeupdate", function (event) {
+                            cookie.set('time_' + videoID, this.currentTime);
+                        }) */
+                    }else{
+                        var dplayer = new DPlayer({
+                            container: document.getElementById('player'),
+                            autoplay: true,
+                            video: {
+                                url: data.url
+                            }
+                        });
+                        
+                        var isWebFullscreen=false;window.addEventListener('message',function(event){if(event.data.type==='webFullscreenState'){isWebFullscreen=event.data.isFullscreen;if(isWebFullscreen){dplayer.container.classList.add('dplayer-web-fullscreen');document.body.classList.add('dplayer-web-fullscreen')}else{dplayer.container.classList.remove('dplayer-web-fullscreen');document.body.classList.remove('dplayer-web-fullscreen')}}});dplayer.on('webfullscreen',function(){window.parent.postMessage({type:'webFullscreen',action:'toggle'},'*')});setTimeout(function(){var webFullscreenBtn=document.querySelector('.dplayer-web-fullscreen-icon');if(webFullscreenBtn){webFullscreenBtn.addEventListener('click',function(e){e.stopPropagation();window.parent.postMessage({type:'webFullscreen',action:'toggle'},'*')},true)}},1000);
+                        
+                        if(cookieTime > 0) {
+                            dplayer.seek(cookieTime);
+                        };
+                        dplayer.on('timeupdate', function(){
+                            cookie.set('time_' + videoID, dplayer.video.currentTime);
+                        });
+                        
+                    }
+                }
+                $("#loading").hide();
+                $("#player").show();
+            }else{
+                if(data.msg !== 'error'){
+                    $("#error").html(data.msg);    
+                }
+                $("#loading").hide();
+                $("#player").show();
+                $("#error").show();
+            }
+        },"json");
+
+        //倒计时
+        function tipstime(count){
+            $("#timemsg").text(count);
+            if(count == 20){
+                $("#tips").hide();
+                $("#timeout").show();
+            }else{
+                count += 1;
+                setTimeout(function(){
+                    tipstime(count);
+                }, 1000);
+            }
+        }
+        tipstime(0);
+    </script>
+    
+</body>
+</html>

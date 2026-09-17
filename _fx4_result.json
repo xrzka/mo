@@ -1,0 +1,39 @@
+{
+  "steps": [
+    "会话内：上次读到 第 6 章「第2話 童年（2）」",
+    "刷新后：上次读到 第 6 章「第2話 童年（2）」",
+    "点继续阅读 → 正文 第2話 童年（2）",
+    "Emoji 进度：壳 20，loaded 12，failed 0（早期采样 bar可见=8 pct=-/-/-/-）"
+  ],
+  "readTitle": "正文 第2話 童年（2）",
+  "inSession": {
+    "resume": "上次读到 第 6 章「第2話 童年（2）」",
+    "currentRow": true,
+    "btn": true
+  },
+  "afterReload": {
+    "resume": "上次读到 第 6 章「第2話 童年（2）」",
+    "currentRow": true,
+    "btn": true
+  },
+  "afterResumeClick": "正文 第2話 童年（2）",
+  "progressEarly": {
+    "total": 20,
+    "loaded": 12,
+    "failed": 0,
+    "barVisible": 8,
+    "samplePct": [
+      "-",
+      "-",
+      "-",
+      "-"
+    ]
+  },
+  "progressFinal": {
+    "total": 20,
+    "loaded": 12,
+    "failed": 0,
+    "imgVisible": 12
+  },
+  "errors": []
+}

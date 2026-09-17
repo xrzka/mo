@@ -1,0 +1,27 @@
+{
+  "steps": [
+    "小说卡片 24 张",
+    "读第 6 章：正文 第2話 童年（2）",
+    "方向键：→ 正文 第3話 童年（3） ｜ ← 正文 第2話 童年（2）",
+    "继续阅读条：上次读到 第 7 章「第3話 童年（3）」",
+    "刷新后：无进度条"
+  ],
+  "cardCount": 24,
+  "chapterTotal": 82,
+  "firstRead": "正文 第2話 童年（2）",
+  "afterRight": "正文 第3話 童年（3）",
+  "afterLeft": "正文 第2話 童年（2）",
+  "savedChapter": "正文 第3話 童年（3）",
+  "resumeBanner": {
+    "present": true,
+    "text": "上次读到 第 7 章「第3話 童年（3）」",
+    "btn": true,
+    "currentRow": true
+  },
+  "cardBadge": "上次：第3話 童年（3）",
+  "afterReload": {
+    "resume": "",
+    "currentRow": false
+  },
+  "errors": []
+}

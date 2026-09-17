@@ -146,10 +146,12 @@ class StatsStub(http.server.BaseHTTPRequestHandler):
 
     # ---- 观看区 ----
     watch_requests = []
+    watch_fail_once = False
 
     @classmethod
     def reset_watch(cls):
         cls.watch_requests = []
+        cls.watch_fail_once = False
 
     # ---- 后台编辑 ----
     # 覆盖层：itemId -> {name?, description?, url?, password?, note?,
@@ -267,6 +269,9 @@ class StatsStub(http.server.BaseHTTPRequestHandler):
         query = urllib.parse.parse_qs(parsed.query)
         if parsed.path.startswith("/api/watch/"):
             StatsStub.watch_requests.append(self.path)
+            if StatsStub.watch_fail_once:
+                StatsStub.watch_fail_once = False
+                return self._send({"error": "temporary watch failure"}, 503)
             action = (query.get("action") or [""])[0]
             if parsed.path == "/api/watch/music":
                 if action in ("", "getNewestSongsV2"):
@@ -3110,7 +3115,28 @@ def test_watch_manga(page, base, stub_port):
     check("返回目录后章节按钮恢复", page.locator(".watch-chapters button", has_text="第一话").count() == 1)
     page.locator("[data-watch-back]").click()
     check("返回列表后卡片可见", page.locator(".watch-card").is_visible())
+    check("阅读进度显示在最近打开的卡片上",
+          "第一话" in page.locator(".watch-progress").inner_text())
     check("观看区无未捕获异常", not errors, ";".join(errors)[:200])
+
+
+def test_watch_retry_and_mobile(page, base, stub_port):
+    """观看区：列表错误可重试，窄屏不横向溢出。"""
+    print("\n--- 观看区：错误恢复与移动端 ---")
+    StatsStub.reset_watch()
+    StatsStub.watch_fail_once = True
+    stub_config(page, f"http://127.0.0.1:{stub_port}")
+    page.set_viewport_size({"width": 390, "height": 844})
+    page.goto(base, wait_until="networkidle")
+    page.get_by_role("tab", name=re.compile(r"观看")).click()
+    page.get_by_role("button", name="重新加载").wait_for()
+    check("列表失败后显示重试按钮",
+          page.get_by_role("button", name="重新加载").count() == 1)
+    page.get_by_role("button", name="重新加载").click()
+    page.wait_for_selector(".watch-card")
+    check("重试后恢复内容", page.locator(".watch-card").count() == 1)
+    overflow = page.evaluate("document.documentElement.scrollWidth > document.documentElement.clientWidth + 1")
+    check("移动端观看区没有横向溢出", not overflow)
 
 
 def test_watch_all_tab(page, base, stub_port):
@@ -3408,6 +3434,10 @@ def main():
 
             ctx = browser.new_context()
             test_watch_all_tab(ctx.new_page(), base, stub_port)
+            ctx.close()
+
+            ctx = browser.new_context()
+            test_watch_retry_and_mobile(ctx.new_page(), base, stub_port)
             ctx.close()
         finally:
             browser.close()
