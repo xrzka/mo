@@ -1182,6 +1182,8 @@ async function fetchNovelChapterAll(novelId, chapterId) {
     path = rp.urlNext;
   }
   // 合并所有页的 blocks，去掉分页间那句「內容加載失敗」占位。
+  // 注意：不做相邻段落去重 —— 正文里可能存在合法的连续相同段落（如两个「……」），
+  // 去重会导致后续段落整体前移、内容错位。
   const merged = [];
   for (const pageHtml of pages) {
     const part = parseNovelChapterPage(pageHtml, origin, novelId, chapterId);
@@ -1189,8 +1191,6 @@ async function fetchNovelChapterAll(novelId, chapterId) {
       if (block.type === "text") {
         const text = block.text;
         if (/內容加載失敗|内容加载失败|加載失敗|加载失败/.test(text)) continue;
-        // 去重：分页边界可能重复段落（翻页提示等）
-        if (merged.length && merged[merged.length - 1].type === "text" && merged[merged.length - 1].text === text) continue;
         merged.push(block);
       } else {
         merged.push(block);
