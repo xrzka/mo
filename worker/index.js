@@ -525,6 +525,32 @@ async function fetchFirstWatchHtml(origins, path) {
   throw new Error(errors.join("; ") || "upstream unavailable");
 }
 
+/** 抓桌面版 www.linovelib.com 的章节 HTML（桌面 UA + Referer 桌面首页）。
+ *  桌面版返回 mlfy_main_text 容器的一页全量完整正文。带重试。 */
+async function fetchNovelDesktopHtml(path) {
+  const url = `${WATCH_NOVEL_DESKTOP_ORIGIN}${path}`;
+  let lastError;
+  for (let attempt = 0; attempt <= 2; attempt++) {
+    try {
+      const response = await watchFetch(url, { headers: {
+        Accept: "text/html,application/xhtml+xml",
+        "User-Agent": WATCH_DESKTOP_UA,
+        "Accept-Language": "zh-CN,zh;q=0.9",
+        Referer: `${WATCH_NOVEL_DESKTOP_ORIGIN}/`,
+      } }, 25000);
+      if (!response.ok) throw new Error(`upstream HTTP ${response.status}`);
+      return await response.text();
+    } catch (error) {
+      lastError = error;
+      const msg = String(error?.message || error);
+      const retryable = /upstream HTTP (429|5\d\d)|abort|timeout|fetch failed|internal/i.test(msg);
+      if (!retryable || attempt === 2) throw error;
+      await new Promise((resolve) => setTimeout(resolve, 500 * (attempt + 1)));
+    }
+  }
+  throw lastError;
+}
+
 /** 小说搜索（桌面版 www.linovelib.com/S6/，POST）。
  *  带 searchkey 的请求被 Cloudflare Managed Challenge 保护，纯 HTTP 大概率
  *  拿不到结果（返回 0 字节 challenge 占位页）。这里走完整 guard 流程尝试一次，
@@ -833,6 +859,14 @@ const WATCH_MANGA_SOURCE_IDS = WATCH_MANGA_SOURCES.map((item) => item.id);
 
 const WATCH_MOBILE_UA = "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 "
   + "(KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36";
+
+// 桌面 UA：linovelib 桌面版 www.linovelib.com 用 mlfy_main_text 容器返回「一页全量」的
+// 完整正文（简体、无分页、无每页末尾截断、无「內容加載失敗」标记）。
+// 而手机 UA + tw.linovelib.com 是繁体、分页、且每页末尾被反爬截断（"……"）。
+// 所以章节正文优先走桌面版，拿不到再回退手机版。
+const WATCH_DESKTOP_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+  + "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+const WATCH_NOVEL_DESKTOP_ORIGIN = "https://www.linovelib.com";
 
 const WATCH_R_BASE = "https://www.jjmhw.cc";
 const WATCH_GMH_BASE = "https://m.g-mh.org";
@@ -1409,6 +1443,53 @@ function parseNovelChapterPage(html, origin, novelId, chapterId) {
   return { id: chapterId, novelId, title, blocks };
 }
 
+/** 解析桌面版 www.linovelib.com 的完整正文（mlfy_main_text 容器，一页全量）。
+ *  桌面版结构：<div id="mlfy_main_text"><h1>标题</h1><div id="TextContent">广告</div>
+ *  <p data-k...>正文段落</p> ...（中间穿插 google 广告 div）。
+ *  桌面版正文是简体、完整（无分页、无每页截断），但段落是 <p data-k...> 带随机属性，
+ *  且混有广告块，需要过滤。 */
+function parseNovelDesktopChapter(html, origin, novelId, chapterId) {
+  const title = stripTags(html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i)?.[1]
+    || html.match(/chaptername\s*:\s*["']([^"']+)/i)?.[1] || `章节 ${chapterId}`);
+  // 桌面版正文在 id="mlfy_main_text" 里；没有就退回 TextContent。
+  let raw = html.match(/id=["']mlfy_main_text["'][^>]*>([\s\S]*?)<\/div>\s*<\/div>\s*</i)?.[1]
+    || html.match(/id=["']TextContent["'][^>]*>([\s\S]*?)<\/(?:div|article)>/i)?.[1] || "";
+  if (!raw) {
+    const idx = html.indexOf('id="mlfy_main_text"');
+    if (idx >= 0) raw = html.slice(idx);
+  }
+  const blocks = [];
+  // 桌面版段落是闭合的 <p data-k...>...</p>，但中间会插入广告 div，用起点分段同样兼容。
+  const tagRe = /<img[^>]+(?:data-src|data-original|src)=["']([^"']+)["'][^>]*>|<p[^>]*>/gi;
+  const marks = [];
+  let tm;
+  while ((tm = tagRe.exec(raw))) {
+    marks.push({ kind: tm[1] ? "img" : "p", src: tm[1] || "", at: tm.index, end: tagRe.lastIndex });
+  }
+  for (let i = 0; i < marks.length && blocks.length < 3000; i++) {
+    const mark = marks[i];
+    if (mark.kind === "img") {
+      const imageUrl = absoluteWatchUrl(mark.src, origin);
+      if (imageUrl && !isNovelDecorationImage(imageUrl)) {
+        blocks.push({ type: "image", src: proxyWatchAsset(imageUrl, "novel") });
+      }
+      continue;
+    }
+    const nextMark = marks[i + 1];
+    const sliceEnd = nextMark ? nextMark.at : raw.length;
+    const segRaw = raw.slice(mark.end, sliceEnd);
+    const text = stripTags(segRaw);
+    if (text) blocks.push({ type: "text", text });
+  }
+  // 过滤广告残留（google ads / 广告 iframe 文本）
+  const cleaned = blocks.filter((block) => {
+    if (block.type !== "text") return true;
+    const t = block.text;
+    return !/^Advertisement$/i.test(t) && !/pagead|googlesyndication|adsbygoogle|googleads/i.test(t);
+  });
+  return { id: chapterId, novelId, title, blocks: cleaned };
+}
+
 /**
  * 抓取某一章的全部正文（含所有分页）并合并成一个 { blocks }。
  *
@@ -1429,6 +1510,33 @@ async function fetchNovelChapterAll(novelId, chapterId) {
   const cacheKey = `${novelId}/${chapterId}`;
   const cached = novelChapterCache.get(cacheKey);
   if (cached && Date.now() - cached.at < 30 * 60 * 1000) return cached.value; // 30 分钟内存缓存
+
+  // 优先桌面版 www.linovelib.com（桌面 UA + mlfy_main_text 容器）：简体、每页末尾无「內容加載失敗」截断。
+  // 桌面版同样分页，但分页信息在 HTML 里的「下一页」链接（_N.html），不在 ReadParams.url_next。
+  try {
+    const desktopPages = [];
+    let desktopPath = `/novel/${novelId}/${chapterId}.html`;
+    for (let i = 0; i < 200; i++) {
+      const html = await fetchNovelDesktopHtml(desktopPath);
+      desktopPages.push(html);
+      // 桌面版「下一页」链接：<a href="/novel/{id}/{chapterId}_N.html">下一页</a>
+      const nextMatch = html.match(new RegExp(`href=["'](/novel/${novelId}/${chapterId}_(\\d+)\\.html)["'][^>]*>[^<]*(?:下一頁|下一页|下一章)`));
+      if (!nextMatch) break;
+      desktopPath = nextMatch[1];
+    }
+    const desktopBlocks = [];
+    for (const pageHtml of desktopPages) {
+      const part = parseNovelDesktopChapter(pageHtml, WATCH_NOVEL_DESKTOP_ORIGIN, novelId, chapterId);
+      desktopBlocks.push(...part.blocks);
+    }
+    if (desktopBlocks.length >= 4) {
+      const firstPart = parseNovelDesktopChapter(desktopPages[0], WATCH_NOVEL_DESKTOP_ORIGIN, novelId, chapterId);
+      const result = { id: chapterId, novelId, title: firstPart.title, blocks: desktopBlocks, pages: desktopPages.length };
+      novelChapterCache.set(cacheKey, { at: Date.now(), value: result });
+      return result;
+    }
+  } catch { /* 桌面版拿不到（403/CF），回退手机版 */ }
+
   const pages = [];
   let path = `/novel/${novelId}/${chapterId}.html`;
   let origin = "";
