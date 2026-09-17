@@ -483,8 +483,9 @@ function proxyWatchAsset(value, kind) {
 }
 
 async function fetchWatchHtml(url, referer = "") {
+  // 用手机 UA：linovelib 等正文站会检测 UA，桌面 UA 会返回手机版内容（含"暂不支持电脑端阅读"警告 + 只有插图无正文段落）。
   const response = await watchFetch(url, { headers: {
-    Accept: "text/html,application/xhtml+xml", "User-Agent": "Mozilla/5.0",
+    Accept: "text/html,application/xhtml+xml", "User-Agent": WATCH_MOBILE_UA,
     "Accept-Language": "zh-CN,zh;q=0.9", ...(referer ? { Referer: referer } : {}),
   } }, 25000);
   if (!response.ok) throw new Error(`upstream HTTP ${response.status}`);
