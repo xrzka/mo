@@ -1417,12 +1417,17 @@ async function fetchNovelChapterAll(novelId, chapterId) {
     if (!nextMatch) break;
     path = rp.urlNext;
   }
-  // 合并所有页的 blocks，剥离分页间那句「內容加載失敗！請重載或更換瀏覽器」占位。
+  // 合并所有页的 blocks，剥离分页间那句「內容加載失敗！請重載/刷新或更換瀏覽器」占位。
   // 注意：这个标记常拼接在正常正文末尾（如「……其他同學隨意在接下來的位……（內容加載失敗！請重載或更換瀏覽器）」），
   // 不能整段删除 —— 否则会把标记前面的正常正文一并丢掉，导致每页末尾都缺一句。
   // 正确做法：只剥离标记本身 + 手机版警告；若剥离后整段只剩标点/空白，才丢弃。
   // 另外不做相邻段落去重 —— 正文里可能存在合法的连续相同段落（如两个「……」），去重会导致内容错位。
-  const LOAD_FAIL_MARK = /[（(]?內容加載失敗[！!]?請重載或更換瀏覽器[)）]?|[（(]?内容加载失败[！!]?请重载或更换浏览器[)）]?/g;
+  // 标记变体（不同镜像源用词不同，实测 4 种以上）：
+  //   （內容加載失敗！請重載或更換瀏覽器）  tw 源
+  //   （內容加載失敗！請刷新或更換瀏覽器）  bilinovel / www 源
+  //   （内容加载失败！请重载/刷新或更换浏览器）  简体镜像
+  // 用「加载失败 + 请 + 重载/刷新 + … + 浏览器」的宽松结构匹配，避免漏掉或/更换等中间词。
+  const LOAD_FAIL_MARK = /[（(]?(?:內容加載失敗|内容加载失败)[！!]?(?:請|请)?(?:重載|重载|刷新)[^\n]{0,12}?(?:瀏覽器|浏览器)[)）]?/g;
   const MOBILE_WARN = /【手機版頁面由於相容性問題暫不支持電腦端閱讀，請使用手機閱讀。】|【手机版页面由于兼容性问题暂不支持电脑端阅读，请使用手机阅读。】/g;
   const merged = [];
   for (const pageHtml of pages) {
@@ -1432,7 +1437,7 @@ async function fetchNovelChapterAll(novelId, chapterId) {
         let text = String(block.text || "");
         if (!text) continue;
         // 整段就是加载失败占位 → 丢弃
-        if (/^(內容加載失敗|内容加载失败|加載失敗|加载失败)[！!]?/.test(text.trim())) continue;
+        if (/^(?:內容加載失敗|内容加载失败|加載失敗|加载失败)[！!]?/.test(text.trim())) continue;
         // 剥离拼接在正文末尾的加载失败标记 + 手机版警告
         text = text.replace(LOAD_FAIL_MARK, "").replace(MOBILE_WARN, "").trim();
         if (text && !/^[……。、，．\s]*$/.test(text)) merged.push({ type: "text", text });
