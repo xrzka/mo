@@ -5059,7 +5059,9 @@
       }
 
       // 播放状态：线路 / 集下标，播放器与选集共用。
-      const cur = { li: 0, ei: 0 };
+      const cur = { li: 0, ei: 0, video: null };
+      // 全屏视频模式状态：overlay 是否已搭好 / 控件是否收起 / 选集抽屉是否打开 / 计时是否在跑。
+      const vm = { open: false, controlsDown: false, drawerOpen: false, timer: null };
       const status = document.createElement("p");
       status.className = "watch-loading";
       status.hidden = true;
@@ -5102,7 +5104,7 @@
         body.querySelectorAll("video").forEach((v) => v.pause());
         status.hidden = false;
         status.textContent = "正在连接视频流…";
-        const video = watchMountVideo(playerWrap, ep.url, () => {
+        const video = watchMountVideo(vm.open ? vmStage : playerWrap, ep.url, () => {
           status.textContent = "该集视频加载失败，换一条线路试试。";
           status.hidden = false;
         });
@@ -5112,12 +5114,208 @@
           status.hidden = false;
         });
         saveWatchProgress("anime", item, { title: ep.ep });
+        cur.video = video;
+        syncVideoMode(li, ei);
         $(`[data-watch-viewer-title]`).textContent = `${detail.title || item.title} · ${ep.ep}`;
         prevBtn.disabled = ei <= 0;
         nextBtn.disabled = ei >= lines[li].eps.length - 1;
         prevBtn.onclick = () => playEp(li, ei - 1);
         nextBtn.onclick = () => playEp(li, ei + 1);
       }
+
+      /* ---------- 全屏视频模式 ----------
+         把当前视频搬进一个全屏 overlay，顶栏显示标题与集数，底栏是进度/时间 + 前进后退
+         (5s/30s/1m/10m)，选集抽屉可开合。点视频本体隐藏/唤出功能栏，沉浸式观看。 */
+      const vmOverlay = document.createElement("div");
+      vmOverlay.className = "anime-vm";
+      vmOverlay.hidden = true;
+      const vmTop = document.createElement("div");
+      vmTop.className = "anime-vm-top";
+      const vmClose = document.createElement("button");
+      vmClose.type = "button";
+      vmClose.className = "anime-vm-btn";
+      vmClose.textContent = "✕ 退出";
+      const vmTitle = document.createElement("span");
+      vmTitle.className = "anime-vm-title";
+      const vmEpRow = document.createElement("span");
+      vmEpRow.className = "anime-vm-ep";
+      const vmDrawerBtn = document.createElement("button");
+      vmDrawerBtn.type = "button";
+      vmDrawerBtn.className = "anime-vm-btn";
+      vmDrawerBtn.textContent = "选集 ▾";
+      vmTop.append(vmClose, vmTitle, vmEpRow, vmDrawerBtn);
+      const vmStage = document.createElement("div");
+      vmStage.className = "anime-vm-stage";
+      const vmDrawer = document.createElement("div");
+      vmDrawer.className = "anime-vm-drawer";
+      vmDrawer.hidden = true;
+      const vmBottom = document.createElement("div");
+      vmBottom.className = "anime-vm-bar";
+      const vmProgress = document.createElement("div");
+      vmProgress.className = "anime-vm-progress";
+      const vmFill = document.createElement("div");
+      vmFill.className = "anime-vm-progress-fill";
+      vmProgress.appendChild(vmFill);
+      const vmSeekRow = document.createElement("div");
+      vmSeekRow.className = "anime-vm-seek";
+      const vmTime = document.createElement("span");
+      vmTime.className = "anime-vm-time";
+      const vmPlayBtn = document.createElement("button");
+      vmPlayBtn.type = "button";
+      vmPlayBtn.className = "anime-vm-btn anime-vm-play";
+      vmPlayBtn.textContent = "⏸";
+      const buildSeekBtn = (label, delta) => {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "anime-vm-btn anime-vm-seekbtn";
+        b.textContent = label;
+        b.addEventListener("click", () => seekBy(delta));
+        return b;
+      };
+      vmSeekRow.append(
+        buildSeekBtn("-10m", -600), buildSeekBtn("-1m", -60), buildSeekBtn("-30s", -30), buildSeekBtn("-5s", -5),
+        vmPlayBtn,
+        buildSeekBtn("+5s", 5), buildSeekBtn("+30s", 30), buildSeekBtn("+1m", 60), buildSeekBtn("+10m", 600),
+        vmTime
+      );
+      const vmHint = document.createElement("div");
+      vmHint.className = "anime-vm-hint";
+      vmHint.hidden = true;
+      vmBottom.append(vmProgress, vmSeekRow);
+      vmOverlay.append(vmTop, vmStage, vmDrawer, vmBottom, vmHint);
+
+      // 选集抽屉：每行一个按钮，点选即切集。
+      function renderVmDrawer() {
+        vmDrawer.textContent = "";
+        const labelRow = document.createElement("div");
+        labelRow.className = "anime-vm-drawer-label";
+        labelRow.textContent = "选择集数";
+        vmDrawer.appendChild(labelRow);
+        lines.forEach((line, li) => {
+          const group = document.createElement("div");
+          group.className = "anime-vm-drawer-group";
+          const gl = document.createElement("div");
+          gl.className = "anime-vm-drawer-line";
+          gl.textContent = `${line.label} · 共 ${line.eps.length} 集`;
+          group.appendChild(gl);
+          const btns = document.createElement("div");
+          btns.className = "anime-vm-drawer-btns";
+          line.eps.forEach((episode, ei) => {
+            const b = document.createElement("button");
+            b.type = "button";
+            b.className = "anime-vm-epbtn";
+            b.textContent = episode.ep;
+            b.classList.toggle("is-current", li === cur.li && ei === cur.ei);
+            b.addEventListener("click", () => { playEp(li, ei); });
+            btns.appendChild(b);
+          });
+          group.appendChild(btns);
+          vmDrawer.appendChild(group);
+        });
+      }
+
+      // 焦点时间同步 / 时间显示格式化。
+      const fmtTime = (s) => {
+        if (!isFinite(s) || s < 0) s = 0;
+        const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = Math.floor(s % 60);
+        const mm = h ? String(m).padStart(2, "0") : String(m);
+        return (h ? h + ":" : "") + mm + ":" + String(sec).padStart(2, "0");
+      };
+      function tickVm() {
+        const v = cur.video;
+        if (!v) return;
+        if (v.duration && isFinite(v.duration)) {
+          vmFill.style.width = Math.min(100, (v.currentTime / v.duration) * 100) + "%";
+          vmTime.textContent = `${fmtTime(v.currentTime)} / ${fmtTime(v.duration)}`;
+        }
+      }
+      function cycleTick() {
+        tickVm();
+        if (vm.open && !vmOverlay.hidden) vm.timer = requestAnimationFrame(cycleTick);
+        else vm.timer = null;
+      }
+
+      // 相对跳转：5s/30s/1m/10m。
+      function seekBy(delta) {
+        const v = cur.video;
+        if (!v || !v.duration || !isFinite(v.duration)) return;
+        v.currentTime = Math.max(0, Math.min(v.duration - 0.1, v.currentTime + delta));
+        showVmHint(delta >= 0 ? `+${fmtTime(delta)}` : `-${fmtTime(-delta)}`);
+      }
+      function togglePlay() {
+        const v = cur.video;
+        if (!v) return;
+        if (v.paused) v.play().catch(() => {}); else v.pause();
+      }
+      function showVmHint(text) {
+        vmHint.textContent = text;
+        vmHint.hidden = false;
+        clearTimeout(vmHint._t);
+        vmHint._t = setTimeout(() => { vmHint.hidden = true; }, 900);
+      }
+
+      // 点视频本体：切功能栏显隐；再点一下唤出。
+      function toggleVmControls() {
+        vm.controlsDown = !vm.controlsDown;
+        vmOverlay.classList.toggle("is-immersive", vm.controlsDown);
+        showVmHint(vm.controlsDown ? "点一下唤出功能栏" : "");
+      }
+
+      // 打开/关闭全屏视频模式。
+      function openVideoMode() {
+        const v = cur.video;
+        if (!v) return;
+        vm.open = true;
+        vm.controlsDown = false;
+        renderVmDrawer();
+        vmTitle.textContent = detail.title || item.title;
+        vmEpRow.textContent = lines[cur.li].eps[cur.ei]?.ep || "";
+        vmOverlay.classList.remove("is-immersive");
+        if (v.parentNode && v.parentNode !== vmStage) {
+          v.remove();
+          vmStage.replaceChildren(v);
+        }
+        vmOverlay.hidden = false;
+        document.body.appendChild(vmOverlay);
+        document.body.classList.add("no-scroll");
+        v.play().catch(() => {});
+        syncVmControls();
+        cycleTick();
+      }
+      function closeVideoMode() {
+        vm.open = false;
+        if (vm.timer) cancelAnimationFrame(vm.timer);
+        vm.timer = null;
+        vmOverlay.hidden = true;
+        vmOverlay.remove();
+        document.body.classList.remove("no-scroll");
+        // 把视频放回正文播放器。
+        const v = cur.video;
+        if (v && v.parentNode === vmStage) {
+          v.remove();
+          playerWrap.replaceChildren(v);
+          v.play().catch(() => {});
+        }
+      }
+      vmClose.addEventListener("click", closeVideoMode);
+      vmStage.addEventListener("click", toggleVmControls);
+      vmPlayBtn.addEventListener("click", togglePlay);
+      vmDrawerBtn.addEventListener("click", () => {
+        vm.drawerOpen = !vm.drawerOpen;
+        vmDrawer.hidden = !vm.drawerOpen;
+        vmDrawerBtn.textContent = vm.drawerOpen ? "选集 ▴" : "选集 ▾";
+      });
+      // 上新集时刷新抽屉高亮 + 标题/集数，若正在全屏则直接切流。
+      function syncVideoMode(li, ei) {
+        const ep = lines[li]?.eps[ei];
+        if (ep) {
+          vmEpRow.textContent = ep.ep;
+          vmTitle.textContent = detail.title || item.title;
+          if (vm.open && vm.drawerOpen) renderVmDrawer();
+          tickVm();
+        }
+      }
+      function syncVmControls() { tickVm(); }
 
       const playerWrap = document.createElement("div");
       playerWrap.className = "watch-anime-player";
@@ -5127,7 +5325,8 @@
       bar.className = "watch-action-bar";
       const prevBtn = watchButton("← 上一集", null, "watch-download");
       const nextBtn = watchButton("下一集 →", null, "watch-download");
-      bar.append(prevBtn, nextBtn);
+      const fullBtn = watchButton("⛶ 视频模式", () => openVideoMode(), "watch-download watch-fullscreen-btn");
+      bar.append(prevBtn, nextBtn, fullBtn);
       if (detail.sourceSite) {
         const link = document.createElement("a");
         link.className = "watch-download";
@@ -5160,6 +5359,19 @@
     const body = $("[data-watch-viewer-body]");
     const media = body?.querySelector("audio, video");
     if (media) media.pause();
+    // 关掉可能开着的全屏视频模式：清 overlay、恢复滚动。
+    const vmOv = document.querySelector(".anime-vm");
+    if (vmOv) {
+      vmOv.remove();
+      document.body.classList.remove("no-scroll");
+      // 若视频正在全屏内，把它放回正文播放器位置，避免流被销毁。
+      const v = vmOv.querySelector("video");
+      if (v) {
+        v.remove();
+        const pwrap = body?.querySelector(".watch-anime-player");
+        if (pwrap) pwrap.appendChild(v);
+      }
+    }
     if (body) body.textContent = "";
     if (viewer) viewer.hidden = true;
     if (state.section === "watch") renderWatch();
