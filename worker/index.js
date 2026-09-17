@@ -1356,20 +1356,32 @@ function parseNovelChapterPage(html, origin, novelId, chapterId) {
     || html.match(/chaptername\s*:\s*["']([^"']+)/i)?.[1] || `章节 ${chapterId}`);
   const raw = html.match(/<(?:div|article)[^>]*(?:id=["'](?:acontent|TextContent)["']|class=["'][^"']*(?:acontent|TextContent|read-content|chapter-content)[^"']*["'])[^>]*>([\s\S]*?)<\/(?:div|article)>/i)?.[1] || "";
   const blocks = [];
-  const tokenRe = /<img[^>]+(?:data-src|src)=["']([^"']+)["'][^>]*>|<p[^>]*>([\s\S]*?)<\/p>/gi;
-  let token;
-  while ((token = tokenRe.exec(raw)) && blocks.length < 2000) {
-    if (token[1]) {
-      const imageUrl = absoluteWatchUrl(token[1], origin);
+  // 正文里常有未闭合的 <p>（源站 HTML 不规范，段落到页尾才被 </div> 截断），
+  // 用「标签起点」分段：每个 <img> 是图，每个 <p> 到下一个 <p>/<img>/容器尾 之间的内容是段落，
+  // 而不是死等 </p>，否则每页末尾那段残缺正文会被整体丢掉。
+  const tagRe = /<img[^>]+(?:data-src|src)=["']([^"']+)["'][^>]*>|<p[^>]*>/gi;
+  const marks = [];
+  let tm;
+  while ((tm = tagRe.exec(raw))) {
+    marks.push({ kind: tm[1] ? "img" : "p", src: tm[1] || "", at: tm.index, end: tagRe.lastIndex });
+  }
+  for (let i = 0; i < marks.length && blocks.length < 2000; i++) {
+    const mark = marks[i];
+    if (mark.kind === "img") {
+      const imageUrl = absoluteWatchUrl(mark.src, origin);
       // 只按「路径 + 文件名」判广告/图标，绝不能拿整条 URL 判：
       // readpai.com 里的 "re-ad-pai" 含 "ad"，裸子串匹配会把所有插图误杀。
       if (imageUrl && !isNovelDecorationImage(imageUrl)) {
         blocks.push({ type: "image", src: proxyWatchAsset(imageUrl, "novel") });
       }
-    } else {
-      const text = stripTags(token[2]);
-      if (text) blocks.push({ type: "text", text });
+      continue;
     }
+    // 段落内容：从当前 <p> 结束，到下一个 <p>/<img> 的起点（或容器末尾）之间
+    const nextMark = marks[i + 1];
+    const sliceEnd = nextMark ? nextMark.at : raw.length;
+    const segRaw = raw.slice(mark.end, sliceEnd);
+    const text = stripTags(segRaw);
+    if (text) blocks.push({ type: "text", text });
   }
   if (!blocks.length) {
     const text = stripTags(raw);
@@ -1405,17 +1417,25 @@ async function fetchNovelChapterAll(novelId, chapterId) {
     if (!nextMatch) break;
     path = rp.urlNext;
   }
-  // 合并所有页的 blocks，去掉分页间那句「內容加載失敗」占位。
-  // 注意：不做相邻段落去重 —— 正文里可能存在合法的连续相同段落（如两个「……」），
-  // 去重会导致后续段落整体前移、内容错位。
+  // 合并所有页的 blocks，剥离分页间那句「內容加載失敗！請重載或更換瀏覽器」占位。
+  // 注意：这个标记常拼接在正常正文末尾（如「……其他同學隨意在接下來的位……（內容加載失敗！請重載或更換瀏覽器）」），
+  // 不能整段删除 —— 否则会把标记前面的正常正文一并丢掉，导致每页末尾都缺一句。
+  // 正确做法：只剥离标记本身 + 手机版警告；若剥离后整段只剩标点/空白，才丢弃。
+  // 另外不做相邻段落去重 —— 正文里可能存在合法的连续相同段落（如两个「……」），去重会导致内容错位。
+  const LOAD_FAIL_MARK = /[（(]?內容加載失敗[！!]?請重載或更換瀏覽器[)）]?|[（(]?内容加载失败[！!]?请重载或更换浏览器[)）]?/g;
+  const MOBILE_WARN = /【手機版頁面由於相容性問題暫不支持電腦端閱讀，請使用手機閱讀。】|【手机版页面由于兼容性问题暂不支持电脑端阅读，请使用手机阅读。】/g;
   const merged = [];
   for (const pageHtml of pages) {
     const part = parseNovelChapterPage(pageHtml, origin, novelId, chapterId);
     for (const block of part.blocks) {
       if (block.type === "text") {
-        const text = block.text;
-        if (/內容加載失敗|内容加载失败|加載失敗|加载失败/.test(text)) continue;
-        merged.push(block);
+        let text = String(block.text || "");
+        if (!text) continue;
+        // 整段就是加载失败占位 → 丢弃
+        if (/^(內容加載失敗|内容加载失败|加載失敗|加载失败)[！!]?/.test(text.trim())) continue;
+        // 剥离拼接在正文末尾的加载失败标记 + 手机版警告
+        text = text.replace(LOAD_FAIL_MARK, "").replace(MOBILE_WARN, "").trim();
+        if (text && !/^[……。、，．\s]*$/.test(text)) merged.push({ type: "text", text });
       } else {
         merged.push(block);
       }
