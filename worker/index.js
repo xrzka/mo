@@ -497,10 +497,29 @@ async function fetchWatchHtml(url, referer = "") {
   return await response.text();
 }
 
+/** 带重试的 HTML 抓取：上游（linovelib 等）偶发 429/5xx/超时，单次失败就返回会让用户
+ *  翻到某一章时整章空白。这里对同一 URL 重试几次，间隔递增，降低偶发限流的影响。 */
+async function fetchWatchHtmlRetry(url, referer = "", retries = 2, baseDelayMs = 400) {
+  let lastError;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      return await fetchWatchHtml(url, referer);
+    } catch (error) {
+      lastError = error;
+      const msg = String(error?.message || error);
+      // 429/5xx/超时 才值得重试；403/404 等确定失败不重试。
+      const retryable = /upstream HTTP (429|5\d\d)|abort|timeout|fetch failed|internal/i.test(msg);
+      if (!retryable || attempt === retries) throw error;
+      await new Promise((resolve) => setTimeout(resolve, baseDelayMs * (attempt + 1)));
+    }
+  }
+  throw lastError;
+}
+
 async function fetchFirstWatchHtml(origins, path) {
   const errors = [];
   for (const origin of origins) {
-    try { return { html: await fetchWatchHtml(`${origin}${path}`), origin }; }
+    try { return { html: await fetchWatchHtmlRetry(`${origin}${path}`), origin }; }
     catch (error) { errors.push(`${new URL(origin).hostname}: ${error.message}`); }
   }
   throw new Error(errors.join("; ") || "upstream unavailable");
@@ -1401,16 +1420,33 @@ function parseNovelChapterPage(html, origin, novelId, chapterId) {
  *
  * 之前只抓第 1 页，导致"一话只有半话/三分之一内容"。
  */
+
+// 章节内容内存缓存：同一 Worker 实例内重复请求同一章直接命中，避免连续翻章时
+// 反复打上游（linovelib 对短时间大量请求会 429 限流，导致某章空白）。
+const novelChapterCache = new Map(); // key = `${novelId}/${chapterId}` -> { at, value }
+
 async function fetchNovelChapterAll(novelId, chapterId) {
+  const cacheKey = `${novelId}/${chapterId}`;
+  const cached = novelChapterCache.get(cacheKey);
+  if (cached && Date.now() - cached.at < 30 * 60 * 1000) return cached.value; // 30 分钟内存缓存
   const pages = [];
   let path = `/novel/${novelId}/${chapterId}.html`;
   let origin = "";
   // 分页安全阀：单章最多 200 页，防死循环。
   for (let i = 0; i < 200; i++) {
-    const { html, origin: pageOrigin } = await fetchFirstWatchHtml(WATCH_NOVEL_ORIGINS, path);
-    origin = pageOrigin;
-    pages.push(html);
-    const rp = extractNovelReadParams(html);
+    // 单页抓取也带重试：某页撞上 429/5xx 就重试整页，而不是让整章直接失败。
+    let page = null;
+    for (let attempt = 0; attempt < 3 && !page; attempt++) {
+      try {
+        page = await fetchFirstWatchHtml(WATCH_NOVEL_ORIGINS, path);
+      } catch (error) {
+        if (attempt === 2) throw error;
+        await new Promise((resolve) => setTimeout(resolve, 600 * (attempt + 1)));
+      }
+    }
+    origin = page.origin;
+    pages.push(page.html);
+    const rp = extractNovelReadParams(page.html);
     // 下一页仍是本章的分页（/novel/{id}/{chapterId}_N.html）→ 继续抓；
     // 否则（变成下一章 /novel/{id}/{other}.html 或为空）→ 结束。
     const nextMatch = rp.urlNext.match(new RegExp(`/novel/${novelId}/${chapterId}_(\\d+)\\.html$`));
@@ -1447,7 +1483,17 @@ async function fetchNovelChapterAll(novelId, chapterId) {
     }
   }
   const first = pages.length ? parseNovelChapterPage(pages[0], origin, novelId, chapterId) : { title: `章节 ${chapterId}` };
-  return { id: chapterId, novelId, title: first.title, blocks: merged, pages: pages.length };
+  const result = { id: chapterId, novelId, title: first.title, blocks: merged, pages: pages.length };
+  // 只有抓到内容才缓存；空结果不缓存（下次重试还能再抓一次）。
+  if (result.blocks.length) {
+    if (novelChapterCache.size > 200) {
+      // 简单淘汰：清掉最旧的一半，避免内存无限增长。
+      const keys = [...novelChapterCache.keys()];
+      for (const k of keys.slice(0, 100)) novelChapterCache.delete(k);
+    }
+    novelChapterCache.set(cacheKey, { at: Date.now(), value: result });
+  }
+  return result;
 }
 
 function animationPath(value, pattern) {
