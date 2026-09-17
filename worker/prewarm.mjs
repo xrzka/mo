@@ -25,7 +25,7 @@ async function main() {
       const res = await fetch("https://mo-stats.werneruszcb71.workers.dev/api/admin/novel-cache", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ key, blocks: record.paras || record.blocks }),
+        body: JSON.stringify({ key, blocks: record.blocks || record.paras }),
       });
       const result = await res.json();
       console.log(`${file}: HTTP ${res.status} ${JSON.stringify(result)}`);

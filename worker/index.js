@@ -808,7 +808,7 @@ function parseNovelSearchCards(html, origin) {
   return cards;
 }
 
-async function watchNovel(request, url) {
+async function watchNovel(request, url, env) {
   const action = watchText(url.searchParams.get("action") || "list", 24);
   if (action === "list") {
     const q = watchText(url.searchParams.get("q"));
@@ -850,7 +850,7 @@ async function watchNovel(request, url) {
   if (action === "chapter") {
     const chapterId = watchText(url.searchParams.get("chapter"), 12);
     if (!/^\d+$/.test(chapterId)) return json({ error: "bad chapter id" }, request, 400);
-    const chapter = await fetchNovelChapterAll(novelId, chapterId);
+    const chapter = await fetchNovelChapterAll(env, novelId, chapterId);
     if (!chapter.blocks.length) return json({ error: "正文为空或被上游保护" }, request, 502);
     return json(chapter, request);
   }
@@ -1538,19 +1538,28 @@ function parseNovelDesktopChapter(html, origin, novelId, chapterId) {
 // 反复打上游（linovelib 对短时间大量请求会 429 限流，导致某章空白）。
 const novelChapterCache = new Map(); // key = `${novelId}/${chapterId}` -> { at, value }
 
-async function fetchNovelChapterAll(novelId, chapterId) {
-  const cacheKey = `novel:${novelId}/${chapterId}`;
+async function fetchNovelChapterAll(env, novelId, chapterId) {
+  const cacheKey = `${novelId}/${chapterId}`;
   const cached = novelChapterCache.get(cacheKey);
   if (cached && Date.now() - cached.at < 30 * 60 * 1000) return cached.value; // 30 分钟内存缓存
 
   // 优先读取 KV 预热缓存（本地 Playwright 批量抓取写入），命中直接返回，不再打上游。
   try {
-    const kvValue = await env.NOVEL_CACHE.get(cacheKey);
+    const cache = env && env.NOVEL_CACHE; if (!cache) throw new Error('NOVEL_CACHE'); const kvValue = await cache.get(cacheKey);
     if (kvValue) {
       const parsed = JSON.parse(kvValue);
       if (parsed && parsed.blocks && parsed.blocks.length) {
-        novelChapterCache.set(cacheKey, { at: Date.now(), value: parsed });
-        return parsed;
+        // 统一格式：KV 缓存可能存为字符串数组或对象数组，均转为 {type:"text",text:...}
+        const blocks = parsed.blocks.map(b => typeof b === 'string' ? {type: 'text', text: b} : b);
+        const result = {
+          id: parsed.id || chapterId,
+          novelId: parsed.novelId || novelId,
+          title: parsed.title || '',
+          blocks,
+          pages: parsed.pages || 1
+        };
+        novelChapterCache.set(cacheKey, { at: Date.now(), value: result });
+        return result;
       }
     }
   } catch { /* KV 读取失败不影响主流程 */ }
@@ -2706,7 +2715,7 @@ export default {
       if (url.pathname === "/api/watch/novel" && request.method === "GET") {
         const ip = request.headers.get("CF-Connecting-IP") || "";
         if (await rateLimited(env, ip)) return json({ error: "too many requests" }, request, 429);
-        return await watchNovel(request, url);
+        return await watchNovel(request, url, env);
       }
 
       if (url.pathname === "/api/watch/manga" && request.method === "GET") {

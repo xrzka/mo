@@ -56,7 +56,7 @@ def main():
     result = {
         "key": key,
         "url": url,
-        "paras": paras,
+        "blocks": paras,
         "count": len(paras),
         "ts": int(time.time())
     }

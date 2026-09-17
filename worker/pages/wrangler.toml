@@ -7,3 +7,8 @@ compatibility_date = "2026-08-01"
 binding = "DB"
 database_name = "mo-stats"
 database_id = "784254ea-5aa2-415c-bfd3-945b9cc4bd67"
+
+# KV：小说章节内容预热缓存（与 Worker 共享同一个 KV 命名空间）。
+[[kv_namespaces]]
+binding = "NOVEL_CACHE"
+id = "2ff6340ff11240bf92335633cdd13678"
