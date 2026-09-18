@@ -4649,15 +4649,41 @@
       }
     }
     const hasPages = pageBlocks.length > 1;
-    const reader = renderNovelBlocks(hasPages ? pageBlocks[0] : allBlocks);
-    const tools = watchNovelTools(reader);
-
-    // 章节内分页状态
     let chapterPage = 0;
-    const updateReader = () => {
-      const curBlocks = hasPages ? pageBlocks[chapterPage] : allBlocks;
+
+    const reader = renderNovelBlocks(hasPages ? pageBlocks[0] : allBlocks);
+    let toolsEl = watchNovelTools(reader);
+
+    let pageInfoEl = null, topPrevBtn = null, topNextBtn = null;
+    let tailInfoEl = null, tailPrevBtn = null, tailNextBtn = null;
+
+    const refreshPageControls = () => {
+      const label = `第 ${chapterPage + 1} / ${pageBlocks.length} 页`;
+      if (pageInfoEl) pageInfoEl.textContent = label;
+      if (tailInfoEl) tailInfoEl.textContent = label;
+      const atFirst = chapterPage <= 0;
+      const atLast = chapterPage >= pageBlocks.length - 1;
+      for (const btn of [topPrevBtn, topNextBtn, tailPrevBtn, tailNextBtn]) {
+        if (btn) {
+          if (btn === topPrevBtn || btn === tailPrevBtn) btn.disabled = atFirst;
+          else btn.disabled = atLast;
+        }
+      }
+    };
+
+    const goPage = (delta) => {
+      const np = chapterPage + delta;
+      if (np < 0 || np >= pageBlocks.length) return;
+      chapterPage = np;
+      const curBlocks = pageBlocks[chapterPage] || [];
       const newReader = renderNovelBlocks(curBlocks);
+      const newTools = watchNovelTools(newReader);
+      toolsEl.replaceWith(newTools);
       reader.replaceChildren(...newReader.children);
+      refreshPageControls();
+      const stepNode = document.querySelector('.read-mode-step');
+      if (stepNode) stepNode.textContent = `第 ${index + 1} / ${chapters.length} 章 · 第 ${chapterPage + 1} / ${pageBlocks.length} 页`;
+      toolsEl = newTools;
     };
 
     // 沉浸模式：内容已是同一份 reader/tools，直接挂进全屏壳，切章不丢偏好
@@ -4678,7 +4704,7 @@
           ? `第 ${index + 1} / ${chapters.length} 章 · 第 ${chapterPage + 1} / ${pageBlocks.length} 页`
           : `第 ${index + 1} / ${chapters.length} 章`,
         content: reader,
-        tools,
+        tools: toolsEl,
         chapters,
         activeId: chapter.id,
         onPick: (picked) => {
@@ -4699,37 +4725,18 @@
 
     // 章节内分页控制器（只有一章多页时显示）
     if (hasPages) {
-      const pageInfo = document.createElement("span");
-      pageInfo.className = "watch-page-info";
-      pageInfo.textContent = `第 ${chapterPage + 1} / ${pageBlocks.length} 页`;
-      bar.appendChild(pageInfo);
+      pageInfoEl = document.createElement("span");
+      pageInfoEl.className = "watch-page-info";
+      pageInfoEl.textContent = `第 ${chapterPage + 1} / ${pageBlocks.length} 页`;
+      bar.appendChild(pageInfoEl);
 
-      const updatePageButtons = (prevBtn, nextBtn) => {
-        prevBtn.disabled = chapterPage <= 0;
-        nextBtn.disabled = chapterPage >= pageBlocks.length - 1;
-      };
+      topPrevBtn = watchButton("‹ 上页", () => goPage(-1), "watch-download");
+      topPrevBtn.disabled = chapterPage <= 0;
+      bar.appendChild(topPrevBtn);
 
-      const prevPage = watchButton("‹ 上页", () => {
-        if (chapterPage > 0) {
-          chapterPage--;
-          pageInfo.textContent = `第 ${chapterPage + 1} / ${pageBlocks.length} 页`;
-          updateReader();
-          updatePageButtons(prevPage, nextPage);
-        }
-      }, "watch-download");
-      prevPage.disabled = chapterPage <= 0;
-      bar.appendChild(prevPage);
-
-      const nextPage = watchButton("下页 ›", () => {
-        if (chapterPage < pageBlocks.length - 1) {
-          chapterPage++;
-          pageInfo.textContent = `第 ${chapterPage + 1} / ${pageBlocks.length} 页`;
-          updateReader();
-          updatePageButtons(prevPage, nextPage);
-        }
-      }, "watch-download");
-      nextPage.disabled = chapterPage >= pageBlocks.length - 1;
-      bar.appendChild(nextPage);
+      topNextBtn = watchButton("下页 ›", () => goPage(1), "watch-download");
+      topNextBtn.disabled = chapterPage >= pageBlocks.length - 1;
+      bar.appendChild(topNextBtn);
     }
 
     bar.appendChild(watchButton("📖 阅读模式", () => enterMode(), "watch-download"));
@@ -4739,39 +4746,25 @@
     download.addEventListener("click", () => downloadNovelChapterView(item, chapter, data, download));
     bar.appendChild(download);
 
-    body.replaceChildren(bar, tools, reader);
+    body.replaceChildren(bar, toolsEl, reader);
 
     // 正文底部再放一组切章按钮，读完不用滚回去
     const tail = document.createElement("div");
     tail.className = "watch-action-bar watch-chapter-tail";
-    // 底部也添加章节内分页
+    // 底部也添加章节内分页（与顶部通过 goPage 共享变量，自动同步）
     if (hasPages) {
-      const tailInfo = document.createElement("span");
-      tailInfo.className = "watch-page-info";
-      tailInfo.textContent = `第 ${chapterPage + 1} / ${pageBlocks.length} 页`;
-      tail.appendChild(tailInfo);
+      tailInfoEl = document.createElement("span");
+      tailInfoEl.className = "watch-page-info";
+      tailInfoEl.textContent = `第 ${chapterPage + 1} / ${pageBlocks.length} 页`;
+      tail.appendChild(tailInfoEl);
 
-      const tailPrev = watchButton("‹ 上页", () => {
-        if (chapterPage > 0) {
-          chapterPage--;
-          pageInfo.textContent = `第 ${chapterPage + 1} / ${pageBlocks.length} 页`;
-          tailInfo.textContent = `第 ${chapterPage + 1} / ${pageBlocks.length} 页`;
-          updateReader();
-        }
-      }, "watch-download");
-      tailPrev.disabled = chapterPage <= 0;
-      tail.appendChild(tailPrev);
+      tailPrevBtn = watchButton("‹ 上页", () => goPage(-1), "watch-download");
+      tailPrevBtn.disabled = chapterPage <= 0;
+      tail.appendChild(tailPrevBtn);
 
-      const tailNext = watchButton("下页 ›", () => {
-        if (chapterPage < pageBlocks.length - 1) {
-          chapterPage++;
-          pageInfo.textContent = `第 ${chapterPage + 1} / ${pageBlocks.length} 页`;
-          tailInfo.textContent = `第 ${chapterPage + 1} / ${pageBlocks.length} 页`;
-          updateReader();
-        }
-      }, "watch-download");
-      tailNext.disabled = chapterPage >= pageBlocks.length - 1;
-      tail.appendChild(tailNext);
+      tailNextBtn = watchButton("下页 ›", () => goPage(1), "watch-download");
+      tailNextBtn.disabled = chapterPage >= pageBlocks.length - 1;
+      tail.appendChild(tailNextBtn);
     }
     if (index > 0) tail.appendChild(watchButton("← 上一章", () => showNovelChapter(item, body, requestId, chapters, index - 1), "watch-download"));
     if (index < chapters.length - 1) tail.appendChild(watchButton("下一章 →", () => showNovelChapter(item, body, requestId, chapters, index + 1), "watch-download"));
