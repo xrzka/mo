@@ -4631,8 +4631,34 @@
     const chapterTitle = `${item.title || ""} · ${title}`;
     saveWatchProgress("novel", item, chapter, index);
 
-    const reader = renderNovelBlocks(data.blocks);
+    // 章节内分页（源站一章多页时 data.pages > 1）
+    const totalPages = data.pages || 1;
+    const allBlocks = data.blocks || [];
+    // 每页大约均分：按 30 段/页切分
+    const pageSize = 30;
+    const pageBlocks = [];
+    for (let i = 0; i < allBlocks.length; i += pageSize) {
+      pageBlocks.push(allBlocks.slice(i, i + pageSize));
+    }
+    // 若 API 返回了真实页数，优先用真实页数做均分
+    if (totalPages > 1 && pageBlocks.length !== totalPages) {
+      const perPage = Math.ceil(allBlocks.length / totalPages);
+      pageBlocks.length = 0;
+      for (let i = 0; i < allBlocks.length; i += perPage) {
+        pageBlocks.push(allBlocks.slice(i, i + perPage));
+      }
+    }
+    const hasPages = pageBlocks.length > 1;
+    const reader = renderNovelBlocks(hasPages ? pageBlocks[0] : allBlocks);
     const tools = watchNovelTools(reader);
+
+    // 章节内分页状态
+    let chapterPage = 0;
+    const updateReader = () => {
+      const curBlocks = hasPages ? pageBlocks[chapterPage] : allBlocks;
+      const newReader = renderNovelBlocks(curBlocks);
+      reader.replaceChildren(...newReader.children);
+    };
 
     // 沉浸模式：内容已是同一份 reader/tools，直接挂进全屏壳，切章不丢偏好
     const stepInto = (nextIndex) => {
@@ -4648,14 +4674,16 @@
       document.title = `${title} - ${item.title || "墨小说漫画"}`;
       mountReadingMode({
         title: chapterTitle,
-        step: `第 ${index + 1} / ${chapters.length} 章`,
+        step: hasPages
+          ? `第 ${index + 1} / ${chapters.length} 章 · 第 ${chapterPage + 1} / ${pageBlocks.length} 页`
+          : `第 ${index + 1} / ${chapters.length} 章`,
         content: reader,
         tools,
         chapters,
         activeId: chapter.id,
         onPick: (picked) => {
           const at = chapters.findIndex((c) => c.id === picked.id);
-          if (at >= 0) stepInto(at);
+          if (at >= 0) { chapterPage = 0; stepInto(at); }
         },
         prev: index > 0 ? () => stepInto(index - 1) : null,
         next: index < chapters.length - 1 ? () => stepInto(index + 1) : null,
@@ -4664,11 +4692,39 @@
     }
 
     $(`[data-watch-viewer-title]`).textContent = title;
-
-    // 内嵌阅读：阅读模式入口 + 返回目录 + 上/下一章 + 下载
+    // 内嵌阅读：章节内翻页 + 目录/阅读模式/章间翻页 + 下载
     const bar = document.createElement("div");
     bar.className = "watch-action-bar";
     bar.appendChild(watchButton("← 返回目录", () => openWatchNovel(item, body, requestId), "watch-inline-back"));
+
+    // 章节内分页控制器（只有一章多页时显示）
+    if (hasPages) {
+      const pageInfo = document.createElement("span");
+      pageInfo.className = "watch-page-info";
+      pageInfo.textContent = `第 ${chapterPage + 1} / ${pageBlocks.length} 页`;
+      bar.appendChild(pageInfo);
+
+      const prevPage = watchButton("‹ 上页", () => {
+        if (chapterPage > 0) {
+          chapterPage--;
+          pageInfo.textContent = `第 ${chapterPage + 1} / ${pageBlocks.length} 页`;
+          updateReader();
+        }
+      }, "watch-download");
+      prevPage.disabled = chapterPage <= 0;
+      bar.appendChild(prevPage);
+
+      const nextPage = watchButton("下页 ›", () => {
+        if (chapterPage < pageBlocks.length - 1) {
+          chapterPage++;
+          pageInfo.textContent = `第 ${chapterPage + 1} / ${pageBlocks.length} 页`;
+          updateReader();
+        }
+      }, "watch-download");
+      nextPage.disabled = chapterPage >= pageBlocks.length - 1;
+      bar.appendChild(nextPage);
+    }
+
     bar.appendChild(watchButton("📖 阅读模式", () => enterMode(), "watch-download"));
     if (index > 0) bar.appendChild(watchButton("← 上一章", () => showNovelChapter(item, body, requestId, chapters, index - 1), "watch-download"));
     if (index < chapters.length - 1) bar.appendChild(watchButton("下一章 →", () => showNovelChapter(item, body, requestId, chapters, index + 1), "watch-download"));
