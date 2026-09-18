@@ -4704,11 +4704,17 @@
       pageInfo.textContent = `第 ${chapterPage + 1} / ${pageBlocks.length} 页`;
       bar.appendChild(pageInfo);
 
+      const updatePageButtons = (prevBtn, nextBtn) => {
+        prevBtn.disabled = chapterPage <= 0;
+        nextBtn.disabled = chapterPage >= pageBlocks.length - 1;
+      };
+
       const prevPage = watchButton("‹ 上页", () => {
         if (chapterPage > 0) {
           chapterPage--;
           pageInfo.textContent = `第 ${chapterPage + 1} / ${pageBlocks.length} 页`;
           updateReader();
+          updatePageButtons(prevPage, nextPage);
         }
       }, "watch-download");
       prevPage.disabled = chapterPage <= 0;
@@ -4719,6 +4725,7 @@
           chapterPage++;
           pageInfo.textContent = `第 ${chapterPage + 1} / ${pageBlocks.length} 页`;
           updateReader();
+          updatePageButtons(prevPage, nextPage);
         }
       }, "watch-download");
       nextPage.disabled = chapterPage >= pageBlocks.length - 1;
@@ -4737,6 +4744,35 @@
     // 正文底部再放一组切章按钮，读完不用滚回去
     const tail = document.createElement("div");
     tail.className = "watch-action-bar watch-chapter-tail";
+    // 底部也添加章节内分页
+    if (hasPages) {
+      const tailInfo = document.createElement("span");
+      tailInfo.className = "watch-page-info";
+      tailInfo.textContent = `第 ${chapterPage + 1} / ${pageBlocks.length} 页`;
+      tail.appendChild(tailInfo);
+
+      const tailPrev = watchButton("‹ 上页", () => {
+        if (chapterPage > 0) {
+          chapterPage--;
+          pageInfo.textContent = `第 ${chapterPage + 1} / ${pageBlocks.length} 页`;
+          tailInfo.textContent = `第 ${chapterPage + 1} / ${pageBlocks.length} 页`;
+          updateReader();
+        }
+      }, "watch-download");
+      tailPrev.disabled = chapterPage <= 0;
+      tail.appendChild(tailPrev);
+
+      const tailNext = watchButton("下页 ›", () => {
+        if (chapterPage < pageBlocks.length - 1) {
+          chapterPage++;
+          pageInfo.textContent = `第 ${chapterPage + 1} / ${pageBlocks.length} 页`;
+          tailInfo.textContent = `第 ${chapterPage + 1} / ${pageBlocks.length} 页`;
+          updateReader();
+        }
+      }, "watch-download");
+      tailNext.disabled = chapterPage >= pageBlocks.length - 1;
+      tail.appendChild(tailNext);
+    }
     if (index > 0) tail.appendChild(watchButton("← 上一章", () => showNovelChapter(item, body, requestId, chapters, index - 1), "watch-download"));
     if (index < chapters.length - 1) tail.appendChild(watchButton("下一章 →", () => showNovelChapter(item, body, requestId, chapters, index + 1), "watch-download"));
     if (tail.children.length) body.appendChild(tail);
