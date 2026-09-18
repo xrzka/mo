@@ -4656,6 +4656,8 @@
 
     let pageInfoEl = null, topPrevBtn = null, topNextBtn = null;
     let tailInfoEl = null, tailPrevBtn = null, tailNextBtn = null;
+    // 沉浸模式下的页内翻页按钮
+    let immersivePrevBtn = null, immersiveNextBtn = null;
 
     const refreshPageControls = () => {
       const label = `第 ${chapterPage + 1} / ${pageBlocks.length} 页`;
@@ -4669,6 +4671,9 @@
           else btn.disabled = atLast;
         }
       }
+      // 同步沉浸模式的页内翻页按钮
+      if (immersivePrevBtn) immersivePrevBtn.disabled = atFirst;
+      if (immersiveNextBtn) immersiveNextBtn.disabled = atLast;
     };
 
     const goPage = (delta) => {
@@ -4680,12 +4685,39 @@
       const newTools = watchNovelTools(newReader);
       toolsEl.replaceWith(newTools);
       reader.replaceChildren(...newReader.children);
-      // 翻页后滚动到正文顶部，否则停留在底部按钮位置。
-      body.scrollTop = 0;
+      // 沉浸模式下翻页后，重新追加页内翻页按钮
+      if (immersivePrevBtn && immersiveNextBtn) {
+        const pageBar = createImmersivePageControls();
+        if (pageBar) {
+          const target = newTools.querySelector('.watch-read-tools') || newTools;
+          target.appendChild(pageBar);
+        }
+      }
+      // 翻页后滚动到正文顶部。内嵌模式滚动页面，沉浸模式滚动 .read-mode-body
+      requestAnimationFrame(() => {
+        if (immersive) {
+          const scrollContainer = document.querySelector(".read-mode-body");
+          if (scrollContainer) scrollContainer.scrollTop = 0;
+        } else {
+          body.scrollIntoView({ block: "start" });
+        }
+      });
       refreshPageControls();
       const stepNode = document.querySelector('.read-mode-step');
       if (stepNode) stepNode.textContent = `第 ${index + 1} / ${chapters.length} 章 · 第 ${chapterPage + 1} / ${pageBlocks.length} 页`;
       toolsEl = newTools;
+    };
+
+    // 创建沉浸模式的页内翻页按钮（仅在 hasPages 时）
+    const createImmersivePageControls = () => {
+      if (!hasPages) return null;
+      const bar = document.createElement("div");
+      bar.className = "watch-read-tools";
+      immersivePrevBtn = watchButton("‹ 上页", () => goPage(-1), "watch-tool-btn");
+      immersivePrevBtn.disabled = true;
+      immersiveNextBtn = watchButton("下页 ›", () => goPage(1), "watch-tool-btn");
+      bar.append(immersivePrevBtn, immersiveNextBtn);
+      return bar;
     };
 
     // 沉浸模式：内容已是同一份 reader/tools，直接挂进全屏壳，切章不丢偏好
@@ -4700,6 +4732,19 @@
     if (immersive) {
       $(`[data-watch-viewer-title]`).textContent = chapterTitle;
       document.title = `${title} - ${item.title || "墨小说漫画"}`;
+      // 沉浸模式下的页内翻页按钮
+      if (hasPages) {
+        const pageBar = createImmersivePageControls();
+        if (pageBar) {
+          // 将页内翻页按钮追加到工具栏
+          const existingTools = toolsEl.querySelector('.watch-read-tools');
+          if (existingTools) {
+            existingTools.appendChild(pageBar);
+          } else {
+            toolsEl.appendChild(pageBar);
+          }
+        }
+      }
       mountReadingMode({
         title: chapterTitle,
         step: hasPages
