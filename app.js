@@ -4680,6 +4680,8 @@
       const newTools = watchNovelTools(newReader);
       toolsEl.replaceWith(newTools);
       reader.replaceChildren(...newReader.children);
+      // 翻页后滚动到正文顶部，否则停留在底部按钮位置。
+      body.scrollTop = 0;
       refreshPageControls();
       const stepNode = document.querySelector('.read-mode-step');
       if (stepNode) stepNode.textContent = `第 ${index + 1} / ${chapters.length} 章 · 第 ${chapterPage + 1} / ${pageBlocks.length} 页`;
