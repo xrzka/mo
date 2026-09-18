@@ -1554,7 +1554,15 @@ async function fetchNovelChapterAll(env, novelId, chapterId) {
       const parsed = JSON.parse(kvValue);
       if (parsed && parsed.blocks && parsed.blocks.length) {
         // 统一格式：KV 缓存可能存为字符串数组或对象数组，均转为 {type:"text",text:...}
-        const blocks = parsed.blocks.map(b => typeof b === 'string' ? {type: 'text', text: b} : b);
+        // 注意：KV 里可能存的是 raw URL（由预热脚本直接写入），需要走 proxyWatchAsset 做代理，
+        // 避免 img3.readpai.com 等上游的防盗链（403）导致图片 404。
+        const blocks = parsed.blocks.map((b) => {
+          if (typeof b === 'string') return {type: 'text', text: b};
+          if (b.type === 'image' && b.src && /^https?:\/\//i.test(b.src)) {
+            return {type: 'image', src: proxyWatchAsset(b.src, 'novel')};
+          }
+          return b;
+        });
         const result = {
           id: parsed.id || chapterId,
           novelId: parsed.novelId || novelId,
