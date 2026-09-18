@@ -845,6 +845,9 @@ async function watchNovel(request, url, env) {
       const chapterTitle = stripTags(m[3]);
       if (!chapters.some((x) => x.id === m[2])) chapters.push({ id: m[2], title: chapterTitle || `章节 ${m[2]}` });
     }
+    // 上游目录页可能混入「最新章节」等侧栏链接，DOM 顺序不保证阅读顺序。
+    // 按 id 数字升序排列，确保章列表始终从小到大。
+    chapters.sort((a, b) => String(a.id).localeCompare(String(b.id), undefined, { numeric: true }));
     return json({ id: novelId, title, cover, description, chapters }, request);
   }
   if (action === "chapter") {
@@ -1417,7 +1420,7 @@ function parseNovelChapter(html, origin, novelId, chapterId) {
   return parseNovelChapterPage(html, origin, novelId, chapterId);
 }
 
-/** 提取 ReadParams 里的关键字段：url_next（分页/下一章）、url_previous、page。 */
+/** 提取 ReadParams 里的关键字段：url_next（分页/下一章）、url_previous、page、subid。 */
 function extractNovelReadParams(html) {
   const raw = html.match(/ReadParams\s*=\s*\{([\s\S]*?)\}/)?.[1] || "";
   const pick = (key) => {
@@ -1429,6 +1432,7 @@ function extractNovelReadParams(html) {
     urlPrev: pick("url_previous"),
     page: pick("page"),
     chapterid: pick("chapterid"),
+    subid: pick("subid"),
   };
 }
 
@@ -1611,9 +1615,25 @@ async function fetchNovelChapterAll(env, novelId, chapterId) {
     const rp = extractNovelReadParams(page.html);
     // 下一页仍是本章的分页（/novel/{id}/{chapterId}_N.html）→ 继续抓；
     // 否则（变成下一章 /novel/{id}/{other}.html 或为空）→ 结束。
-    const nextMatch = rp.urlNext.match(new RegExp(`/novel/${novelId}/${chapterId}_(\\d+)\\.html$`));
-    if (!nextMatch) break;
-    path = rp.urlNext;
+    let nextPagePath = null;
+    if (rp.urlNext) {
+      // url_next 优先
+      const nextMatch = rp.urlNext.match(new RegExp(`/novel/${novelId}/${chapterId}_(\\d+)\\.html$`));
+      if (!nextMatch) break; // 是下一章或格式不对 → 结束
+      nextPagePath = rp.urlNext;
+    } else {
+      // url_next 为空时的回退：直接在 HTML 里找分页链接
+      // 源站分页链接形如：<a href="/novel/{id}/{chapterId}_2.html">下一页</a>
+      // 直接搜 href，比靠 subid/page 推导可靠。
+      const pageLinkMatch = page.html.match(
+        new RegExp(`href=["'](/novel/${novelId}/${chapterId}_(\\d+)\\.html)["']`)
+      );
+      if (pageLinkMatch) {
+        nextPagePath = pageLinkMatch[1];
+      }
+    }
+    if (!nextPagePath) break;
+    path = nextPagePath;
   }
   // 合并所有页的 blocks，剥离分页间那句「內容加載失敗！請重載/刷新或更換瀏覽器」占位。
   // 注意：这个标记常拼接在正常正文末尾（如「……其他同學隨意在接下來的位……（內容加載失敗！請重載或更換瀏覽器）」），
@@ -2669,25 +2689,38 @@ export default {
       return json({ error: "D1 未绑定，请检查 wrangler.toml 的 [[d1_databases]]" }, request, 500);
     }
 
-    // 小说章节预热缓存写入接口（内部接口，跳过 CORS origin 白名单）。
-    if (url.pathname === "/api/admin/novel-cache" && request.method === "POST") {
-      const ip = request.headers.get("CF-Connecting-IP") || "";
-      if (await rateLimited(env, ip)) return json({ error: "too many requests" }, request, 429);
-      if (!env.NOVEL_CACHE) return json({ error: "NOVEL_CACHE KV 未绑定" }, request, 500);
-      const body = await request.json().catch(() => ({}));
-      const key = typeof body.key === "string" ? body.key.trim() : "";
-      const blocks = Array.isArray(body.blocks) ? body.blocks : null;
-      if (!key || !blocks || !blocks.length) {
-        return json({ error: "需要 key 和非空 blocks 数组" }, request, 400);
+      // 预热缓存写入接口（内部接口，跳过 CORS origin 白名单）。
+      if (url.pathname === "/api/admin/novel-cache" && request.method === "POST") {
+        const ip = request.headers.get("CF-Connecting-IP") || "";
+        if (await rateLimited(env, ip)) return json({ error: "too many requests" }, request, 429);
+        if (!env.NOVEL_CACHE) return json({ error: "NOVEL_CACHE KV 未绑定" }, request, 500);
+        const body = await request.json().catch(() => ({}));
+        const key = typeof body.key === "string" ? body.key.trim() : "";
+        const blocks = Array.isArray(body.blocks) ? body.blocks : null;
+        if (!key || !blocks || !blocks.length) {
+          return json({ error: "需要 key 和非空 blocks 数组" }, request, 400);
+        }
+        const payload = JSON.stringify({
+          key,
+          blocks,
+          pages: body.pages || 1,
+          ts: Date.now(),
+        });
+        await env.NOVEL_CACHE.put(key, payload, { expirationTtl: 86400 });
+        return json({ ok: true, key, count: blocks.length, pages: body.pages || 1 }, request);
       }
-      const payload = JSON.stringify({
-        key,
-        blocks,
-        ts: Date.now(),
-      });
-      await env.NOVEL_CACHE.put(key, payload, { expirationTtl: 86400 });
-      return json({ ok: true, key, count: blocks.length }, request);
-    }
+
+      // 预热缓存删除接口（内部接口，跳过 CORS origin 白名单）——用于清除被污染的缓存。
+      if (url.pathname === "/api/admin/novel-cache" && request.method === "DELETE") {
+        const ip = request.headers.get("CF-Connecting-IP") || "";
+        if (await rateLimited(env, ip)) return json({ error: "too many requests" }, request, 429);
+        if (!env.NOVEL_CACHE) return json({ error: "NOVEL_CACHE KV 未绑定" }, request, 500);
+        const body = await request.json().catch(() => ({}));
+        const key = typeof body.key === "string" ? body.key.trim() : "";
+        if (!key) return json({ error: "需要 key" }, request, 400);
+        await env.NOVEL_CACHE.delete(key);
+        return json({ ok: true, key, deleted: true }, request);
+      }
 
     // 写接口必须来自白名单站点；读接口放开，方便你直接在浏览器里查
     if (request.method === "POST" && !cors.allowed) {

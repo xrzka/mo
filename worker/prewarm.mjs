@@ -1,4 +1,3 @@
-// 批量推送本地缓存章节到 Worker KV
 import fs from 'fs';
 import path from 'path';
 
@@ -22,10 +21,16 @@ async function main() {
     for (const file of batch) {
       const record = JSON.parse(fs.readFileSync(path.join(BASE, file), "utf8"));
       const key = record.key;
+      const payload = {
+        key,
+        blocks: record.blocks || record.paras,
+      };
+      if (record.pages !== undefined) payload.pages = record.pages;
+      if (record.ts !== undefined) payload.ts = record.ts;
       const res = await fetch("https://mo-stats.werneruszcb71.workers.dev/api/admin/novel-cache", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ key, blocks: record.blocks || record.paras }),
+        body: JSON.stringify(payload),
       });
       const result = await res.json();
       console.log(`${file}: HTTP ${res.status} ${JSON.stringify(result)}`);
