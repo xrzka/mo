@@ -525,12 +525,13 @@ async function fetchFirstWatchHtml(origins, path) {
   throw new Error(errors.join("; ") || "upstream unavailable");
 }
 
-/** 抓桌面版 www.linovelib.com 的章节 HTML（桌面 UA + Referer 桌面首页）。
- *  桌面版返回 mlfy_main_text 容器的一页全量完整正文。带重试。
- *  纯 HTTP 可能被反爬返回截断/乱序，因此可回退到本地 Playwright 渲染服务。 */
+/** 抓桌面版章节 HTML（桌面 UA + Referer 首页）。带重试。
+ *  桌面版返回 mlfy_main_text 容器的一页全量完整正文。
+ *  纯 HTTP 可能被反爬返回截断/乱序，因此可回退到本地 Playwright 渲染服务。
+ *  origin 可选，默认 WATCH_NOVEL_DESKTOP_ORIGIN。 */
 const PLAYWRIGHT_RENDER_URL = "http://127.0.0.1:50051/render";
-async function fetchNovelDesktopHtml(path) {
-  const url = `${WATCH_NOVEL_DESKTOP_ORIGIN}${path}`;
+async function fetchNovelDesktopHtml(path, origin = WATCH_NOVEL_DESKTOP_ORIGIN) {
+  const url = `${origin}${path}`;
   let lastError;
   for (let attempt = 0; attempt <= 2; attempt++) {
     try {
@@ -538,7 +539,7 @@ async function fetchNovelDesktopHtml(path) {
         Accept: "text/html,application/xhtml+xml",
         "User-Agent": WATCH_DESKTOP_UA,
         "Accept-Language": "zh-CN,zh;q=0.9",
-        Referer: `${WATCH_NOVEL_DESKTOP_ORIGIN}/`,
+        Referer: `${origin}/`,
       } }, 25000);
       if (!response.ok) throw new Error(`upstream HTTP ${response.status}`);
       const html = await response.text();
@@ -853,7 +854,10 @@ async function watchNovel(request, url, env) {
   if (action === "chapter") {
     const chapterId = watchText(url.searchParams.get("chapter"), 12);
     if (!/^\d+$/.test(chapterId)) return json({ error: "bad chapter id" }, request, 400);
-    const chapter = await fetchNovelChapterAll(env, novelId, chapterId);
+    // lang: simplified（默认）或 traditional。简体用桌面版 www.linovelib.com，
+    // 繁体用 tw.linovelib.com。不影响已有的 KV 预热缓存命中（KV 默认存简体）。
+    const lang = url.searchParams.get("lang");
+    const chapter = await fetchNovelChapterAll(env, novelId, chapterId, lang);
     if (!chapter.blocks.length) return json({ error: "正文为空或被上游保护" }, request, 502);
     return json(chapter, request);
   }
@@ -1542,8 +1546,8 @@ function parseNovelDesktopChapter(html, origin, novelId, chapterId) {
 // 反复打上游（linovelib 对短时间大量请求会 429 限流，导致某章空白）。
 const novelChapterCache = new Map(); // key = `${novelId}/${chapterId}` -> { at, value }
 
-async function fetchNovelChapterAll(env, novelId, chapterId) {
-  const cacheKey = `${novelId}/${chapterId}`;
+async function fetchNovelChapterAll(env, novelId, chapterId, lang = "simplified") {
+  const cacheKey = `${novelId}/${chapterId}/${lang}`;
   const cached = novelChapterCache.get(cacheKey);
   if (cached && Date.now() - cached.at < 30 * 60 * 1000) return cached.value; // 30 分钟内存缓存
 
@@ -1576,14 +1580,21 @@ async function fetchNovelChapterAll(env, novelId, chapterId) {
     }
   } catch { /* KV 读取失败不影响主流程 */ }
 
-  // 优先桌面版 www.linovelib.com（桌面 UA + mlfy_main_text 容器）：简体、每页末尾无「內容加載失敗」截断。
-  // 桌面版同样分页，但分页信息在 HTML 里的「下一页」链接（_N.html），不在 ReadParams.url_next。
-  // 纯 HTTP 可能被反爬返回截断/乱序，此时回退到本地 Playwright 渲染服务。
+  // lang: simplified → 桌面版 www.linovelib.com（简体、完整正文、每页末尾无「內容加載失敗」截断）
+  // lang: traditional → 台灣站 tw.linovelib.com（繁體、手機版正文，可能有分頁）
+  const isTraditional = lang === "traditional";
+  const desktopOrigin = isTraditional
+    ? "https://tw.linovelib.com"
+    : "https://www.linovelib.com";
+  const desktopOriginBase = isTraditional
+    ? "https://tw.linovelib.com"
+    : WATCH_NOVEL_DESKTOP_ORIGIN;
+
   try {
     const desktopPages = [];
     let desktopPath = `/novel/${novelId}/${chapterId}.html`;
     for (let i = 0; i < 200; i++) {
-      const html = await fetchNovelDesktopHtml(desktopPath);
+      const html = await fetchNovelDesktopHtml(desktopPath, desktopOrigin);
       desktopPages.push(html);
       // 桌面版「下一页」链接：<a href="/novel/{id}/{chapterId}_N.html">下一页</a>
       const nextMatch = html.match(new RegExp(`href=["'](/novel/${novelId}/${chapterId}_(\\d+)\\.html)["'][^>]*>[^<]*(?:下一頁|下一页|下一章)`));
@@ -1592,11 +1603,11 @@ async function fetchNovelChapterAll(env, novelId, chapterId) {
     }
     const desktopBlocks = [];
     for (const pageHtml of desktopPages) {
-      const part = parseNovelDesktopChapter(pageHtml, WATCH_NOVEL_DESKTOP_ORIGIN, novelId, chapterId);
+      const part = parseNovelDesktopChapter(pageHtml, desktopOriginBase, novelId, chapterId);
       desktopBlocks.push(...part.blocks);
     }
     if (desktopBlocks.length >= 4) {
-      const firstPart = parseNovelDesktopChapter(desktopPages[0], WATCH_NOVEL_DESKTOP_ORIGIN, novelId, chapterId);
+      const firstPart = parseNovelDesktopChapter(desktopPages[0], desktopOriginBase, novelId, chapterId);
       const result = { id: chapterId, novelId, title: firstPart.title, blocks: desktopBlocks, pages: desktopPages.length };
       novelChapterCache.set(cacheKey, { at: Date.now(), value: result });
       return result;

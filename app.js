@@ -4341,6 +4341,7 @@
   const READ_KEYS = {
     novelSize: "mo-read-novel-size",
     novelTheme: "mo-read-novel-theme",
+    novelLang: "mo-read-novel-lang",
     mangaFit: "mo-read-manga-fit",
   };
   const NOVEL_THEME_LABEL = { "": "白", paper: "纸", dark: "暗" };
@@ -4355,7 +4356,7 @@
     try { localStorage.setItem(key, String(value)); } catch { /* 隐私模式忽略 */ }
   }
 
-  function watchNovelTools(reader) {
+  function watchNovelTools(reader, lang = "simplified", onLangChange = null) {
     const bar = document.createElement("div");
     bar.className = "watch-read-tools";
     let size = Math.min(28, Math.max(14, parseInt(watchReadStore(READ_KEYS.novelSize, "17"), 10) || 17));
@@ -4374,8 +4375,16 @@
       apply();
       try { localStorage.setItem(READ_KEYS.novelTheme, theme); } catch {}
     }, "watch-tool-btn");
+    // 简繁切换按钮
+    const langLabel = lang === "traditional" ? "繁体" : "简体";
+    const langBtn = watchButton(`文：${langLabel}`, () => {
+      const newLang = lang === "traditional" ? "simplified" : "traditional";
+      langBtn.textContent = `文：${newLang === "traditional" ? "繁体" : "简体"}`;
+      try { localStorage.setItem(READ_KEYS.novelLang, newLang); } catch {}
+      if (onLangChange) onLangChange(newLang);
+    }, "watch-tool-btn");
     apply();
-    bar.append(minus, plus, themeBtn);
+    bar.append(minus, plus, themeBtn, langBtn);
     return bar;
   }
 
@@ -4618,9 +4627,14 @@
     const chapter = chapters[index];
     if (!chapter) return;
     if (!immersive) body.innerHTML = '<p class="watch-loading">正在读取正文…</p>';
+    
+    // 获取语言偏好（简体/繁体），默认简体
+    let lang = watchReadStore(READ_KEYS.novelLang, "simplified");
+    
     let data;
     try {
-      data = await watchApi(`/api/watch/novel?action=chapter&novel=${encodeURIComponent(item.id)}&chapter=${encodeURIComponent(chapter.id)}`);
+      // 添加 lang 参数
+      data = await watchApi(`/api/watch/novel?action=chapter&novel=${encodeURIComponent(item.id)}&chapter=${encodeURIComponent(chapter.id)}&lang=${encodeURIComponent(lang)}`);
     } catch (error) {
       if (watchViewCurrent(requestId)) watchError(body, "阅读失败", error, () => openWatchNovel(item, body, requestId));
       return;
@@ -4652,7 +4666,12 @@
     let chapterPage = 0;
 
     const reader = renderNovelBlocks(hasPages ? pageBlocks[0] : allBlocks);
-    let toolsEl = watchNovelTools(reader);
+    let toolsEl = watchNovelTools(reader, lang, (newLang) => {
+      if (newLang === lang) return;
+      lang = newLang;
+      // 切换语言后重新加载当前章节
+      showNovelChapter(item, body, requestId, chapters, index, immersive);
+    });
 
     let pageInfoEl = null, topPrevBtn = null, topNextBtn = null;
     let tailInfoEl = null, tailPrevBtn = null, tailNextBtn = null;
@@ -4682,7 +4701,11 @@
       chapterPage = np;
       const curBlocks = pageBlocks[chapterPage] || [];
       const newReader = renderNovelBlocks(curBlocks);
-      const newTools = watchNovelTools(newReader);
+      const newTools = watchNovelTools(newReader, lang, (newLang) => {
+        if (newLang === lang) return;
+        lang = newLang;
+        showNovelChapter(item, body, requestId, chapters, index, immersive);
+      });
       toolsEl.replaceWith(newTools);
       reader.replaceChildren(...newReader.children);
       // 沉浸模式下翻页后，重新追加页内翻页按钮
