@@ -5214,7 +5214,7 @@
       }
 
       // 播放状态：线路 / 集下标，播放器与选集共用。
-      const cur = { li: 0, ei: 0, video: null };
+      const cur = { li: 0, ei: 0, video: null, triedLines: new Set() };
       // 全屏视频模式状态：overlay 是否已搭好 / 控件是否收起 / 选集抽屉是否打开 / 计时是否在跑。
       const vm = { open: false, controlsDown: false, drawerOpen: false, timer: null };
       const status = document.createElement("p");
@@ -5254,15 +5254,30 @@
       }
 
       // 自动切换：当前线路失败时，尝试下一条线路（不依赖用户手动切换）。
+      // 用 triedLines 防止所有线路都挂时无限循环。
       function tryNextLine() {
-        if (lines.length <= 1) return;
-        const nextLi = (cur.li + 1) % lines.length;
-        if (nextLi === cur.li) return; // 已经试完所有线路
-        const nextEp = lines[nextLi].eps[cur.ei];
-        if (!nextEp) return;
-        status.textContent = `${lines[cur.li].source || lines[cur.li].label} 不可用，自动切换到 ${lines[nextLi].source || lines[nextLi].label}…`;
-        cur.li = nextLi;
-        playEp(nextLi, cur.ei);
+        if (lines.length <= 1) {
+          if (lines.length === 1) {
+            status.textContent = "视频流加载失败，本线路无可用资源，请稍后重试或到原站观看。";
+          }
+          return;
+        }
+        cur.triedLines.add(cur.li);
+        // 按顺序找下一个没试过的线路（最多扫一遍）
+        for (let i = 0; i < lines.length; i++) {
+          const nextLi = (cur.li + 1 + i) % lines.length;
+          if (!cur.triedLines.has(nextLi)) {
+            const nextEp = lines[nextLi].eps[cur.ei];
+            if (!nextEp) continue;
+            status.textContent = `${lines[cur.li].source || lines[cur.li].label} 不可用，自动切换到 ${lines[nextLi].source || lines[nextLi].label}…`;
+            cur.li = nextLi;
+            cur.triedLines.add(nextLi);
+            playEp(nextLi, cur.ei);
+            return;
+          }
+        }
+        // 所有线路都试过了
+        status.textContent = "所有线路都不可用（可能上游维护中）。请稍后再试，或到原站观看。";
       }
       function playEp(li, ei) {
         cur.li = li; cur.ei = ei;
@@ -5271,6 +5286,7 @@
         body.querySelectorAll("video").forEach((v) => v.pause());
         status.hidden = false;
         status.textContent = "正在连接视频流…";
+        cur.triedLines.add(li);
         const video = watchMountVideo(vm.open ? vmStage : playerWrap, ep.url, () => {
           tryNextLine();
         });
