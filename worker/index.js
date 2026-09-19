@@ -1775,14 +1775,6 @@ function parseAnimePlayer(html, origin, episode) {
   return animeEmbedUrl(embedUrl, origin);
 }
 
-/* ---------- 动画区：量子资源 API（cj.lziapi.com） ----------
- *
- * 之前上游是 lmm85（路漫漫）网页抓取 + yun.92cj 播放器代理。lmm85 对
- * Worker 数据中心 IP 恒定挂 Cloudflare challenge（403/520），且其手机站
- * 现在把播放强推到 APK，网页端基本播不了。现换成资源站 JSON API：
- * 这是专门给聚合站用的开放接口，无 CF 挑战、直接返回每集 m3u8（lzm3u8
- * 线路），CORS ACAO=*，浏览器 hls.js 可直连，Worker 只透传 JSON。
- */
 /* ---------- 动画区：聚合站 JSON API + 多线路多源防墙 ----------
  * 之前上游是 lmm85（路漫漫）网页抓取 + yun.92cj 播放器代理。lmm85 对 Worker
  * 数据中心 IP 恒定挂 Cloudflare challenge（403/520），且其手机站现在把播放强推
