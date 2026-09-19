@@ -884,6 +884,7 @@ const WATCH_MANGA_SOURCES = [
   { id: "manga3r", label: "叽叽漫画" },
   { id: "manga4", label: "GMH 漫画" },
   { id: "crm", label: "薄荷梨子（原线路）" },
+  { id: "manga5", label: "漫画5-R（Copy）" },
 ];
 const WATCH_MANGA_SOURCE_IDS = WATCH_MANGA_SOURCES.map((item) => item.id);
 
@@ -1287,6 +1288,179 @@ async function mangaCrmChapter(chapterId) {
   return { id: chapterId, title: stripTags(data?.data?.name || ""), images };
 }
 
+/* ---------- 源 4：漫画5-R（Copy） ---------- */
+
+const WATCH_MANGA5_BASES = [
+  "https://api.copymanga.site",
+  "https://api.copy2000.online",
+  "https://api.copy3000.com",
+  "https://api.copy-manga.com",
+  "https://api.copy202602.com",
+];
+
+async function manga5Fetch(path, params = new URLSearchParams()) {
+  const errors = [];
+  for (const base of WATCH_MANGA5_BASES) {
+    const url = new URL(path.replace(/^\/+/, ""), base);
+    if (!params.has("platform")) params.set("platform", "1");
+    if (!params.has("format")) params.set("format", "json");
+    params.forEach((value, key) => url.searchParams.set(key, value));
+    try {
+      const response = await watchFetch(url, { headers: {
+        Accept: "application/json,text/plain,*/*",
+        "User-Agent": WATCH_MOBILE_UA,
+        "Referer": `${base}/`,
+        "Origin": base,
+      } }, 20000);
+      const data = await response.json();
+      if (!response.ok || Number(data?.code) !== 200) {
+        throw new Error(data?.message || data?.results?.detail || `HTTP ${response.status}`);
+      }
+      return data;
+    } catch (error) {
+      errors.push(`${new URL(base).hostname}: ${error.message}`);
+    }
+  }
+  throw new Error(`漫画5-R接口不可用：${errors.join("；")}`);
+}
+
+function manga5Path(value) {
+  const text = String(value || "").trim();
+  if (!text) return "";
+  try {
+    return new URL(text, "https://www.copy3000.com/").pathname
+      .match(/\/(?:comic|v2h5\/comic)\/([^/?#]+)/)?.[1] || text;
+  } catch { return text; }
+}
+
+function manga5Comic(value) {
+  const raw = value?.comic || value || {};
+  const id = manga5Path(raw.path_word || raw.pathWord || raw.path || raw.comic_path || raw.id);
+  const name = stripTags(raw.name || raw.title || raw.author || "");
+  if (!id || !name) return null;
+  const chapters = Array.isArray(raw.chapters) ? raw.chapters : [];
+  return {
+    id,
+    title: name,
+    subtitle: stripTags(raw.author || raw.author_alias || "漫画5-R"),
+    cover: mangaImageUrl(raw.cover || raw.cover_url || raw.pic || raw.img || ""),
+    description: stripTags(raw.brief || raw.description || raw.content || raw.intro || ""),
+    chapterCount: Number(raw.nums || raw.chapter_count || raw.chapters_count || chapters.length) || 0,
+    chapters: chapters.map((chapter, index) => ({
+      id: String(chapter.uuid || chapter.id || chapter.path_word || chapter.pathWord || ""),
+      title: stripTags(chapter.name || chapter.title || chapter.chapter_name) || `第 ${index + 1} 章`,
+      order: Number(chapter.index ?? chapter.order ?? chapter.sort ?? index + 1) || index + 1,
+    })).filter((chapter) => chapter.id),
+  };
+}
+
+async function manga5List(q) {
+  const payload = q
+    ? await manga5Fetch("api/v3/search/comic", new URLSearchParams({ q, limit: "24", offset: "0" }))
+    : await manga5Fetch("api/v3/ranks", new URLSearchParams({ limit: "24", offset: "0" }));
+  const items = [];
+  const seen = new Set();
+  const visit = (node) => {
+    if (!node || typeof node !== "object") return;
+    if (Array.isArray(node)) {
+      node.forEach(visit);
+      return;
+    }
+    const comic = manga5Comic(node);
+    if (comic && !seen.has(comic.id)) {
+      seen.add(comic.id);
+      items.push(comic);
+    }
+    Object.entries(node).forEach(([, child]) => visit(child));
+  };
+  visit(payload?.results);
+  if (!items.length) throw new Error(q ? `没有搜到“${q}”` : "漫画5-R首页没有可用漫画");
+  return items;
+}
+
+async function manga5Detail(comicId) {
+  const id = manga5Path(comicId);
+  if (!id) throw new Error("漫画5-R缺少漫画 ID");
+  const payload = await manga5Fetch(`api/v3/comic2/${encodeURIComponent(id)}`);
+  const raw = payload?.results?.comic || payload?.results || {};
+  const comic = manga5Comic(raw) || { id, title: id, subtitle: "漫画5-R", chapters: [] };
+  const groups = [];
+  const seenGroups = new Set();
+  const visitGroups = (node) => {
+    if (!node || typeof node !== "object") return;
+    if (Array.isArray(node)) { node.forEach(visitGroups); return; }
+    const group = node.path_word || node.pathWord || node.path || node.name;
+    if (group && !seenGroups.has(group)) { seenGroups.add(group); groups.push(group); }
+    Object.entries(node).forEach(([, child]) => visitGroups(child));
+  };
+  visitGroups(payload?.results);
+  if (!groups.length) groups.push("default");
+  const chapters = [];
+  const seenChapters = new Set();
+  for (const group of groups) {
+    let offset = 0;
+    let total = 0;
+    do {
+      const pagePayload = await manga5Fetch(
+        `api/v3/comic/${encodeURIComponent(id)}/group/${encodeURIComponent(group)}/chapters`,
+        new URLSearchParams({ limit: "100", offset: String(offset) })
+      );
+      const page = pagePayload?.results || {};
+      const list = Array.isArray(page.list) ? page.list : [];
+      list.forEach((item, index) => {
+        const chapter = {
+          id: String(item.uuid || item.id || item.path_word || item.pathWord || ""),
+          title: stripTags(item.name || item.title || item.chapter_name) || `第 ${chapters.length + 1} 章`,
+          order: Number(item.index ?? item.order ?? item.sort ?? index + 1) || index + 1,
+        };
+        if (chapter.id && !seenChapters.has(chapter.id)) { seenChapters.add(chapter.id); chapters.push(chapter); }
+      });
+      total = Number(page.total || 0);
+      offset += list.length || 100;
+      if (!list.length) break;
+    } while (total && offset < total && offset < 1000);
+  }
+  chapters.sort((a, b) => a.order - b.order);
+  comic.chapters = chapters;
+  comic.chapterCount = chapters.length || comic.chapterCount;
+  return comic;
+}
+
+async function manga5Chapter(comicId, chapterId) {
+  const comic = manga5Path(comicId);
+  const chapter = manga5Path(chapterId);
+  if (!comic || !chapter) throw new Error("漫画5-R章节缺少漫画或章节 ID");
+  const payload = await manga5Fetch(
+    `api/v3/comic/${encodeURIComponent(comic)}/chapter2/${encodeURIComponent(chapter)}`
+  );
+  const raw = payload?.results?.chapter || payload?.results || payload || {};
+  const nodes = [];
+  const visit = (node) => {
+    if (!node) return;
+    if (Array.isArray(node)) { node.forEach(visit); return; }
+    if (typeof node === "string") { nodes.push(node); return; }
+    if (typeof node !== "object") return;
+    Object.entries(node).forEach(([, child]) => visit(child));
+  };
+  visit(raw.contents ?? raw);
+  const images = [];
+  const seen = new Set();
+  for (const value of nodes) {
+    const absolute = absoluteWatchUrl(String(value || "").trim(), "https://www.copy3000.com/");
+    if (!absolute || seen.has(absolute)) continue;
+    let url;
+    try { url = new URL(absolute); } catch { continue; }
+    if (!/\.(?:jpg|jpeg|png|webp)(?:[?#]|$)/i.test(url.pathname)) continue;
+    const host = url.hostname.toLowerCase();
+    if (!/copymanga|copy3000|copy-manga|copy2000|copy202602|cdn|img|image|pic|pic.img/i.test(host)) continue;
+    url.protocol = "https:";
+    const proxy = proxyWatchAsset(url.toString(), "manga");
+    if (proxy) { seen.add(absolute); images.push(proxy); }
+  }
+  if (!images.length) throw new Error("漫画5-R章节没有可用图片");
+  return { id: chapter, title: stripTags(raw.name || raw.title || raw.chapter_name || ""), images };
+}
+
 /* ---------- 源调度 ---------- */
 
 const WATCH_MANGA_HANDLERS = {
@@ -1304,6 +1478,11 @@ const WATCH_MANGA_HANDLERS = {
     list: (q) => mangaCrmList(q),
     detail: (id) => mangaCrmDetail(id),
     chapter: (id) => mangaCrmChapter(id),
+  },
+  manga5: {
+    list: (q) => manga5List(q),
+    detail: (id) => manga5Detail(id),
+    chapter: (id, params) => manga5Chapter(params.get("comicId") || id, id),
   },
 };
 
