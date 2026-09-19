@@ -5227,7 +5227,8 @@
       lineLabel.className = "watch-source-line";
       lineLabel.textContent = "线路";
       const lineBtns = lines.map((line, li) => {
-        const btn = watchButton(line.label, () => playEp(li, 0), "watch-line-btn");
+        const label = line.source ? `${line.source} · ${line.label}` : line.label;
+        const btn = watchButton(label, () => playEp(li, 0), "watch-line-btn");
         lineRow.append(btn);
         return btn;
       });
@@ -5252,6 +5253,17 @@
         lineBtns.forEach((btn, i) => btn.classList.toggle("is-current", i === cur.li));
       }
 
+      // 自动切换：当前线路失败时，尝试下一条线路（不依赖用户手动切换）。
+      function tryNextLine() {
+        if (lines.length <= 1) return;
+        const nextLi = (cur.li + 1) % lines.length;
+        if (nextLi === cur.li) return; // 已经试完所有线路
+        const nextEp = lines[nextLi].eps[cur.ei];
+        if (!nextEp) return;
+        status.textContent = `${lines[cur.li].source || lines[cur.li].label} 不可用，自动切换到 ${lines[nextLi].source || lines[nextLi].label}…`;
+        cur.li = nextLi;
+        playEp(nextLi, cur.ei);
+      }
       function playEp(li, ei) {
         cur.li = li; cur.ei = ei;
         const ep = lines[li].eps[ei];
@@ -5260,13 +5272,11 @@
         status.hidden = false;
         status.textContent = "正在连接视频流…";
         const video = watchMountVideo(vm.open ? vmStage : playerWrap, ep.url, () => {
-          status.textContent = "该集视频加载失败，换一条线路试试。";
-          status.hidden = false;
+          tryNextLine();
         });
         video.addEventListener("playing", () => { status.hidden = true; });
         video.addEventListener("error", () => {
-          status.textContent = "视频流加载失败（可能被上游下架），换线路或稍后再试。";
-          status.hidden = false;
+          tryNextLine();
         });
         saveWatchProgress("anime", item, { title: ep.ep });
         cur.video = video;

@@ -1783,18 +1783,37 @@ function parseAnimePlayer(html, origin, episode) {
  * 这是专门给聚合站用的开放接口，无 CF 挑战、直接返回每集 m3u8（lzm3u8
  * 线路），CORS ACAO=*，浏览器 hls.js 可直连，Worker 只透传 JSON。
  */
-const WATCH_ANIME_API = "https://cj.lziapi.com/api.php/provide/vod/";
-const WATCH_ANIME_TYPE = "30"; // 日韩动漫（量子把子类挂细分 id，父类 4 只有 1 部）
+/* ---------- 动画区：聚合站 JSON API + 多线路多源防墙 ----------
+ * 之前上游是 lmm85（路漫漫）网页抓取 + yun.92cj 播放器代理。lmm85 对 Worker
+ * 数据中心 IP 恒定挂 Cloudflare challenge（403/520），且其手机站现在把播放强推
+ * 到 APK，网页端基本播不了。现换成聚合站 JSON API（maccms provide/vod）：
+ * - 专门给聚合站用的开放接口，无 CF 挑战、直接返回每集 m3u8（lzm3u8 线路）。
+ * - 单个聚合站的 CDN 大概率挂掉/过期（如 vip1.lz-cdn5 现已 404），所以注册
+ *   多个备用源；每次 detail 尝试若干源，只保留“首集 m3u8 可活”的线路。
+ * - 流 CDN ACAO=*，浏览器 hls.js 可直连，Worker 仅透传 JSON。 */
 
+const WATCH_ANIME_SOURCES = [
+  { id: "quantum", label: "量子", api: "https://cj.lziapi.com/api.php/provide/vod/" },
+  { id: "ffzy",     label: "非凡", api: "https://cj.ffzyapi.com/api.php/provide/vod/" },
+  { id: "hongniu",  label: "红牛", api: "https://www.hongniuzy2.com/api.php/provide/vod/" },
+];
+const WATCH_ANIME_TYPE = "30"; // 量子里日韩动漫的父类 id（量子细分了子类，父类 4 只有 1 部）。
+
+/** 跨若干聚合站透传 vod api 参数并返回 JSON（失败不抛，返 null）。 */
 async function watchAnimeJson(params) {
-  const target = new URL(WATCH_ANIME_API);
-  target.search = new URLSearchParams(params);
-  const response = await watchFetch(target, { headers: { "User-Agent": "Mozilla/5.0", Accept: "application/json" } }, 20000);
-  if (!response.ok) throw new Error(`anime upstream HTTP ${response.status}`);
-  return await response.json();
+  const out = [];
+  for (const src of WATCH_ANIME_SOURCES) {
+    const target = new URL(src.api);
+    target.search = new URLSearchParams(params);
+    try {
+      const res = await watchFetch(target, { headers: { "User-Agent": "Mozilla/5.0", Accept: "application/json" } }, 15000);
+      if (res.ok) { out.push({ src, data: await res.json() }); }
+    } catch { /* 跳过死源，继续下一个 */ }
+  }
+  return out;
 }
 
-/** vod_play_url 形如 "线路1$$$线路2"，每段内 "第01集$url#第02集$url"。
+/** vod_play_from / vod_play_url 分隔符为 $$$。
  *  只保留直连 m3u8 的线路（lzm3u8），share 页线路（liangzi）前端播不了，丢弃。 */
 function parseAnimeLines(entry) {
   const froms = String(entry?.vod_play_from || "").split("$$$");
@@ -1806,21 +1825,43 @@ function parseAnimeLines(entry) {
       if (idx < 0) return null;
       return { ep: watchText(pair.slice(0, idx), 60), url: watchText(pair.slice(idx + 1), 600) };
     }).filter((e) => e && /^https?:\/\/.+\.m3u8/i.test(e.url)).slice(0, 2000);
-    if (eps.length) lines.push({ label: stripTags(label) || `线路${i + 1}`, eps });
+    if (eps.length) lines.push({ label: stripTags(label) || `线路${i + 1}`, source: entry?._src || "quantum", eps });
   });
   return lines;
 }
 
+/** 快速探活首集 m3u8：GET 取一截，2xx 视为可用。 */
+async function m3u8Alive(url) {
+  if (!url) return false;
+  try {
+    const res = await watchFetch(url, { method: "GET", headers: { "User-Agent": "Mozilla/5.0" }, timeoutMs: 6000 });
+    return res.ok && (res.headers.get("Content-Type") || "").includes("mpegurl");
+  } catch { return false; }
+}
+
+/** 搜索：聚合站并行取，合并去重后按原始排序返回。 */
 async function watchAnime(request, url) {
   const action = watchText(url.searchParams.get("action") || "list", 24);
   if (action === "list") {
     const q = watchText(url.searchParams.get("q"));
     const page = Math.min(Math.max(parseInt(url.searchParams.get("page") || "1", 10) || 1, 1), 500);
-    const data = q
-      ? await watchAnimeJson({ ac: "videolist", wd: q, pg: String(page) })
-      : await watchAnimeJson({ ac: "videolist", t: WATCH_ANIME_TYPE, pg: String(page) });
-    const totalPages = Math.min(Number(data?.pagecount) || page, 500);
-    const items = (data?.list || []).map((entry) => ({
+    const params = q
+      ? { ac: "videolist", wd: q, pg: String(page) }
+      : { ac: "videolist", t: WATCH_ANIME_TYPE, pg: String(page) };
+    const srcResults = await watchAnimeJson(params);
+    // 合并所有源的列表，按第一条命中的源优先排序，去重 id
+    const merged = [];
+    const seen = new Set();
+    for (const { src, data } of srcResults) {
+      for (const entry of (data?.list || [])) {
+        const id = watchText(entry?.vod_id, 20);
+        if (!/^\d+$/.test(id) || seen.has(id)) continue;
+        seen.add(id);
+        merged.push({ ...entry, _src: src.id });
+      }
+    }
+    const totalPages = Math.min(Number(srcResults[0]?.data?.pagecount) || page, 500);
+    const items = merged.map((entry) => ({
       id: watchText(entry?.vod_id, 20),
       title: stripTags(entry?.vod_name) || `动画 ${entry?.vod_id}`,
       subtitle: stripTags(entry?.vod_remarks) || stripTags(entry?.vod_class) || "在线动画",
@@ -1833,16 +1874,37 @@ async function watchAnime(request, url) {
   if (action === "detail") {
     const animeId = watchText(url.searchParams.get("anime"), 20);
     if (!/^\d+$/.test(animeId)) return json({ error: "bad anime id" }, request, 400);
-    const data = await watchAnimeJson({ ac: "videolist", ids: animeId });
-    const entry = data?.list?.[0];
-    if (!entry) return json({ error: "动画不存在或已下架" }, request, 404);
+    const srcResults = await watchAnimeJson({ ac: "videolist", ids: animeId });
+    if (!srcResults.length) return json({ error: "动画不存在或已下架" }, request, 404);
+    // 返回所有源的所有线路（前端可切换线路 + 自动降级）
+    const allLines = [];
+    let bestTitle = "";
+    let bestCover = "";
+    let bestYear = "";
+    let bestDesc = "";
+    for (const { src, data } of srcResults) {
+      const entry = data?.list?.[0];
+      if (!entry) continue;
+      entry._src = src.id;
+      const lines = parseAnimeLines(entry);
+      if (lines.length) {
+        allLines.push(...lines);
+        if (!bestTitle) {
+          bestTitle = stripTags(entry.vod_name) || `动画 ${animeId}`;
+          bestCover = watchText(entry.vod_pic, 500);
+          bestYear = watchText(entry.vod_year, 16);
+          bestDesc = stripTags(entry.vod_content).slice(0, 600);
+        }
+      }
+    }
+    if (!allLines.length) return json({ error: "动画不存在或已下架" }, request, 404);
     return json({
       id: animeId,
-      title: stripTags(entry.vod_name) || `动画 ${animeId}`,
-      cover: watchText(entry.vod_pic, 500),
-      year: watchText(entry.vod_year, 16),
-      description: stripTags(entry.vod_content).slice(0, 600),
-      lines: parseAnimeLines(entry),
+      title: bestTitle,
+      cover: bestCover,
+      year: bestYear,
+      description: bestDesc,
+      lines: allLines,
       sourceSite: "https://www.lmm85.com",
     }, request);
   }
