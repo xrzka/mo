@@ -13821,6 +13821,24 @@
       "note": "需要用户名 + 密码（无需邮箱验证）。 使用条款第 3、4 条明写「脚本签到视为滥用」「禁止自动签到」，违规会取消奖励、扣回额度或封禁 —— 这个站请手动签到，不要挂进自动签到工具。另有公告：长时间不使用的账号余额将被清零，所以别只签到不调用。 可用模型：gpt-5.6-sol。 Base URL 为 https://motomoto.lol/v1（OpenAI 兼容 /v1/chat/completions），令牌在控制台创建。签到与登录都挂着 Cloudflare Turnstile，需真人过一次验证。邀请奖励约 $40，需对方产生约 $2 真实消耗后结算，每天最多 3 笔、累计 20 笔。站点提供工单与 /appeal 申诉通道。额度是站内记账单位，不可提现，官方不承诺可用性。另可在「数据授权」页选择是否授权训练数据。"
     },
     {
+      "id": "relay-rua",
+      "name": "rua.chat",
+      "section": "ai",
+      "subsection": "relay",
+      "description": "New API 面板的综合中转站，模型库很全：Claude Opus 4-8 / 4-6、Sonnet 5，Gemini 3.x，GPT-5.x，Grok 4.x，GLM、Kimi、DeepSeek，以及 nai / gpt-image / seedream 等生图模型。支持每日签到，站内用自定义「rua 币」计价。",
+      "url": "https://api.rua.chat/sign-up?aff=gw2w",
+      "tags": [
+        "模型齐全",
+        "可签到",
+        "支持生图",
+        "SSO 注册"
+      ],
+      "kind": "AI API 中转站",
+      "need_login": true,
+      "update_info": "每日可签到",
+      "note": "注册走 rua.chat 自有 SSO 授权（页面未开放账号密码 / GitHub 直接注册），签到功能已开启。额度以站内自定义「rua 币」结算（兑换比例 100），官方不承诺可用性。注册与签到赠送的具体额度以站内页面为准，本条未核实到确切数字。 生图相关：nai-* 系列走 /v1/images/generations 或 nai 原生 /v1/ai/generate-image；生图 400 多为提示词撞审核，改词或换参考图即可。 可用模型（部分）：claude-opus-4-8、claude-opus-4-6、claude-sonnet-5、gemini-3-pro-preview、gpt-5.6-terra、grok-4.6、glm-5.3、kimi-k3、deepseek-v4-pro。"
+    },
+    {
       "id": "cs-skl-1",
       "name": "kk（至上）借 150 元拒不归还",
       "section": "cs",
