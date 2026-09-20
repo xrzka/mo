@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>栗子漫画 - 在线免登录阅读</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#1a1a2e;color:#eee;min-height:100vh}
+.header{background:#16213e;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:100;border-bottom:1px solid #0f3460}
+.header h1{font-size:18px;color:#e94560}
+.header .sub{font-size:12px;color:#888}
+.tabs{display:flex;background:#0f3460;border-bottom:1px solid #1a1a2e}
+.tab{flex:1;padding:10px 8px;color:#888;text-align:center;cursor:pointer;font-size:13px;border-bottom:2px solid transparent}
+.tab.active{color:#e94560;border-bottom-color:#e94560}
+.tabs .tab-icon{font-size:16px;display:block;margin-bottom:2px}
+.container{max-width:960px;margin:0 auto;padding:10px}
+#mangaGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;padding:8px 0}
+.manga-card{background:#16213e;border-radius:8px;overflow:hidden;cursor:pointer;transition:transform .2s}
+.manga-card:hover{transform:scale(1.03)}
+.manga-card .cover{width:100%;height:160px;object-fit:cover;background:#2a2a4a;display:block}
+.manga-card .title{padding:6px 8px;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#chapterList{padding:6px 0}
+.chapter-item{padding:12px 14px;background:#16213e;margin-bottom:6px;border-radius:6px;cursor:pointer;display:flex;justify-content:space-between;align-items:center}
+.chapter-item:hover{background:#0f3460}
+.chapter-item .name{font-size:14px}
+.chapter-item .arrow{color:#888;font-size:12px}
+.reader-area{display:none;padding:8px 0}
+.reader-area img{width:100%;margin-bottom:6px;border-radius:4px;background:#2a2a4a;min-height:200px}
+.back-btn{background:#e94560;color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;margin-bottom:10px;font-size:14px}
+.back-btn:hover{background:#c73650}
+.status{padding:10px;color:#888;font-size:13px;text-align:center}
+.error{color:#ff6b6b;text-align:center;padding:20px}
+.nav-bar{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.nav-bar button{background:#16213e;color:#aaa;border:1px solid #333;padding:6px 12px;border-radius:4px;cursor:pointer;font-size:12px}
+.nav-bar button:hover{color:#e94560;border-color:#e94560}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div><h1>🍒 栗子漫画</h1><div class="sub" id="subtitle">免登录在线阅读</div></div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="showView('list')"><span class="tab-icon">📚</span>漫画列表</div>
+  <div class="tab" onclick="showView('chapters')"><span class="tab-icon">📖</span>章节</div>
+  <div class="tab" onclick="showView('reader')"><span class="tab-icon">👁</span>阅读</div>
+</div>
+
+<div class="container">
+  <div class="nav-bar" id="navBar" style="display:none">
+    <button onclick="showView('list')">← 返回列表</button>
+  </div>
+  <div id="mangaGrid"></div>
+  <div id="chapterList"></div>
+  <div id="readerArea" class="reader-area"></div>
+  <div id="status" class="status">加载中...</div>
+</div>
+
+<script>
+const API="https://adnet.lizimh.com";
+const APPSIGN="CDD266DF8B2399C24DA38E408B6D9825C7BD2AF073229847F551EA653EA096E1";
+let curMangaId="",curChapterId="",allMangas=[],allChapters=[];
+
+async function hmacMd5(key,msg){
+  const enc=new TextEncoder();
+  const k=await crypto.subtle.importKey("raw",enc.encode(key),{name:"HMAC",hash:"SHA-256"},false,["sign"]);
+  const h=await crypto.subtle.sign("HMAC",k,enc.encode(msg));
+  return Array.from(new Uint8Array(h)).map(b=>b.toString(16).padStart(2,"0")).join("").slice(0,32);
+}
+
+async function genLzsign(params){
+  const keys=Object.keys(params).sort();
+  const s=keys.map(k=>k+"="+params[k]).join("&")+APPSIGN;
+  try{return await hmacMd5(APPSIGN,s)}catch{let h=0x811c9dc5;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,0x01000193)}return(h>>>0).toString(16).substring(0,16)}}
+
+async function api(endpoint,extra={}){
+  const ts=Math.floor(Date.now()/1000);
+  const p={platform:"android",packname:"com.hbsclj.uth",appsign256:APPSIGN,t:ts.toString(),...extra};
+  p.lzsign=await genLzsign(p);
+  const url=API+endpoint+"?"+new URLSearchParams(p);
+  const r=await fetch(url,{headers:{"User-Agent":"LiziManga/1.0","Accept":"application/json"},"signal":AbortSignal.timeout(20000)});
+  if(!r.ok)throw new Error("HTTP "+r.status);
+  return r.json();
+}
+
+function showView(v){
+  document.querySelectorAll(".tab").forEach((t,i)=>t.classList.toggle("active",["list","chapters","reader"].indexOf(v)===i));
+  ["mangaGrid","chapterList","readerArea"].forEach(id=>document.getElementById(id).style.display="none");
+  document.getElementById("navBar").style.display="none";
+  document.getElementById("readerArea").style.display="none";
+  if(v==="list")document.getElementById("mangaGrid").style.display="grid",document.getElementById("navBar").style.display="flex";
+  else if(v==="chapters")document.getElementById("chapterList").style.display="block",document.getElementById("navBar").style.display="flex";
+  else document.getElementById("readerArea").style.display="block";
+}
+
+function s(msg){document.getElementById("status").textContent=msg}
+
+async function loadMangas(){
+  s("加载漫画列表...");
+  try{
+    const d=await api("/app/api/home/data");
+    let items=[];
+    if(d.data&&Array.isArray(d.data))items=d.data;
+    else if(d.list&&Array.isArray(d.list))items=d.list;
+    else if(Array.isArray(d))items=d;
+    else if(d.data&&d.data.list)items=d.data.list;
+    else{console.error("Unknown format:",JSON.stringify(d).slice(0,500));s("数据格式异常");return}
+    allMangas=items.map(m=>({id:m.id||m.chapterId||m._id||"",title:m.title||m.name||"未知",cover:m.cover||m.thumbnail||""}));
+    renderMangas(allMangas);
+    s("共 "+allMangas.length+" 部漫画");
+  }catch(e){s("加载失败: "+e.message);console.error(e)}
+}
+
+function renderMangas(mangas){
+  const c=document.getElementById("mangaGrid");c.innerHTML="";
+  for(const m of mangas){
+    const card=document.createElement("div");card.className="manga-card";
+    card.onclick=()=>loadChapters(m.id,m.title);
+    card.innerHTML=`<img class="cover" src="${m.cover}" onerror="this.style.display='none'"><div class="title">${m.title}</div>`;
+    c.appendChild(card);
+  }
+}
+
+async function loadChapters(mangaId,title){
+  curMangaId=mangaId;curChapterId="";allChapters=[];
+  s("加载章节...");
+  try{
+    const d=await api("/app/api/v2/detail/"+mangaId,{id:mangaId});
+    let ch=[];
+    if(d.data&&Array.isArray(d.data))ch=d.data;
+    else if(d.chapters&&Array.isArray(d.chapters))ch=d.chapters;
+    else if(d.data&&d.data.chapters)ch=d.data.chapters;
+    else if(d.pages)ch=d.pages;
+    else{console.error("No chapters:",JSON.stringify(d).slice(0,300));s("章节数据异常");return}
+    allChapters=ch;
+    renderChapters(title);
+    showView("chapters");
+    s("共 "+allChapters.length+" 章节");
+  }catch(e){s("章节加载失败: "+e.message);console.error(e)}
+}
+
+function renderChapters(title){
+  const c=document.getElementById("chapterList");c.innerHTML="";
+  const h=document.createElement("h3");h.style.cssText="padding:8px 0;font-size:16px";h.textContent="《"+title+"》";c.appendChild(h);
+  for(const ch of allChapters){
+    const item=document.createElement("div");item.className="chapter-item";
+    item.onclick=()=>readChapter(ch.id||ch.chapterId||ch._id,ch.title||ch.name);
+    const chTitle=ch.title||ch.name||("章节"+(ch.id||ch.chapterId||"?"));
+    item.innerHTML=`<span class="name">${chTitle}</span><span class="arrow">›</span>`;
+    c.appendChild(item);
+  }
+}
+
+async function readChapter(chId,title){
+  curChapterId=chId;
+  s("加载图片...");
+  try{
+    const d=await api("/app/api/v2/detail/"+chId,{id:chId});
+    const area=document.getElementById("readerArea");area.innerHTML=`<button class="back-btn" onclick="loadChapters('${curMangaId}','')">← 返回</button>`;
+    let imgs=[];
+    if(d.data&&Array.isArray(d.data))imgs=d.data;
+    else if(d.images&&Array.isArray(d.images))imgs=d.images;
+    else if(d.pages&&Array.isArray(d.pages))imgs=d.pages;
+    else if(d.data&&d.data.pages)imgs=d.data.pages;
+    else{const js=JSON.stringify(d);const m=js.match(/"url"\s*:\s*"([^"]+)"/g);if(m)imgs=m.map(x=>JSON.parse('{'+x+'}').url);else{s("未找到图片URL");return}}
+    let count=0;
+    for(const img of imgs){
+      let src=typeof img==="string"?img:(img.url||img.src||img.image||img.path);
+      if(src&&!src.startsWith("http"))src="https://lz-1382057604.cos.ap-hongkong.myqcloud.com/"+src;
+      const el=document.createElement("img");el.src=src;el.onerror=()=>el.style.display="none";
+      el.onload=()=>{count++;s("已加载 "+(count)+"/"+imgs.length+" 张");area.appendChild(el)};
+      area.appendChild(el);
+    }
+    showView("reader");
+  }catch(e){s("图片加载失败: "+e.message);console.error(e)}
+}
+
+loadMangas();
+</script>
+</body>
+</html>
