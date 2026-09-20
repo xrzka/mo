@@ -14014,9 +14014,9 @@
     {
       "id": "lizi-manga-app",
       "name": "栗子漫画 (Lizi Manga)",
-      "section": "watch",
-      "subsection": "manga",
-      "description": "国产漫画App。免登录网页阅读，客户端JS直接调用API（HMAC-MD5动态签名）获取漫画列表与章节图片，图片来自腾讯云COS香港区域。无需下载App，浏览器直接看漫。",
+      "section": "manga",
+      "subsection": "app",
+      "description": "栗子漫画网页阅读器。免登录直接看漫画，支持列表、章节和在线阅读。",
       "url": "https://xrzka.github.io/mo/reader/lizi.html",
       "tags": [
         "国产漫画",
@@ -14029,7 +14029,7 @@
       "kind": "漫画阅读器",
       "need_login": false,
       "update_info": "持续更新",
-      "note": "纯静态网页阅读器，客户端JS实现HMAC-MD5签名。appsign256密钥：CDD266DF8B2399C24DA38E408B6D9825C7BD2AF073229847F551EA653EA096E1。图片URL格式：https://lz-1382057604.cos.ap-hongkong.myqcloud.com/{hash}/{chapter_id}/{page}.jpg"
+      "note": "纯静态网页阅读器，客户端JS实现HMAC-MD5动态签名。图片来自腾讯云COS香港区域。"
     }
   ]
 }
