@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-19T06:59:49Z",
+  "generated_at": "2026-09-20T00:00:00Z",
   "note": "新增资源在 items 数组里加一项即可。section 取值：novel / manga / anime / game / music / tool / ai / forum / guide / collection。不确定归哪个分区就填 collection（收录 / 杂类），填错或留空也会落到那里。",
   "items": [
     {
@@ -14010,6 +14010,26 @@
       "need_login": true,
       "update_info": "每日可签到",
       "note": "需要通过 rua.chat SSO 授权登录（未开放账号密码 / GitHub 直接注册）。 注册走 rua.chat 自有 SSO 授权，页面未开放账号密码 / GitHub 直接注册；签到功能已开启。注册与签到赠送的具体额度以站内页面为准，本条未核实到确切数字。 可用模型：claude-opus-4-8、claude-opus-4-6、claude-sonnet-5、gemini-3-pro-preview、gpt-5.6-terra、grok-4.6、glm-5.3、kimi-k3、deepseek-v4-pro。 额度以站内自定义「rua 币」结算（兑换比例 100），官方不承诺可用性。模型库很全（约 200 个），上面仅列常用几款。生图相关：nai-* 系列走 /v1/images/generations 或 nai 原生 /v1/ai/generate-image；生图 400 多为提示词撞审核，改词或换参考图即可。"
+    },
+    {
+      "id": "lizi-manga-app",
+      "name": "栗子漫画 (Lizi Manga)",
+      "section": "watch",
+      "subsection": "manga",
+      "description": "国产漫画App。免登录网页阅读，客户端JS直接调用API（HMAC-MD5动态签名）获取漫画列表与章节图片，图片来自腾讯云COS香港区域。无需下载App，浏览器直接看漫。",
+      "url": "https://xrzka.github.io/mo/reader/lizi.html",
+      "tags": [
+        "国产漫画",
+        "免登录",
+        "网页阅读",
+        "COS图片",
+        "安卓",
+        "iOS"
+      ],
+      "kind": "漫画阅读器",
+      "need_login": false,
+      "update_info": "持续更新",
+      "note": "纯静态网页阅读器，客户端JS实现HMAC-MD5签名。appsign256密钥：CDD266DF8B2399C24DA38E408B6D9825C7BD2AF073229847F551EA653EA096E1。图片URL格式：https://lz-1382057604.cos.ap-hongkong.myqcloud.com/{hash}/{chapter_id}/{page}.jpg"
     }
   ]
 }
