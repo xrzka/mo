@@ -34,12 +34,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#1a1a2e;
 .nav-bar{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap}
 .nav-bar button{background:#16213e;color:#aaa;border:1px solid #333;padding:6px 12px;border-radius:4px;cursor:pointer;font-size:12px}
 .nav-bar button:hover{color:#e94560;border-color:#e94560}
+.search-box{margin-bottom:12px;display:flex;gap:8px}
+.search-box input{flex:1;padding:8px 12px;border-radius:6px;border:1px solid #333;background:#16213e;color:#eee;font-size:14px}
+.search-box button{padding:8px 16px;border-radius:6px;border:none;background:#e94560;color:#fff;cursor:pointer;font-size:13px}
 </style>
 </head>
 <body>
 
 <div class="header">
-  <div><h1>🍒 栗子漫画</h1><div class="sub" id="subtitle">免登录在线阅读</div></div>
+  <div><h1>🍒 栗子漫画</h1><div class="sub" id="subtitle">API: ai.xajtl.com</div></div>
 </div>
 
 <div class="tabs">
@@ -49,8 +52,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#1a1a2e;
 </div>
 
 <div class="container">
+  <div class="search-box">
+    <input id="searchInput" placeholder="搜索漫画..." onkeydown="if(event.key==='Enter')doSearch()">
+    <button onclick="doSearch()">搜索</button>
+  </div>
   <div class="nav-bar" id="navBar" style="display:none">
-    <button onclick="showView('list')">← 返回列表</button>
+    <button onclick="showView('list')">← 返回</button>
   </div>
   <div id="mangaGrid"></div>
   <div id="chapterList"></div>
@@ -59,29 +66,34 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#1a1a2e;
 </div>
 
 <script>
-const API="https://adnet.lizimh.com";
-const APPSIGN="CDD266DF8B2399C24DA38E408B6D9825C7BD2AF073229847F551EA653EA096E1";
+// ===== 新 API 配置 =====
+const API = "http://ai.xajtl.com";  // 新域名 2026-09
+const APPSIGN = "CDD266DF8B2399C24DA38E408B6D9825C7BD2AF073229847F551EA653EA096E1";
+const PACKNAME = "com.hbsclj.uth";
+const PLATFORM = "android";
 let curMangaId="",curChapterId="",allMangas=[],allChapters=[];
 
-async function hmacMd5(key,msg){
-  const enc=new TextEncoder();
-  const k=await crypto.subtle.importKey("raw",enc.encode(key),{name:"HMAC",hash:"SHA-256"},false,["sign"]);
-  const h=await crypto.subtle.sign("HMAC",k,enc.encode(msg));
-  return Array.from(new Uint8Array(h)).map(b=>b.toString(16).padStart(2,"0")).join("").slice(0,32);
+// lzsign = MD5(sorted k=v params + APPSIGN)[:32]
+async function genLzsign(params){
+  const keys = Object.keys(params).sort();
+  const s = keys.map(k => k + "=" + params[k]).join("") + APPSIGN;
+  const msg = new TextEncoder().encode(s);
+  const key = new TextEncoder().encode(APPSIGN);
+  const h = await crypto.subtle.digest("MD5", msg);
+  return Array.from(new Uint8Array(h)).map(b => b.toString(16).padStart(2,"0")).join("").slice(0,32);
 }
 
-async function genLzsign(params){
-  const keys=Object.keys(params).sort();
-  const s=keys.map(k=>k+"="+params[k]).join("&")+APPSIGN;
-  try{return await hmacMd5(APPSIGN,s)}catch{let h=0x811c9dc5;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,0x01000193)}return(h>>>0).toString(16).substring(0,16)}}
-
-async function api(endpoint,extra={}){
-  const ts=Math.floor(Date.now()/1000);
-  const p={platform:"android",packname:"com.hbsclj.uth",appsign256:APPSIGN,t:ts.toString(),...extra};
-  p.lzsign=await genLzsign(p);
-  const url=API+endpoint+"?"+new URLSearchParams(p);
-  const r=await fetch(url,{headers:{"User-Agent":"LiziManga/1.0","Accept":"application/json"},"signal":AbortSignal.timeout(20000)});
-  if(!r.ok)throw new Error("HTTP "+r.status);
+async function api(endpoint, extra={}){
+  const ts = Math.floor(Date.now()/1000);
+  const p = {platform: PLATFORM, packname: PACKNAME, t: String(ts), ...extra};
+  p.sign = await genLzsign(p);
+  const query = new URLSearchParams(p).toString();
+  const url = API + endpoint + "?" + query;
+  const r = await fetch(url, {
+    headers: {"User-Agent": "LiziManga/1.0 Dalvik/2.1.0 (Linux; Android 11)"},
+    signal: AbortSignal.timeout(15000)
+  });
+  if(!r.ok) throw new Error("HTTP "+r.status);
   return r.json();
 }
 
@@ -89,52 +101,62 @@ function showView(v){
   document.querySelectorAll(".tab").forEach((t,i)=>t.classList.toggle("active",["list","chapters","reader"].indexOf(v)===i));
   ["mangaGrid","chapterList","readerArea"].forEach(id=>document.getElementById(id).style.display="none");
   document.getElementById("navBar").style.display="none";
-  document.getElementById("readerArea").style.display="none";
-  if(v==="list")document.getElementById("mangaGrid").style.display="grid",document.getElementById("navBar").style.display="flex";
-  else if(v==="chapters")document.getElementById("chapterList").style.display="block",document.getElementById("navBar").style.display="flex";
-  else document.getElementById("readerArea").style.display="block";
+  if(v==="list"){document.getElementById("mangaGrid").style.display="grid";document.getElementById("navBar").style.display="flex";}
+  else if(v==="chapters"){document.getElementById("chapterList").style.display="block";document.getElementById("navBar").style.display="flex";}
+  else{document.getElementById("readerArea").style.display="block";}
 }
 
 function s(msg){document.getElementById("status").textContent=msg}
 
+// ===== 漫画列表 =====
 async function loadMangas(){
   s("加载漫画列表...");
   try{
-    const d=await api("/app/api/home/data");
-    let items=[];
-    if(d.data&&Array.isArray(d.data))items=d.data;
-    else if(d.list&&Array.isArray(d.list))items=d.list;
-    else if(Array.isArray(d))items=d;
-    else if(d.data&&d.data.list)items=d.data.list;
-    else{console.error("Unknown format:",JSON.stringify(d).slice(0,500));s("数据格式异常");return}
-    allMangas=items.map(m=>({id:m.id||m.chapterId||m._id||"",title:m.title||m.name||"未知",cover:m.cover||m.thumbnail||""}));
+    const d = await api("/app/api/home/data");
+    let items = [];
+    if(d.data && d.data.home_content_list) items = d.data.home_content_list[0]?.comic_list || [];
+    else if(d.data && Array.isArray(d.data)) items = d.data;
+    else if(Array.isArray(d.data)) items = d.data;
+    allMangas = items.map(m=>({
+      id: m.id,
+      title: m.name || m.title || "未知",
+      cover: m.picY ? "https://cdn.lzimg.xyz"+m.picY : "",
+      tags: m.tags || "",
+      hits: m.hits || 0
+    }));
     renderMangas(allMangas);
     s("共 "+allMangas.length+" 部漫画");
   }catch(e){s("加载失败: "+e.message);console.error(e)}
 }
 
 function renderMangas(mangas){
-  const c=document.getElementById("mangaGrid");c.innerHTML="";
+  const c = document.getElementById("mangaGrid"); c.innerHTML = "";
   for(const m of mangas){
-    const card=document.createElement("div");card.className="manga-card";
-    card.onclick=()=>loadChapters(m.id,m.title);
-    card.innerHTML=`<img class="cover" src="${m.cover}" onerror="this.style.display='none'"><div class="title">${m.title}</div>`;
+    const card = document.createElement("div"); card.className = "manga-card";
+    card.onclick = () => loadChapters(m.id, m.title);
+    const img = document.createElement("img");
+    img.className = "cover";
+    img.src = m.cover || "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='160'><rect fill='%232a2a4a' width='120' height='160'/><text fill='%23666' x='60' y='85' text-anchor='middle' font-size='12'>暂无封面</text></svg>";
+    img.onerror = () => { img.src = "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='160'><rect fill='%232a2a4a' width='120' height='160'/><text fill='%23666' x='60' y='85' text-anchor='middle' font-size='12'>暂无封面</text></svg>"; };
+    const title = document.createElement("div"); title.className = "title";
+    title.textContent = m.title;
+    card.appendChild(img); card.appendChild(title);
     c.appendChild(card);
   }
 }
 
-async function loadChapters(mangaId,title){
-  curMangaId=mangaId;curChapterId="";allChapters=[];
+// ===== 章节列表 =====
+async function loadChapters(mangaId, title){
+  curMangaId = mangaId; curChapterId = ""; allChapters = [];
   s("加载章节...");
   try{
-    const d=await api("/app/api/v2/detail/"+mangaId,{id:mangaId});
-    let ch=[];
-    if(d.data&&Array.isArray(d.data))ch=d.data;
-    else if(d.chapters&&Array.isArray(d.chapters))ch=d.chapters;
-    else if(d.data&&d.data.chapters)ch=d.data.chapters;
-    else if(d.pages)ch=d.pages;
-    else{console.error("No chapters:",JSON.stringify(d).slice(0,300));s("章节数据异常");return}
-    allChapters=ch;
+    const d = await api("/app/api/v2/detail/" + mangaId, {id: mangaId});
+    let ch = [];
+    if(d.data && Array.isArray(d.data)) ch = d.data;
+    else if(d.data && d.data.chapters) ch = d.data.chapters;
+    else if(d.chapters && Array.isArray(d.chapters)) ch = d.chapters;
+    else if(d.pages && Array.isArray(d.pages)) ch = d.pages;
+    allChapters = ch;
     renderChapters(title);
     showView("chapters");
     s("共 "+allChapters.length+" 章节");
@@ -142,42 +164,88 @@ async function loadChapters(mangaId,title){
 }
 
 function renderChapters(title){
-  const c=document.getElementById("chapterList");c.innerHTML="";
-  const h=document.createElement("h3");h.style.cssText="padding:8px 0;font-size:16px";h.textContent="《"+title+"》";c.appendChild(h);
+  const c = document.getElementById("chapterList"); c.innerHTML = "";
+  const h = document.createElement("h3"); h.style.cssText = "padding:8px 0;font-size:16px"; h.textContent = "《"+title+"》";
+  c.appendChild(h);
   for(const ch of allChapters){
-    const item=document.createElement("div");item.className="chapter-item";
-    item.onclick=()=>readChapter(ch.id||ch.chapterId||ch._id,ch.title||ch.name);
-    const chTitle=ch.title||ch.name||("章节"+(ch.id||ch.chapterId||"?"));
-    item.innerHTML=`<span class="name">${chTitle}</span><span class="arrow">›</span>`;
+    const id = ch.id || ch.chapterId || ch._id;
+    const name = ch.name || ch.title || ("章节"+(id||"?"));
+    const item = document.createElement("div"); item.className = "chapter-item";
+    item.onclick = () => readChapter(id, name);
+    item.innerHTML = `<span class="name">${name}</span><span class="arrow">›</span>`;
     c.appendChild(item);
   }
 }
 
-async function readChapter(chId,title){
-  curChapterId=chId;
+// ===== 阅读器 =====
+async function readChapter(chId, title){
+  curChapterId = chId;
   s("加载图片...");
   try{
-    const d=await api("/app/api/v2/detail/"+chId,{id:chId});
-    const area=document.getElementById("readerArea");area.innerHTML=`<button class="back-btn" onclick="loadChapters('${curMangaId}','')">← 返回</button>`;
-    let imgs=[];
-    if(d.data&&Array.isArray(d.data))imgs=d.data;
-    else if(d.images&&Array.isArray(d.images))imgs=d.images;
-    else if(d.pages&&Array.isArray(d.pages))imgs=d.pages;
-    else if(d.data&&d.data.pages)imgs=d.data.pages;
-    else{const js=JSON.stringify(d);const m=js.match(/"url"\s*:\s*"([^"]+)"/g);if(m)imgs=m.map(x=>JSON.parse('{'+x+'}').url);else{s("未找到图片URL");return}}
-    let count=0;
+    const d = await api("/app/api/chapter/v2/" + chId, {chapter_id: chId});
+    const area = document.getElementById("readerArea");
+    area.innerHTML = `<button class="back-btn" onclick="loadChapters('${curMangaId}','')">← 返回《${title}》</button>`;
+    let imgs = [];
+    if(d.data && Array.isArray(d.data)) imgs = d.data;
+    else if(d.images && Array.isArray(d.images)) imgs = d.images;
+    else if(d.pages && Array.isArray(d.pages)) imgs = d.pages;
+    else if(d.data && d.data.pages) imgs = d.data.pages;
+    else if(d.data && d.data.image_list) imgs = d.data.image_list;
+    else{s("未找到图片: "+JSON.stringify(d).slice(0,200));return}
+
+    let loaded = 0;
     for(const img of imgs){
-      let src=typeof img==="string"?img:(img.url||img.src||img.image||img.path);
-      if(src&&!src.startsWith("http"))src="https://lz-1382057604.cos.ap-hongkong.myqcloud.com/"+src;
-      const el=document.createElement("img");el.src=src;el.onerror=()=>el.style.display="none";
-      el.onload=()=>{count++;s("已加载 "+(count)+"/"+imgs.length+" 张");area.appendChild(el)};
+      let src = typeof img === "string" ? img : (img.url || img.src || img.image || img.path || "");
+      let imgSrc = src;
+      if(imgSrc && !imgSrc.startsWith("http")){
+        // CDN 图片路径（img_generator 函数 img1/img2）
+        imgSrc = "https://cdn.lzimg.xyz" + imgSrc;
+      }
+      if(!imgSrc) continue;
+      const el = document.createElement("img");
+      el.src = imgSrc;
+      el.style.cssText = "width:100%;margin-bottom:4px;border-radius:4px;background:#2a2a4a;min-height:200px;";
+      el.onerror = () => {
+        // 备用 CDN: img.mechat.fun（img_generator img2）
+        if(el.src.includes("cdn.lzimg.xyz")){
+          el.src = el.src.replace("https://cdn.lzimg.xyz", "http://img.mechat.fun");
+        } else {
+          el.style.display="none"; el.alt="加载失败";
+        }
+      };
       area.appendChild(el);
+      loaded++;
+      s(`已加载 ${loaded}/${imgs.length} 张`);
     }
     showView("reader");
+    s("共 "+loaded+" 张图片");
   }catch(e){s("图片加载失败: "+e.message);console.error(e)}
 }
 
+// ===== 搜索 =====
+async function doSearch(){
+  const q = document.getElementById("searchInput").value.trim();
+  if(!q){s("请输入搜索关键词");return}
+  s("搜索中...");
+  try{
+    const d = await api("/app/api/search/suggest", {q: q});
+    let items = [];
+    if(d.data && d.data.search_suggest) items = d.data.search_suggest;
+    else if(d.data && Array.isArray(d.data)) items = d.data;
+    else if(Array.isArray(d.data)) items = d.data;
+    allMangas = items.map(m=>({
+      id: m.id, title: m.name||m.title||"未知",
+      cover: m.picY ? "https://cdn.lzimg.xyz"+m.picY : "",
+      tags: m.tags||"", hits: m.hits||0
+    }));
+    renderMangas(allMangas);
+    s("搜索「"+q+"」→ "+allMangas.length+" 结果");
+  }catch(e){s("搜索失败: "+e.message);console.error(e)}
+}
+
+// 初始化
 loadMangas();
 </script>
 </body>
 </html>
+
