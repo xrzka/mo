@@ -11,12 +11,12 @@ body{font-family:sans-serif;background:#1a1a2e;color:#eee}
 .header h1{font-size:18px;color:#e94560}
 .container{max-width:960px;margin:0 auto;padding:10px}
 #mangaGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;padding:8px 0}
-.manga-card{background:#16213e;border-radius:8px;overflow:hidden;cursor:pointer;transition:transform 0.1s}
+.manga-card{background:#16213e;border-radius:8px;overflow:hidden;cursor:pointer}
 .manga-card:hover{transform:scale(1.02)}
 .manga-card .cover{width:100%;height:160px;object-fit:cover;background:#2a2a4a;display:block}
 .manga-card .title{padding:6px 8px;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #chapterList{padding:6px 0;max-height:70vh;overflow-y:auto}
-.chapter-item{padding:12px 14px;background:#16213e;margin-bottom:6px;border-radius:6px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;border:1px solid transparent;transition:background 0.15s}
+.chapter-item{padding:12px 14px;background:#16213e;margin-bottom:6px;border-radius:6px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;border:1px solid transparent}
 .chapter-item:hover{background:#1a2744}
 .chapter-item.active{background:#0f3460;border-color:#e94560}
 .chapter-item .name{flex:1;font-size:13px}
@@ -36,15 +36,13 @@ body{font-family:sans-serif;background:#1a1a2e;color:#eee}
 .tab:hover{color:#ccc}
 .tab.active{color:#e94560;border-bottom-color:#e94560}
 .notice{background:#0f3460;color:#e94560;padding:6px 10px;border-radius:4px;margin-bottom:8px;font-size:12px}
-.loader{display:inline-block;width:20px;height:20px;border:3px solid #666;border-top:3px solid #e94560;border-radius:50%;animation:spin 0.8s linear infinite}
+.loader{display:inline-block;width:20px;height:20px;border:3px solid #666;border-top:3px solid #e94560;border-radius:50%;animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>
 
-<div class="header">
-  <div><h1>🍒 栗子漫画</h1></div>
-</div>
+<div class="header"><div><h1>🍒 栗子漫画</h1></div></div>
 
 <div style="background:#0f3460;border-bottom:1px solid #1a1a2e">
   <span class="tab active" onclick="showView('list')">📚列表</span>
@@ -66,100 +64,96 @@ body{font-family:sans-serif;background:#1a1a2e;color:#eee}
 </div>
 
 <script>
-// ===== 纯 JS MD5（无 crypto.subtle）=====
+// ===== 纯 JS MD5 =====
 function md5Js(s) {
-  function rotl(x, n) { return (x << n) | (x >>> (32 - n)); }
-  var K = [0xd76aa478,0xe8c7b756,0x242070db,0xc1bdceee,0xf57c0faf,0x4787c62a,0xa8304613,0xfd469501,0x698098d8,0x8b44f7af,0xffff5bb1,0x895cd7be,0x6b901122,0xfd987193,0xa679438e,0x49b40821,0xf61e2562,0xc040b340,0x265e5a51,0xe9b6c7aa,0xd62f105d,0x02441453,0xd8a1e681,0xe7d3fbc8,0x21e1cde6,0xc33707d6,0xf4d50d87,0x455a14ed,0xa9e3e905,0xfcefa3f8,0x676f02d9,0x8d2a4c8a,0xfffa3942,0x8771f681,0x6d9d6122,0xfde5380c,0xa4beea44,0x4bdecfa9,0xf6bb4b60,0xbebfbc70,0x289b7ec6,0xeaa127fa,0xd4ef3085,0x04881d05,0xd9d4d039,0xe6db99e5,0x1fa27cf8,0xc4ac5665,0xf4292244,0x432aff97,0xab9423a7,0xfc93a039,0x655b59c3,0x8f0ccc92,0xffeff47d,0x85845dd1,0x6fa87e4f,0xfe2ce6e0,0xa3014314,0x4e0811a1,0xf7537e82,0xbd3af235,0x2ad7d2bb,0xeb86d391];
-  var S = [7,12,17,22,5,9,14,20,4,11,16,23,6,10,15,21,8,12,16,20,8,12,16,20,8,12,16,20,8,12,16,20];
-  var T = new Array(64);
-  for (var i = 0; i < 64; i++) T[i] = Math.floor(Math.abs(Math.sin(i + 1)) * 0x100000000);
-  var a0 = 0x67452301, b0 = 0xefcdab89, c0 = 0x98badcfe, d0 = 0x10325476;
-  var n = s.length;
-  var M = [];
-  for (var i = 0; i < n; i += 4)
-    M.push(s.charCodeAt(i) | (s.charCodeAt(i+1)||0)<<8 | (s.charCodeAt(i+2)||0)<<16 | (s.charCodeAt(i+3)||0)<<24);
-  var origLen = n;
-  while ((M.length % 16) !== 14) M.push(0);
-  M.push(origLen * 8 & 0xffffffff);
-  M.push(Math.floor(origLen * 8 / 0x100000000) & 0xffffffff);
-  for (var cc = 0; cc < M.length; cc += 16) {
-    var A = a0, B = b0, C = c0, D = d0;
-    for (var j = 0; j < 64; j++) {
-      var F, g;
-      if (j < 16) { F = (B & C) | (~B & D); g = j; }
-      else if (j < 32) { F = (D & B) | (~D & C); g = (5*j+1) % 16; }
-      else if (j < 48) { F = B ^ C ^ D; g = (3*j+5) % 16; }
-      else { F = C ^ (B | (~D)); g = (7*j) % 16; }
-      var temp = D;
-      D = C;
-      C = B;
-      var x = (A + F + T[j] + M[cc + g]) | 0;
-      B = (B + rotl(x, S[j])) | 0;
-      A = temp;
+  function rotl(x,n){return(x<<n)|(x>>>(32-n))}
+  var K=[0xd76aa478,0xe8c7b756,0x242070db,0xc1bdceee,0xf57c0faf,0x4787c62a,0xa8304613,0xfd469501,0x698098d8,0x8b44f7af,0xffff5bb1,0x895cd7be,0x6b901122,0xfd987193,0xa679438e,0x49b40821,0xf61e2562,0xc040b340,0x265e5a51,0xe9b6c7aa,0xd62f105d,0x02441453,0xd8a1e681,0xe7d3fbc8,0x21e1cde6,0xc33707d6,0xf4d50d87,0x455a14ed,0xa9e3e905,0xfcefa3f8,0x676f02d9,0x8d2a4c8a,0xfffa3942,0x8771f681,0x6d9d6122,0xfde5380c,0xa4beea44,0x4bdecfa9,0xf6bb4b60,0xbebfbc70,0x289b7ec6,0xeaa127fa,0xd4ef3085,0x04881d05,0xd9d4d039,0xe6db99e5,0x1fa27cf8,0xc4ac5665,0xf4292244,0x432aff97,0xab9423a7,0xfc93a039,0x655b59c3,0x8f0ccc92,0xffeff47d,0x85845dd1,0x6fa87e4f,0xfe2ce6e0,0xa3014314,0x4e0811a1,0xf7537e82,0xbd3af235,0x2ad7d2bb,0xeb86d391];
+  var S=[7,12,17,22,5,9,14,20,4,11,16,23,6,10,15,21,8,12,16,20,8,12,16,20,8,12,16,20,8,12,16,20];
+  var T=new Array(64);
+  for(var i=0;i<64;i++)T[i]=Math.floor(Math.abs(Math.sin(i+1))*0x100000000);
+  var a0=0x67452301,b0=0xefcdab89,c0=0x98badcfe,d0=0x10325476;
+  var n=s.length;
+  // Convert to word array
+  var M=[];
+  for(var i=0;i<n;i+=4)M.push(s.charCodeAt(i)|(s.charCodeAt(i+1)||0)<<8|(s.charCodeAt(i+2)||0)<<16|(s.charCodeAt(i+3)||0)<<24);
+  var origLen=n*8; // length in bits
+  // Padding: append 0x80, then zeros, then 64-bit length
+  M.push(0x80);
+  while((M.length%16)!==14)M.push(0);
+  M.push(origLen>>>0);
+  M.push(Math.floor(origLen/0x100000000)>>>0);
+  // Process
+  for(var cc=0;cc<M.length;cc+=16){
+    var A=a0,B=b0,C=c0,D=d0;
+    for(var j=0;j<64;j++){
+      var F,g;
+      if(j<16){F=(B&C)|(~B&D);g=j}
+      else if(j<32){F=(D&B)|(~D&C);g=(5*j+1)%16}
+      else if(j<48){F=B^C^D;g=(3*j+5)%16}
+      else{F=C^(B|~D);g=(7*j)%16}
+      var temp=D;
+      D=C;
+      C=B;
+      var x=(A+F+T[j]+M[cc+g])|0;
+      B=(B+rotl(x,S[j]))|0;
+      A=temp;
     }
-    a0 = (a0 + A) | 0; b0 = (b0 + B) | 0; c0 = (c0 + C) | 0; d0 = (d0 + D) | 0;
+    a0=(a0+A)|0;b0=(b0+B)|0;c0=(c0+C)|0;d0=(d0+D)|0;
   }
-  function cv(v) {
-    var h = '';
-    for (var i = 0; i < 4; i++) { h += String.fromCharCode(v & 0xff); v = v >>> 8; }
-    return h;
-  }
-  var raw = cv(a0) + cv(b0) + cv(c0) + cv(d0);
-  var hex = '';
-  for (var j = 0; j < raw.length; j++) hex += (raw.charCodeAt(j) < 16 ? '0' : '') + raw.charCodeAt(j).toString(16);
+  // Convert to hex string
+  function cv(v){var h='';for(var i=0;i<4;i++){h+=String.fromCharCode(v&0xff);v=v>>>8}return h}
+  var raw=cv(a0)+cv(b0)+cv(c0)+cv(d0);
+  var hex='';
+  for(var i=0;i<raw.length;i++)hex+=(raw.charCodeAt(i)<16?'0':'')+raw.charCodeAt(i).toString(16);
   return hex;
 }
 
 function genLzsign(params) {
-  var keys = Object.keys(params).sort();
-  var s = '';
-  for (var i = 0; i < keys.length; i++) s += keys[i] + '=' + params[keys[i]];
-  s += APPSIGN;
+  var keys=Object.keys(params).sort();
+  var s='';
+  for(var i=0;i<keys.length;i++)s+=keys[i]+'='+params[keys[i]];
+  s+=APPSIGN;
   return md5Js(s);
 }
 
-async function api(endpoint, extra) {
-  var params = {platform: PLATFORM, packname: PACKNAME, t: String(Math.floor(Date.now()/1000))};
-  if (extra) for (var k in extra) params[k] = extra[k];
-  params.sign = genLzsign(params);
-  var query = Object.keys(params).map(function(k) { return k + '=' + encodeURIComponent(params[k]); }).join('&');
-  var url = API_BASE + endpoint + '?' + query;
-  var resp = await fetch(url, {headers: {'User-Agent': 'LiziManga/1.0'}});
-  var text = await resp.text();
-  try { return JSON.parse(text); } catch(e) { throw new Error('JSON解析失败: ' + text.substring(0, 200)); }
+async function api(endpoint,extra){
+  var params={platform:PLATFORM,packname:PACKNAME,t:String(Math.floor(Date.now()/1000))};
+  if(extra)for(var k in extra)params[k]=extra[k];
+  params.sign=genLzsign(params);
+  var query=Object.keys(params).map(function(k){return k+'='+encodeURIComponent(params[k]);}).join('&');
+  var url=API_BASE+endpoint+'?'+query;
+  var resp=await fetch(url,{headers:{'User-Agent':'LiziManga/1.0'}});
+  var text=await resp.text();
+  try{return JSON.parse(text);}catch(e){throw new Error('JSON解析失败: '+text.substring(0,200));}
 }
 
 // ===== 应用逻辑 =====
-var API_BASE = "https://ai.xajtl.com";
-var APPSIGN = "CDD266DF8B2399C24DA38E408B6D9825C7BD2AF073229847F551EA653EA096E1";
-var PACKNAME = "com.hbsclj.uth";
-var PLATFORM = "android";
-var IMAGE_BASE = "https://cdn.lzimg.xyz";
-var curMangaId = "";
-var curMangaTitle = "";
-var allMangas = [];
-var allChapters = [];
+var API_BASE="https://ai.xajtl.com";
+var APPSIGN="CDD266DF8B2399C24DA38E408B6D9825C7BD2AF073229847F551EA653EA096E1";
+var PACKNAME="com.hbsclj.uth";
+var PLATFORM="android";
+var IMAGE_BASE="https://cdn.lzimg.xyz";
+var curMangaId="",curMangaTitle="",allMangas=[],allChapters=[];
 
-function showView(v) {
-  var tabs = document.querySelectorAll(".tab");
-  for (var i = 0; i < tabs.length; i++) tabs[i].classList.toggle("active", ["list","chapters","reader"].indexOf(v) === i);
+function showView(v){
+  var tabs=document.querySelectorAll(".tab");
+  for(var i=0;i<tabs.length;i++)tabs[i].classList.toggle("active",["list","chapters","reader"].indexOf(v)===i);
   ["mangaGrid","chapterList","readerArea"].forEach(function(id){document.getElementById(id).style.display="none";});
   document.getElementById("navBar").style.display="none";
   if(v==="list"){document.getElementById("mangaGrid").style.display="grid";document.getElementById("navBar").style.display="flex";document.getElementById("notice").style.display="block";}
   else if(v==="chapters"){document.getElementById("chapterList").style.display="block";document.getElementById("navBar").style.display="flex";document.getElementById("notice").style.display="none";}
   else{document.getElementById("readerArea").style.display="block";document.getElementById("notice").style.display="none";}
 }
-
 function s(msg){document.getElementById("status").textContent=msg}
 
 async function loadMangas(){
   s("加载漫画列表...");
   try{
-    var d = await api("/app/api/home/data");
-    var sections = d.data.home_content_list;
-    var mangas = [];
+    var d=await api("/app/api/home/data");
+    var sections=d.data.home_content_list;
+    var mangas=[];
     for(var i=0;i<sections.length;i++){if(Array.isArray(sections[i].comic_list))mangas=mangas.concat(sections[i].comic_list);}
-    allMangas = mangas.map(function(m){return{id:String(m.id),title:m.name||"未知",cover:m.picY?IMAGE_BASE+m.picY:"",tags:m.tags||"",hits:m.hits||0};});
+    allMangas=mangas.map(function(m){return{id:String(m.id),title:m.name||"未知",cover:m.picY?IMAGE_BASE+m.picY:"",tags:m.tags||"",hits:m.hits||0};});
     renderMangas(allMangas);
     s("共 "+allMangas.length+" 部漫画");
   }catch(e){s("加载失败: "+e.message);console.error(e);}
