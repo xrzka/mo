@@ -753,6 +753,66 @@
       ]
     },
     {
+      "id": "manual-novel-8",
+      "name": "뉴토끼우회.com（뉴토끼 地址发布页）",
+      "section": "novel",
+      "subsection": "site",
+      "description": "뉴토끼 的另一个地址发布页，实时列出当前可用的三个地址：实时地址 toki31.com、固定地址 sbxh9.com、旧版地址 newtoki1.org。域名被封打不开时来这里对照当前主地址。",
+      "url": "https://xn--h10b90bby9a7jkc4f.com/",
+      "links": [
+        {
+          "name": "地址发布页（뉴토끼우회.com）",
+          "url": "https://xn--h10b90bby9a7jkc4f.com/",
+          "password": "",
+          "label": "国内可开"
+        },
+        {
+          "name": "实时地址 toki31.com",
+          "url": "https://toki31.com/",
+          "password": "",
+          "label": "需绕过"
+        },
+        {
+          "name": "固定地址 sbxh9.com",
+          "url": "https://sbxh9.com/",
+          "password": "",
+          "label": "推荐"
+        },
+        {
+          "name": "旧版地址 newtoki1.org",
+          "url": "https://newtoki1.org/",
+          "password": ""
+        },
+        {
+          "name": "官方 Telegram 频道",
+          "url": "https://t.me/s/newtoki_juso",
+          "password": ""
+        }
+      ],
+      "tags": [
+        "韩国网络小说",
+        "地址发布页",
+        "在线看",
+        "限韩国 IP",
+        "需 DNS 绕过",
+        "免注册看列表"
+      ],
+      "kind": "地址发布页",
+      "need_login": false,
+      "update_info": "实时更新",
+      "note": "实测：这个地址发布页本身国内直连能打开（HTTP 200），比 manual-novel-1 那个 telegra.ph 导航页好用。页面实时列三个地址：실시간주소 toki31.com、고정주소 sbxh9.com、구버전주소 newtoki1.org，另有官方 TG 频道 t.me/s/newtoki_juso。目标站点做了韩国 IP 限制，国内访问会被 Cloudflare 挡（403，KR_ONLY / only KR is allowed, detected country is CN），首页和小说列表多数能开，详情页时通时不通，toki31.com 常被拦。绕过办法：装 DNS 绕过 App —— 安卓/iOS 用 1.1.1.1 + WARP 或 Unicorn HTTPS，Windows 用 Unicorn HTTPS，开启后重连。和 manual-novel-1/2/3 是同一个 뉴토끼，这条是更稳的入口。站内另有 🔞 成人分区和赌博性质的积分小游戏，介意的话别深逛。",
+      "also_in": [
+        {
+          "section": "manga",
+          "subsection": "site"
+        },
+        {
+          "section": "anime",
+          "subsection": "site"
+        }
+      ]
+    },
+    {
       "id": "manual-novel-2",
       "name": "新书兔 toki31（뉴토끼 新版）",
       "section": "novel",
