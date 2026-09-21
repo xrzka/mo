@@ -64,48 +64,38 @@ body{font-family:sans-serif;background:#1a1a2e;color:#eee}
 </div>
 
 <script>
-// ===== 纯 JS MD5 =====
+// ===== 纯 JS MD5（正确实现，兼容浏览器）=====
 function md5Js(s) {
-  function rotl(x,n){return(x<<n)|(x>>>(32-n))}
+  var bytes=[];
+  for(var i=0;i<s.length;i++){var c=s.charCodeAt(i);bytes.push(c&0xff);}
+  var origLen=bytes.length;
+  bytes.push(0x80);
+  while(bytes.length%64!==56)bytes.push(0);
+  var bitLen=origLen*8;
+  bytes.push(bitLen&0xff);bytes.push((bitLen>>>8)&0xff);bytes.push((bitLen>>>16)&0xff);bytes.push((bitLen>>>24)&0xff);
+  bytes.push((bitLen/0x100000000)&0xff);bytes.push(((bitLen/0x100000000)>>>8)&0xff);bytes.push(((bitLen/0x100000000)>>>16)&0xff);bytes.push(((bitLen/0x100000000)>>>24)&0xff);
   var K=[0xd76aa478,0xe8c7b756,0x242070db,0xc1bdceee,0xf57c0faf,0x4787c62a,0xa8304613,0xfd469501,0x698098d8,0x8b44f7af,0xffff5bb1,0x895cd7be,0x6b901122,0xfd987193,0xa679438e,0x49b40821,0xf61e2562,0xc040b340,0x265e5a51,0xe9b6c7aa,0xd62f105d,0x02441453,0xd8a1e681,0xe7d3fbc8,0x21e1cde6,0xc33707d6,0xf4d50d87,0x455a14ed,0xa9e3e905,0xfcefa3f8,0x676f02d9,0x8d2a4c8a,0xfffa3942,0x8771f681,0x6d9d6122,0xfde5380c,0xa4beea44,0x4bdecfa9,0xf6bb4b60,0xbebfbc70,0x289b7ec6,0xeaa127fa,0xd4ef3085,0x04881d05,0xd9d4d039,0xe6db99e5,0x1fa27cf8,0xc4ac5665,0xf4292244,0x432aff97,0xab9423a7,0xfc93a039,0x655b59c3,0x8f0ccc92,0xffeff47d,0x85845dd1,0x6fa87e4f,0xfe2ce6e0,0xa3014314,0x4e0811a1,0xf7537e82,0xbd3af235,0x2ad7d2bb,0xeb86d391];
-  var S=[7,12,17,22,5,9,14,20,4,11,16,23,6,10,15,21,8,12,16,20,8,12,16,20,8,12,16,20,8,12,16,20];
-  var T=new Array(64);
-  for(var i=0;i<64;i++)T[i]=Math.floor(Math.abs(Math.sin(i+1))*0x100000000);
+  var S=[7,12,17,22,7,12,17,22,7,12,17,22,7,12,17,22,5,9,14,20,5,9,14,20,5,9,14,20,5,9,14,20,4,11,16,23,4,11,16,23,4,11,16,23,4,11,16,23,6,10,15,21,6,10,15,21,6,10,15,21,6,10,15,21];
   var a0=0x67452301,b0=0xefcdab89,c0=0x98badcfe,d0=0x10325476;
-  var n=s.length;
-  // Convert to word array
-  var M=[];
-  for(var i=0;i<n;i+=4)M.push(s.charCodeAt(i)|(s.charCodeAt(i+1)||0)<<8|(s.charCodeAt(i+2)||0)<<16|(s.charCodeAt(i+3)||0)<<24);
-  var origLen=n*8; // length in bits
-  // Padding: append 0x80, then zeros, then 64-bit length
-  M.push(0x80);
-  while((M.length%16)!==14)M.push(0);
-  M.push(origLen>>>0);
-  M.push(Math.floor(origLen/0x100000000)>>>0);
-  // Process
-  for(var cc=0;cc<M.length;cc+=16){
+  for(var off=0;off<bytes.length;off+=64){
+    var M=[];
+    for(var i=0;i<16;i++){var idx=off+i*4;M[i]=(bytes[idx]|(bytes[idx+1]<<8)|(bytes[idx+2]<<16)|(bytes[idx+3]<<24))>>>0;}
     var A=a0,B=b0,C=c0,D=d0;
     for(var j=0;j<64;j++){
       var F,g;
-      if(j<16){F=(B&C)|(~B&D);g=j}
-      else if(j<32){F=(D&B)|(~D&C);g=(5*j+1)%16}
-      else if(j<48){F=B^C^D;g=(3*j+5)%16}
-      else{F=C^(B|~D);g=(7*j)%16}
-      var temp=D;
-      D=C;
-      C=B;
-      var x=(A+F+T[j]+M[cc+g])|0;
-      B=(B+rotl(x,S[j]))|0;
-      A=temp;
+      if(j<16){F=(B&C)|(~B&D);g=j;}
+      else if(j<32){F=(D&B)|(~D&C);g=(5*j+1)%16;}
+      else if(j<48){F=B^C^D;g=(3*j+5)%16;}
+      else{F=C^(B|~D);g=(7*j)%16;}
+      var tmp=D;D=C;C=B;
+      var x=(A+F+K[j]+M[g])>>>0;
+      B=(B+((x<<S[j])|(x>>>(32-S[j]))))>>>0;
+      A=tmp;
     }
-    a0=(a0+A)|0;b0=(b0+B)|0;c0=(c0+C)|0;d0=(d0+D)|0;
+    a0=(a0+A)>>>0;b0=(b0+B)>>>0;c0=(c0+C)>>>0;d0=(d0+D)>>>0;
   }
-  // Convert to hex string
-  function cv(v){var h='';for(var i=0;i<4;i++){h+=String.fromCharCode(v&0xff);v=v>>>8}return h}
-  var raw=cv(a0)+cv(b0)+cv(c0)+cv(d0);
-  var hex='';
-  for(var i=0;i<raw.length;i++)hex+=(raw.charCodeAt(i)<16?'0':'')+raw.charCodeAt(i).toString(16);
-  return hex;
+  function toHex(v){var h='';for(var i=0;i<4;i++){var b=(v>>>(i*8))&0xff;h+=(b<16?'0':'')+b.toString(16);}return h;}
+  return toHex(a0)+toHex(b0)+toHex(c0)+toHex(d0);
 }
 
 function genLzsign(params) {
@@ -128,12 +118,12 @@ async function api(endpoint,extra){
 }
 
 // ===== 应用逻辑 =====
-var API_BASE="https://ai.xajtl.com";
+var API_BASE="http://ai.xajtl.com";
 var APPSIGN="CDD266DF8B2399C24DA38E408B6D9825C7BD2AF073229847F551EA653EA096E1";
 var PACKNAME="com.hbsclj.uth";
 var PLATFORM="android";
 var IMAGE_BASE="https://cdn.lzimg.xyz";
-var curMangaId="",curMangaTitle="",allMangas=[],allChapters=[];
+var curMangaId="",curMangaTitle="",curChapterId="",allMangas=[],allChapters=[];
 
 function showView(v){
   var tabs=document.querySelectorAll(".tab");
@@ -149,11 +139,19 @@ function s(msg){document.getElementById("status").textContent=msg}
 async function loadMangas(){
   s("加载漫画列表...");
   try{
+    var mangas=[];
+    // 1. home/data
     var d=await api("/app/api/home/data");
     var sections=d.data.home_content_list;
-    var mangas=[];
     for(var i=0;i<sections.length;i++){if(Array.isArray(sections[i].comic_list))mangas=mangas.concat(sections[i].comic_list);}
-    allMangas=mangas.map(function(m){return{id:String(m.id),title:m.name||"未知",cover:m.picY?IMAGE_BASE+m.picY:"",tags:m.tags||"",hits:m.hits||0};});
+    // 2. rank/list (more manga)
+    var r=await api("/app/api/rank/list");
+    var ranks=r.data.rank_list||[];
+    for(var i=0;i<ranks.length;i++){if(Array.isArray(ranks[i].comic_list))mangas=mangas.concat(ranks[i].comic_list);}
+    // dedup by id
+    var seen={};var unique=[];
+    for(var i=0;i<mangas.length;i++){var m=mangas[i];var mid=String(m.id);if(!seen[mid]){seen[mid]=true;unique.push(m);}}
+    allMangas=unique.map(function(m){return{id:String(m.id),title:m.name||"未知",cover:m.picY?IMAGE_BASE+m.picY:"",tags:m.tags||"",hits:m.hits||0};});
     renderMangas(allMangas);
     s("共 "+allMangas.length+" 部漫画");
   }catch(e){s("加载失败: "+e.message);console.error(e);}
@@ -220,10 +218,8 @@ async function doSearch(){
   if(!q){s("请输入关键词");return;}
   s("搜索中...");
   try{
-    var d=await api("/app/api/search/suggest",{q:q});
-    var items=[];
-    if(d.data&&d.data.search_suggest)items=d.data.search_suggest;
-    else if(Array.isArray(d.data))items=d.data;
+    var d=await api("/app/api/search/full",{q:q});
+    var items=d.data&&d.data.search_full||[];
     allMangas=items.map(function(m){return{id:String(m.id),title:m.name||"未知",cover:m.picY?IMAGE_BASE+m.picY:"",tags:m.tags||"",hits:m.hits||0};});
     renderMangas(allMangas);showView("list");s("搜索「"+q+"」→ "+allMangas.length+" 结果");
   }catch(e){s("搜索失败: "+e.message);console.error(e);}
