@@ -102,8 +102,8 @@ function genLzsign(params) {
 
 /* API 后端 */
 var BACKEND = "http://ai.xajtl.com";
-/* jina.ai 代理 (HTTPS) */
-var JINA_PROXY = "https://r.jina.ai/";
+/* allorigins 代理 (HTTPS, 直接返回 JSON) */
+var PROXY = "https://api.allorigins.win/raw?url=";
 
 function api(endpoint, extra) {
   var ts = Math.floor(Date.now()/1000);
@@ -114,20 +114,17 @@ function api(endpoint, extra) {
   var keys = Object.keys(p);
   for (var i = 0; i < keys.length; i++) query += (i>0?"&":"") + keys[i] + "=" + encodeURIComponent(p[keys[i]]);
   var backendUrl = BACKEND + endpoint + "?" + query;
-  /* 通过 jina.ai 代理转发 HTTPS 请求 */
-  var proxyUrl = JINA_PROXY + encodeURIComponent(backendUrl);
+  /* 通过 allorigins 代理转发 HTTPS 请求 */
+  var proxyUrl = PROXY + encodeURIComponent(backendUrl);
   return fetch(proxyUrl, {
-    headers:{"User-Agent":"Mozilla/5.0","Accept":"*/*"},
+    headers:{"User-Agent":"Mozilla/5.0"},
     "signal":AbortSignal.timeout(20000)
   }).then(function(r){
     if (!r.ok) throw new Error("HTTP " + r.status);
     return r.text();
   }).then(function(text){
-    /* jina 返回："Title:\n\nURL Source:\n\nMarkdown Content:\n{json}" */
-    var marker = "\n\nMarkdown Content:\n";
-    var idx = text.indexOf(marker);
-    var jsonStr = idx >= 0 ? text.substring(idx + marker.length) : text;
-    return JSON.parse(jsonStr.trim());
+    /* allorigins 直接返回 JSON，无需解析 */
+    return JSON.parse(text);
   });
 }
 
