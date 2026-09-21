@@ -52,7 +52,7 @@ body{font-family:sans-serif;background:#1a1a2e;color:#eee}
 </div>
 
 <script>
-var API = "https://ai.xajtl.com";
+var API = "https://r.jina.ai/";
 var APPSIGN = "CDD266DF8B2399C24DA38E408B6D9825C7BD2AF073229847F551EA653EA096E1";
 var PACKNAME = "com.hbsclj.uth";
 var PLATFORM = "android";
@@ -100,6 +100,11 @@ function genLzsign(params) {
   return md5Js(str).slice(0, 32);
 }
 
+/* API 后端 */
+var BACKEND = "http://ai.xajtl.com";
+/* jina.ai 代理 (HTTPS) */
+var JINA_PROXY = "https://r.jina.ai/";
+
 function api(endpoint, extra) {
   var ts = Math.floor(Date.now()/1000);
   var p = {platform:PLATFORM, packname:PACKNAME, t:String(ts)};
@@ -108,8 +113,22 @@ function api(endpoint, extra) {
   var query = "";
   var keys = Object.keys(p);
   for (var i = 0; i < keys.length; i++) query += (i>0?"&":"") + keys[i] + "=" + encodeURIComponent(p[keys[i]]);
-  var url = API + endpoint + "?" + query;
-  return fetch(url, {headers:{"User-Agent":"LiziManga/1.0"},"signal":AbortSignal.timeout(15000)}).then(function(r){if(!r.ok)throw new Error("HTTP "+r.status);return r.json();});
+  var backendUrl = BACKEND + endpoint + "?" + query;
+  /* 通过 jina.ai 代理转发 HTTPS 请求 */
+  var proxyUrl = JINA_PROXY + encodeURIComponent(backendUrl);
+  return fetch(proxyUrl, {
+    headers:{"User-Agent":"Mozilla/5.0","Accept":"*/*"},
+    "signal":AbortSignal.timeout(20000)
+  }).then(function(r){
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    return r.text();
+  }).then(function(text){
+    /* jina 返回："Title:\n\nURL Source:\n\nMarkdown Content:\n{json}" */
+    var marker = "\n\nMarkdown Content:\n";
+    var idx = text.indexOf(marker);
+    var jsonStr = idx >= 0 ? text.substring(idx + marker.length) : text;
+    return JSON.parse(jsonStr.trim());
+  });
 }
 
 function showView(v) {
