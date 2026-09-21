@@ -3,52 +3,40 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>栗子漫画 - 在线免登录阅读</title>
+<title>栗子漫画</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#1a1a2e;color:#eee;min-height:100vh}
+body{font-family:sans-serif;background:#1a1a2e;color:#eee}
 .header{background:#16213e;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:100;border-bottom:1px solid #0f3460}
 .header h1{font-size:18px;color:#e94560}
-.header .sub{font-size:12px;color:#888}
-.tabs{display:flex;background:#0f3460;border-bottom:1px solid #1a1a2e}
-.tab{flex:1;padding:10px 8px;color:#888;text-align:center;cursor:pointer;font-size:13px;border-bottom:2px solid transparent}
-.tab.active{color:#e94560;border-bottom-color:#e94560}
-.tabs .tab-icon{font-size:16px;display:block;margin-bottom:2px}
 .container{max-width:960px;margin:0 auto;padding:10px}
 #mangaGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;padding:8px 0}
-.manga-card{background:#16213e;border-radius:8px;overflow:hidden;cursor:pointer;transition:transform .2s}
-.manga-card:hover{transform:scale(1.03)}
+.manga-card{background:#16213e;border-radius:8px;overflow:hidden;cursor:pointer}
 .manga-card .cover{width:100%;height:160px;object-fit:cover;background:#2a2a4a;display:block}
 .manga-card .title{padding:6px 8px;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #chapterList{padding:6px 0}
-.chapter-item{padding:12px 14px;background:#16213e;margin-bottom:6px;border-radius:6px;cursor:pointer;display:flex;justify-content:space-between;align-items:center}
-.chapter-item:hover{background:#0f3460}
-.chapter-item .name{font-size:14px}
-.chapter-item .arrow{color:#888;font-size:12px}
+.chapter-item{padding:12px 14px;background:#16213e;margin-bottom:6px;border-radius:6px;cursor:pointer}
 .reader-area{display:none;padding:8px 0}
 .reader-area img{width:100%;margin-bottom:6px;border-radius:4px;background:#2a2a4a;min-height:200px}
 .back-btn{background:#e94560;color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;margin-bottom:10px;font-size:14px}
-.back-btn:hover{background:#c73650}
 .status{padding:10px;color:#888;font-size:13px;text-align:center}
-.error{color:#ff6b6b;text-align:center;padding:20px}
-.nav-bar{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap}
-.nav-bar button{background:#16213e;color:#aaa;border:1px solid #333;padding:6px 12px;border-radius:4px;cursor:pointer;font-size:12px}
-.nav-bar button:hover{color:#e94560;border-color:#e94560}
 .search-box{margin-bottom:12px;display:flex;gap:8px}
 .search-box input{flex:1;padding:8px 12px;border-radius:6px;border:1px solid #333;background:#16213e;color:#eee;font-size:14px}
-.search-box button{padding:8px 16px;border-radius:6px;border:none;background:#e94560;color:#fff;cursor:pointer;font-size:13px}
+.search-box button{padding:8px 16px;border-radius:6px;border:none;background:#e94560;color:#fff;cursor:pointer}
+.tab{padding:10px 8px;color:#888;text-align:center;cursor:pointer;font-size:13px;border-bottom:2px solid transparent;display:inline-block}
+.tab.active{color:#e94560;border-bottom-color:#e94560}
 </style>
 </head>
 <body>
 
 <div class="header">
-  <div><h1>🍒 栗子漫画</h1><div class="sub" id="subtitle">API: ai.xajtl.com</div></div>
+  <div><h1>🍒 栗子漫画</h1></div>
 </div>
 
-<div class="tabs">
-  <div class="tab active" onclick="showView('list')"><span class="tab-icon">📚</span>漫画列表</div>
-  <div class="tab" onclick="showView('chapters')"><span class="tab-icon">📖</span>章节</div>
-  <div class="tab" onclick="showView('reader')"><span class="tab-icon">👁</span>阅读</div>
+<div style="background:#0f3460;border-bottom:1px solid #1a1a2e">
+  <span class="tab active" onclick="showView('list')">📚列表</span>
+  <span class="tab" onclick="showView('chapters')">📖章节</span>
+  <span class="tab" onclick="showView('reader')">👁阅读</span>
 </div>
 
 <div class="container">
@@ -56,9 +44,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#1a1a2e;
     <input id="searchInput" placeholder="搜索漫画..." onkeydown="if(event.key==='Enter')doSearch()">
     <button onclick="doSearch()">搜索</button>
   </div>
-  <div class="nav-bar" id="navBar" style="display:none">
-    <button onclick="showView('list')">← 返回</button>
-  </div>
+  <div id="navBar" style="display:none;margin-bottom:10px"><button onclick="showView('list')">← 返回列表</button></div>
   <div id="mangaGrid"></div>
   <div id="chapterList"></div>
   <div id="readerArea" class="reader-area"></div>
@@ -66,98 +52,87 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#1a1a2e;
 </div>
 
 <script>
-// ===== API 配置 =====
-const API = "https://ai.xajtl.com";
-const APPSIGN = "CDD266DF8B2399C24DA38E408B6D9825C7BD2AF073229847F551EA653EA096E1";
-const PACKNAME = "com.hbsclj.uth";
-const PLATFORM = "android";
-let curMangaId="",curChapterId="",allMangas=[],allChapters=[];
+var API = "https://ai.xajtl.com";
+var APPSIGN = "CDD266DF8B2399C24DA38E408B6D9825C7BD2AF073229847F551EA653EA096E1";
+var PACKNAME = "com.hbsclj.uth";
+var PLATFORM = "android";
+var curMangaId = "";
+var allMangas = [];
+var allChapters = [];
 
-// ===== 纯 JS MD5 实现 =====
-function md5Js(s){
-  function rotl(x,n){return(x<<n)|(x>>>(32-n));}
-  var K=[0xd76aa478,0xe8c7b756,0x242070db,0xc1bdceee,0xf57c0faf,0x4787c62a,0xa8304613,0xfd469501,0x698098d8,0x8b44f7af,0xffff5bb1,0x895cd7be,0x6b901122,0xfd987193,0xa679438e,0x49b40821,0xf61e2562,0xc040b340,0x265e5a51,0xe9b6c7aa,0xd62f105d,0x02441453,0xd8a1e681,0xe7d3fbc8,0x21e1cde6,0xc33707d6,0xf4d50d87,0x455a14ed,0xa9e3e905,0xfcefa3f8,0x676f02d9,0x8d2a4c8a,0xfffa3942,0x8771f681,0x6d9d6122,0xfde5380c,0xa4beea44,0x4bdecfa9,0xf6bb4b60,0xbebfbc70,0x289b7ec6,0xeaa127fa,0xd4ef3085,0x04881d05,0xd9d4d039,0xe6db99e5,0x1fa27cf8,0xc4ac5665,0xf4292244,0x432aff97,0xab9423a7,0xfc93a039,0x655b59c3,0x8f0ccc92,0xffeff47d,0x85845dd1,0x6fa87e4f,0xfe2ce6e0,0xa3014314,0x4e0811a1,0xf7537e82,0xbd3af235,0x2ad7d2bb,0xeb86d391];
-  var S=[7,12,17,22,7,12,17,22,7,12,17,22,7,12,17,22,5,9,14,20,5,9,14,20,5,9,14,20,5,9,14,20,4,11,16,23,4,11,16,23,4,11,16,23,4,11,16,23,6,10,15,21,6,10,15,21,6,10,15,21,6,10,15,21,6,10,15,21];
-  var X=new Array(16);
+/* ===== MD5 (pure JS, no crypto.subtle) ===== */
+function md5Js(s) {
+  function rotl(x, n) { return (x << n) | (x >>> (32 - n)); }
+  var K = [0xd76aa478,0xe8c7b756,0x242070db,0xc1bdceee,0xf57c0faf,0x4787c62a,0xa8304613,0xfd469501,0x698098d8,0x8b44f7af,0xffff5bb1,0x895cd7be,0x6b901122,0xfd987193,0xa679438e,0x49b40821,0xf61e2562,0xc040b340,0x265e5a51,0xe9b6c7aa,0xd62f105d,0x02441453,0xd8a1e681,0xe7d3fbc8,0x21e1cde6,0xc33707d6,0xf4d50d87,0x455a14ed,0xa9e3e905,0xfcefa3f8,0x676f02d9,0x8d2a4c8a,0xfffa3942,0x8771f681,0x6d9d6122,0xfde5380c,0xa4beea44,0x4bdecfa9,0xf6bb4b60,0xbebfbc70,0x289b7ec6,0xeaa127fa,0xd4ef3085,0x04881d05,0xd9d4d039,0xe6db99e5,0x1fa27cf8,0xc4ac5665,0xf4292244,0x432aff97,0xab9423a7,0xfc93a039,0x655b59c3,0x8f0ccc92,0xffeff47d,0x85845dd1,0x6fa87e4f,0xfe2ce6e0,0xa3014314,0x4e0811a1,0xf7537e82,0xbd3af235,0x2ad7d2bb,0xeb86d391];
+  var S = [7,12,17,22,7,12,17,22,7,12,17,22,7,12,17,22,5,9,14,20,5,9,14,20,5,9,14,20,5,9,14,20,4,11,16,23,4,11,16,23,4,11,16,23,4,11,16,23,6,10,15,21,6,10,15,21,6,10,15,21,6,10,15,21,6,10,15,21];
+  var X = new Array(16);
   var a0=0x67452301,b0=0xefcdab89,c0=0x98badcfe,d0=0x10325476;
-  var msg=unescape(encodeURIComponent(s));
-  var ml=msg.length;
-  var bitLen=ml*8;
-  msg+="\x80";
-  while((msg.length%64)!==56)msg+="\x00";
-  msg+=String.fromCharCode(bitLen&0xff,(bitLen>>>8)&0xff,(bitLen>>>16)&0xff,(bitLen>>>24)&0xff,(bitLen>>>32)&0xff,(bitLen>>>40)&0xff,(bitLen>>>48)&0xff,(bitLen>>>56)&0xff);
-  for(var i=0;i<msg.length;i+=64){
+  var msg = unescape(encodeURIComponent(s));
+  var ml = msg.length;
+  var bitLen = ml * 8;
+  msg += "\x80";
+  while (msg.length % 64 !== 56) msg += "\x00";
+  msg += String.fromCharCode(bitLen&0xff,(bitLen>>>8)&0xff,(bitLen>>>16)&0xff,(bitLen>>>24)&0xff,(bitLen>>>32)&0xff,(bitLen>>>40)&0xff,(bitLen>>>48)&0xff,(bitLen>>>56)&0xff);
+  for (var i = 0; i < msg.length; i += 64) {
     var a=a0,b=b0,c=c0,d=d0;
-    for(var j=0;j<16;j++)X[j]=msg.charCodeAt(i+j*4)|(msg.charCodeAt(i+j*4+1)<<8)|(msg.charCodeAt(i+j*4+2)<<16)|(msg.charCodeAt(i+j*4+3)<<24);
-    for(var j=0;j<64;j++){
-      var g,f,t;
-      if(j<16){f=(b&c)|((~b)&d);g=j;}
-      else if(j<32){f=(d&b)|((~d)&c);g=(5*j+1)%16;}
-      else if(j<48){f=b^c^d;g=(3*j+5)%16;}
-      else{f=c^(b|(~d));g=(7*j)%16;}
-      t=d;d=c;c=b;b=b+rotl(a+f+K[j]+X[g],S[j]);a=t;
+    for (var j = 0; j < 16; j++) X[j] = msg.charCodeAt(i+j*4)|(msg.charCodeAt(i+j*4+1)<<8)|(msg.charCodeAt(i+j*4+2)<<16)|(msg.charCodeAt(i+j*4+3)<<24);
+    for (var j = 0; j < 64; j++) {
+      var g, f, t;
+      if (j < 16) { f=(b&c)|((~b)&d); g=j; }
+      else if (j < 32) { f=(d&b)|((~d)&c); g=(5*j+1)%16; }
+      else if (j < 48) { f=b^c^d; g=(3*j+5)%16; }
+      else { f=c^(b|(~d)); g=(7*j)%16; }
+      t=d; d=c; c=b; b=b+rotl(a+f+K[j]+X[g],S[j]); a=t;
     }
-    a0+=a;b0+=b;c0+=c;d0+=d;
+    a0+=a; b0+=b; c0+=c; d0+=d;
   }
   var r=[a0,b0,c0,d0];
   var hex="";
-  for(var i=0;i<4;i++){
-    for(var j=0;j<4;j++){hex+=((r[i]>>>(j*8))&0xff).toString(16).padStart(2,"0");}
-  }
+  for (var i=0; i<4; i++) for (var j=0; j<4; j++) hex+=((r[i]>>>(j*8))&0xff).toString(16).padStart(2,"0");
   return hex;
 }
-function md5Hex(str){
-  try{
-    var enc=new TextEncoder();
-    var h=crypto.subtle.digest("MD5",enc.encode(str));
-    return Array.from(new Uint8Array(h)).map(function(b){return b.toString(16).padStart(2,"0");}).join("");
-  }catch(e){
-    return md5Js(str);
-  }
-}
-function genLzsign(params){
-  var keys=Object.keys(params).sort();
-  var str="";
-  for(var i=0;i<keys.length;i++){str+=keys[i]+"="+params[keys[i]];}
-  str+=APPSIGN;
-  return md5Hex(str).slice(0,32);
+
+function genLzsign(params) {
+  var keys = Object.keys(params).sort();
+  var str = "";
+  for (var i = 0; i < keys.length; i++) str += keys[i] + "=" + params[keys[i]];
+  str += APPSIGN;
+  return md5Js(str).slice(0, 32);
 }
 
-async function api(endpoint, extra){
-  var ts=Math.floor(Date.now()/1000);
-  var p={platform:PLATFORM,packname:PACKNAME,t:String(ts)};
-  if(extra){for(var k in extra){if(extra.hasOwnProperty(k)){p[k]=extra[k];}}}
-  p.sign=genLzsign(p);
-  var query="";
-  var keys=Object.keys(p);
-  for(var i=0;i<keys.length;i++){query+=(i>0?"&":"")+keys[i]+"="+encodeURIComponent(p[keys[i]]);}
-  var url=API+endpoint+"?"+query;
-  var r=await fetch(url,{headers:{"User-Agent":"LiziManga/1.0 Dalvik/2.1.0 (Linux; Android 11)"},"signal":AbortSignal.timeout(15000)});
-  if(!r.ok)throw new Error("HTTP "+r.status);
-  return r.json();
+function api(endpoint, extra) {
+  var ts = Math.floor(Date.now()/1000);
+  var p = {platform:PLATFORM, packname:PACKNAME, t:String(ts)};
+  if (extra) for (var k in extra) if(extra.hasOwnProperty(k)) p[k] = extra[k];
+  p.sign = genLzsign(p);
+  var query = "";
+  var keys = Object.keys(p);
+  for (var i = 0; i < keys.length; i++) query += (i>0?"&":"") + keys[i] + "=" + encodeURIComponent(p[keys[i]]);
+  var url = API + endpoint + "?" + query;
+  return fetch(url, {headers:{"User-Agent":"LiziManga/1.0"},"signal":AbortSignal.timeout(15000)}).then(function(r){if(!r.ok)throw new Error("HTTP "+r.status);return r.json();});
 }
 
-function showView(v){
-  document.querySelectorAll(".tab").forEach(function(t,i){t.classList.toggle("active",["list","chapters","reader"].indexOf(v)===i);});
+function showView(v) {
+  var tabs = document.querySelectorAll(".tab");
+  for (var i = 0; i < tabs.length; i++) tabs[i].classList.toggle("active", ["list","chapters","reader"].indexOf(v)===i);
   ["mangaGrid","chapterList","readerArea"].forEach(function(id){document.getElementById(id).style.display="none";});
   document.getElementById("navBar").style.display="none";
-  if(v==="list"){document.getElementById("mangaGrid").style.display="grid";document.getElementById("navBar").style.display="flex";}
-  else if(v==="chapters"){document.getElementById("chapterList").style.display="block";document.getElementById("navBar").style.display="flex";}
+  if (v==="list"){document.getElementById("mangaGrid").style.display="grid";document.getElementById("navBar").style.display="flex";}
+  else if (v==="chapters"){document.getElementById("chapterList").style.display="block";document.getElementById("navBar").style.display="flex";}
   else{document.getElementById("readerArea").style.display="block";}
 }
 
 function s(msg){document.getElementById("status").textContent=msg}
 
-// ===== 漫画列表 =====
 async function loadMangas(){
   s("加载漫画列表...");
   try{
-    var d=await api("/app/api/home/data");
-    var items=[];
+    var d = await api("/app/api/home/data");
+    var items = [];
     if(d.data&&d.data.home_content_list)items=d.data.home_content_list[0].comic_list||[];
     else if(d.data&&Array.isArray(d.data))items=d.data;
     else if(Array.isArray(d.data))items=d.data;
-    allMangas=items.map(function(m){return{id:m.id,title:m.name||m.title||"未知",cover:m.picY?"https://cdn.lzimg.xyz"+m.picY:"",tags:m.tags||"",hits:m.hits||0};});
+    allMangas = items.map(function(m){return{id:m.id,title:m.name||m.title||"未知",cover:m.picY?"https://cdn.lzimg.xyz"+m.picY:"",tags:m.tags||"",hits:m.hits||0};});
     renderMangas(allMangas);
     s("共 "+allMangas.length+" 部漫画");
   }catch(e){s("加载失败: "+e.message);console.error(e)}
@@ -168,20 +143,17 @@ function renderMangas(mangas){
   for(var i=0;i<mangas.length;i++){
     var m=mangas[i];
     var card=document.createElement("div");card.className="manga-card";
-    card.onclick=function(){loadChapters(m.id,m.title);};
+    (function(mid,mt){card.onclick=function(){loadChapters(mid,mt);};})(m.id,m.title);
     var img=document.createElement("img");img.className="cover";
-    img.src=m.cover||"data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='160'><rect fill='%232a2a4a' width='120' height='160'/><text fill='%23666' x='60' y='85' text-anchor='middle' font-size='12'>暂无封面</text></svg>";
-    img.onerror=function(){this.src="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='160'><rect fill='%232a2a4a' width='120' height='160'/><text fill='%23666' x='60' y='85' text-anchor='middle' font-size='12'>暂无封面</text></svg>";};
-    var title=document.createElement("div");title.className="title";
-    title.textContent=m.title;
+    img.src=m.cover||"";img.onerror=function(){this.style.display="none";};
+    var title=document.createElement("div");title.className="title";title.textContent=m.title;
     card.appendChild(img);card.appendChild(title);
     c.appendChild(card);
   }
 }
 
-// ===== 章节列表 =====
 async function loadChapters(mangaId,title){
-  curMangaId=mangaId;curChapterId="";allChapters=[];
+  curMangaId=mangaId;allChapters=[];
   s("加载章节...");
   try{
     var d=await api("/app/api/v2/detail/"+mangaId,{id:mangaId});
@@ -206,44 +178,37 @@ function renderChapters(title){
     var id=ch.id||ch.chapterId||ch._id;
     var name=ch.name||ch.title||("章节"+(id||"?"));
     var item=document.createElement("div");item.className="chapter-item";
-    item.onclick=(function(mid,nm){return function(){readChapter(mid,nm);};})(id,name);
+    (function(mid,nm){item.onclick=function(){readChapter(mid,nm);};})(id,name);
     item.innerHTML="<span class='name'>"+name+"</span><span class='arrow'>›</span>";
     c.appendChild(item);
   }
 }
 
-// ===== 阅读器 =====
 async function readChapter(chId,title){
   curChapterId=chId;
   s("加载图片...");
   try{
     var d=await api("/app/api/chapter/v2/"+chId,{chapter_id:chId});
     var area=document.getElementById("readerArea");
-    area.innerHTML="<button class='back-btn' onclick='loadChapters("+JSON.stringify(curMangaId)+",\"\")'>← 返回《"+title+"》</button>";
+    area.innerHTML="<button class='back-btn' onclick='loadChapters("+JSON.stringify(curMangaId)+",\"\")'>← 返回</button>";
     var imgs=[];
     if(d.data&&Array.isArray(d.data))imgs=d.data;
     else if(d.images&&Array.isArray(d.images))imgs=d.images;
     else if(d.pages&&Array.isArray(d.pages))imgs=d.pages;
     else if(d.data&&d.data.pages)imgs=d.data.pages;
     else if(d.data&&d.data.image_list)imgs=d.data.image_list;
-    else{s("未找到图片: "+JSON.stringify(d).slice(0,200));return}
-
+    else{s("未找到图片");return}
     var loaded=0;
     for(var i=0;i<imgs.length;i++){
       var src=typeof imgs[i]==="string"?imgs[i]:(imgs[i].url||imgs[i].src||imgs[i].image||imgs[i].path||"");
-      if(src&&!src.startsWith("http")){
-        src="https://cdn.lzimg.xyz"+src;
-      }
+      if(src&&!src.startsWith("http"))src="https://cdn.lzimg.xyz"+src;
       if(!src)continue;
       var el=document.createElement("img");
       el.src=src;
       el.style.cssText="width:100%;margin-bottom:4px;border-radius:4px;background:#2a2a4a;min-height:200px;";
       el.onerror=function(){
-        if(this.src.includes("cdn.lzimg.xyz")){
-          this.src=this.src.replace("https://cdn.lzimg.xyz","http://img.mechat.fun");
-        }else{
-          this.style.display="none";this.alt="加载失败";
-        }
+        if(this.src.includes("cdn.lzimg.xyz")){this.src=this.src.replace("https://cdn.lzimg.xyz","http://img.mechat.fun");}
+        else{this.style.display="none";this.alt="加载失败";}
       };
       area.appendChild(el);
       loaded++;
@@ -254,7 +219,6 @@ async function readChapter(chId,title){
   }catch(e){s("图片加载失败: "+e.message);console.error(e)}
 }
 
-// ===== 搜索 =====
 async function doSearch(){
   var q=document.getElementById("searchInput").value.trim();
   if(!q){s("请输入搜索关键词");return}
@@ -271,7 +235,6 @@ async function doSearch(){
   }catch(e){s("搜索失败: "+e.message);console.error(e)}
 }
 
-// 初始化
 loadMangas();
 </script>
 </body>
