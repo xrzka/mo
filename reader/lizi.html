@@ -15,9 +15,12 @@ body{font-family:sans-serif;background:#1a1a2e;color:#eee}
 .manga-card .cover{width:100%;height:160px;object-fit:cover;background:#2a2a4a;display:block}
 .manga-card .title{padding:6px 8px;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #chapterList{padding:6px 0}
-.chapter-item{padding:12px 14px;background:#16213e;margin-bottom:6px;border-radius:6px;cursor:pointer}
+.chapter-item{padding:12px 14px;background:#16213e;margin-bottom:6px;border-radius:6px;cursor:pointer;display:flex;justify-content:space-between;align-items:center}
+.chapter-item .name{flex:1;font-size:13px}
+.chapter-item .arrow{color:#e94560;font-size:18px}
 .reader-area{display:none;padding:8px 0}
 .reader-area img{width:100%;margin-bottom:6px;border-radius:4px;background:#2a2a4a;min-height:200px}
+.reader-area .placeholder{background:#2a2a4a;border-radius:4px;height:200px;display:flex;align-items:center;justify-content:center;color:#888;margin-bottom:6px}
 .back-btn{background:#e94560;color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;margin-bottom:10px;font-size:14px}
 .status{padding:10px;color:#888;font-size:13px;text-align:center}
 .search-box{margin-bottom:12px;display:flex;gap:8px}
@@ -25,6 +28,7 @@ body{font-family:sans-serif;background:#1a1a2e;color:#eee}
 .search-box button{padding:8px 16px;border-radius:6px;border:none;background:#e94560;color:#fff;cursor:pointer}
 .tab{padding:10px 8px;color:#888;text-align:center;cursor:pointer;font-size:13px;border-bottom:2px solid transparent;display:inline-block}
 .tab.active{color:#e94560;border-bottom-color:#e94560}
+.notice{background:#0f3460;color:#e94560;padding:6px 10px;border-radius:4px;margin-bottom:8px;font-size:12px}
 </style>
 </head>
 <body>
@@ -40,6 +44,7 @@ body{font-family:sans-serif;background:#1a1a2e;color:#eee}
 </div>
 
 <div class="container">
+  <div class="notice" id="notice">✅ 数据已就绪，点击任意漫画即可浏览章节和阅读。</div>
   <div class="search-box">
     <input id="searchInput" placeholder="搜索漫画..." onkeydown="if(event.key==='Enter')doSearch()">
     <button onclick="doSearch()">搜索</button>
@@ -52,109 +57,31 @@ body{font-family:sans-serif;background:#1a1a2e;color:#eee}
 </div>
 
 <script>
-var API = "https://r.jina.ai/";
-var APPSIGN = "CDD266DF8B2399C24DA38E408B6D9825C7BD2AF073229847F551EA653EA096E1";
-var PACKNAME = "com.hbsclj.uth";
-var PLATFORM = "android";
-var curMangaId = "";
-var allMangas = [];
-var allChapters = [];
+var EMBEDDED_MANGA_DATA = [{"id": "22613", "title": "我，当备胎女友就行了", "cover": "https://cdn.lzimg.xyz/picY/5699a6771ecf810d280fc617c6afaf56.jpg", "tags": "爱情,校园", "hits": 785328, "chapter_count": 34, "chapters": [{"id": "223281", "name": "第01卷"}, {"id": "223246", "name": "第01话"}, {"id": "223247", "name": "第02话"}, {"id": "223249", "name": "第3.1话"}, {"id": "223250", "name": "第3.2话"}, {"id": "223251", "name": "第3.3话"}, {"id": "223253", "name": "第4.1话"}, {"id": "223254", "name": "第4.2话"}, {"id": "223255", "name": "第5.1话"}, {"id": "223262", "name": "第5.2话"}], "sample_pics": ["https://cdn.lzimg.xyz/Manual/CF35BHRR/umvFbB39/1.webp", "https://cdn.lzimg.xyz/Manual/CF35BHRR/umvFbB39/2.webp"]}, {"id": "77246", "title": "某天男主掉进了我家-AI翻译", "cover": "https://cdn.lzimg.xyz/picY/b12b79c4108f38e672e2d5abe7395a8d.webp", "tags": "恋爱,奇幻,穿越,日常", "hits": 629580, "chapter_count": 32, "chapters": [{"id": "2481338", "name": "第1话"}, {"id": "2481340", "name": "第2话"}, {"id": "2481342", "name": "第3话"}, {"id": "2481344", "name": "第4话"}, {"id": "2481346", "name": "第5话"}, {"id": "2481347", "name": "第6话"}, {"id": "2481348", "name": "第7话"}, {"id": "2481350", "name": "第8话"}, {"id": "2481352", "name": "第9话"}, {"id": "2481354", "name": "第10话"}], "sample_pics": ["https://cdn.lzimg.xyz/Manual/CF35BHRR/umvFbB39/1.webp", "https://cdn.lzimg.xyz/Manual/CF35BHRR/umvFbB39/2.webp"]}, {"id": "26824", "title": "葬送者芙莉莲", "cover": "https://cdn.lzimg.xyz/picY/fb94e81bb3d650ef7c69e44947b4fe46.jpg", "tags": "搞笑,冒险", "hits": 456643, "chapter_count": 162, "chapters": [{"id": "277608", "name": "第01话"}, {"id": "277905", "name": "第01卷"}, {"id": "277948", "name": "1-3卷附赠"}, {"id": "277609", "name": "第02话"}, {"id": "277908", "name": "第02卷"}, {"id": "277610", "name": "第03话"}, {"id": "277910", "name": "第03卷"}, {"id": "277611", "name": "第04话"}, {"id": "277919", "name": "第04卷"}, {"id": "277613", "name": "第05话"}], "sample_pics": ["https://cdn.lzimg.xyz/Manual/CF35BHRR/umvFbB39/1.webp", "https://cdn.lzimg.xyz/Manual/CF35BHRR/umvFbB39/2.webp"]}, {"id": "31902", "title": "古见同学是沟通鲁蛇。", "cover": "https://cdn.lzimg.xyz/picY/f9328c9e79c98819df2d829761a38249.jpg", "tags": "搞笑,治愈", "hits": 331721, "chapter_count": 519, "chapters": [{"id": "345143", "name": "短篇"}, {"id": "346733", "name": "第01卷"}, {"id": "346946", "name": "魔王城×古见联动"}, {"id": "345147", "name": "第01回"}, {"id": "346751", "name": "第02卷"}, {"id": "346948", "name": "2019大吉"}, {"id": "345150", "name": "第02回"}, {"id": "346755", "name": "第03卷"}, {"id": "345154", "name": "第03回"}, {"id": "346763", "name": "第04卷"}], "sample_pics": ["https://cdn.lzimg.xyz/Manual/CF35BHRR/umvFbB39/1.webp", "https://cdn.lzimg.xyz/Manual/CF35BHRR/umvFbB39/2.webp"]}, {"id": "41002", "title": "电锯人", "cover": "https://cdn.lzimg.xyz/picY/2e46bbe1d0d372487a496f90603d4c89.jpg", "tags": "热血", "hits": 312310, "chapter_count": 266, "chapters": [{"id": "466944", "name": "第01回"}, {"id": "467375", "name": "第01卷"}, {"id": "467445", "name": "第1卷附录"}, {"id": "466945", "name": "第02回"}, {"id": "467377", "name": "第02卷"}, {"id": "467448", "name": "第2卷附录"}, {"id": "466946", "name": "第03回"}, {"id": "467382", "name": "第03卷"}, {"id": "467450", "name": "访谈"}, {"id": "466947", "name": "第04回"}], "sample_pics": ["https://cdn.lzimg.xyz/Manual/CF35BHRR/umvFbB39/1.webp", "https://cdn.lzimg.xyz/Manual/CF35BHRR/umvFbB39/2.webp"]}, {"id": "36359", "title": "GRANDBLUE碧蓝之海", "cover": "https://cdn.lzimg.xyz/picY/877a195be8f4c3a21d0766be5d5612fc.jpg", "tags": "爱情,校园", "hits": 205550, "chapter_count": 139, "chapters": [{"id": "406533", "name": "第11回"}, {"id": "406663", "name": "第01卷"}, {"id": "406738", "name": "番外篇01"}, {"id": "406534", "name": "第12回"}, {"id": "406664", "name": "第02卷"}, {"id": "406739", "name": "番外篇02"}, {"id": "406535", "name": "第13回"}, {"id": "406675", "name": "第03卷"}, {"id": "406741", "name": "番外篇03"}, {"id": "406537", "name": "第14回"}], "sample_pics": ["https://cdn.lzimg.xyz/Manual/CF35BHRR/umvFbB39/1.webp", "https://cdn.lzimg.xyz/Manual/CF35BHRR/umvFbB39/2.webp"]}, {"id": "31777", "title": "花薰凛然", "cover": "https://cdn.lzimg.xyz/picY/7b24cce432057409522ae1a42a115af6.jpg", "tags": "爱情,校园", "hits": 204706, "chapter_count": 225, "chapters": [{"id": "342984", "name": "第01话"}, {"id": "343588", "name": "第01卷"}, {"id": "343652", "name": "官方人气投票结果"}, {"id": "342987", "name": "第02话"}, {"id": "343593", "name": "第02卷"}, {"id": "343654", "name": "动画化"}, {"id": "342997", "name": "第03话"}, {"id": "343614", "name": "第03卷"}, {"id": "343000", "name": "第04话"}, {"id": "343616", "name": "第04卷"}], "sample_pics": ["https://cdn.lzimg.xyz/Manual/CF35BHRR/umvFbB39/1.webp", "https://cdn.lzimg.xyz/Manual/CF35BHRR/umvFbB39/2.webp"]}, {"id": "45475", "title": "咒术回战", "cover": "https://cdn.lzimg.xyz/picY/543a8491a114442f61fc5a8938c78ed7.jpg", "tags": "冒险,魔幻", "hits": 174463, "chapter_count": 330, "chapters": [{"id": "541435", "name": "第01回"}, {"id": "542133", "name": "第00卷"}, {"id": "542253", "name": "①卷附录"}, {"id": "542136", "name": "第01卷"}, {"id": "542255", "name": "02卷附录"}, {"id": "541439", "name": "第03回"}, {"id": "542139", "name": "第02卷"}, {"id": "542257", "name": "03卷附录"}, {"id": "541442", "name": "第4话 铁骨娘"}, {"id": "542142", "name": "第03卷"}], "sample_pics": ["https://cdn.lzimg.xyz/Manual/CF35BHRR/umvFbB39/1.webp", "https://cdn.lzimg.xyz/Manual/CF35BHRR/umvFbB39/2.webp"]}, {"id": "22979", "title": "在超市后门吸烟的二人", "cover": "https://cdn.lzimg.xyz/picY/9cec6460b27b42195183eb8ff09ce0c1.jpg", "tags": "爱情,职场", "hits": 166722, "chapter_count": 106, "chapters": [{"id": "227840", "name": "第01话"}, {"id": "227921", "name": "单行本1卷特别篇"}, {"id": "577819", "name": "第01卷"}, {"id": "227853", "name": "第02话"}, {"id": "227922", "name": "贺图集"}, {"id": "577820", "name": "第02卷"}, {"id": "227862", "name": "第03话"}, {"id": "227924", "name": "新年番外"}, {"id": "577821", "name": "第03卷"}, {"id": "227864", "name": "第04话"}], "sample_pics": ["https://cdn.lzimg.xyz/Manual/CF35BHRR/umvFbB39/1.webp", "https://cdn.lzimg.xyz/Manual/CF35BHRR/umvFbB39/2.webp"]}, {"id": "40436", "title": "魔都精兵的奴隶", "cover": "https://cdn.lzimg.xyz/picY/1282ca9ed2b66567c55d5e82001bdffc.jpg", "tags": "冒险,魔幻", "hits": 136026, "chapter_count": 224, "chapters": [{"id": "457633", "name": "第01回"}, {"id": "457851", "name": "第01卷"}, {"id": "457885", "name": "第5卷番外"}, {"id": "457635", "name": "第02话"}, {"id": "457853", "name": "第02卷"}, {"id": "457886", "name": "第6卷番外"}, {"id": "457636", "name": "第03话"}, {"id": "457856", "name": "第03卷"}, {"id": "457888", "name": "第7卷番外"}, {"id": "457637", "name": "第4话 奴隶的机智"}], "sample_pics": ["https://cdn.lzimg.xyz/Manual/CF35BHRR/umvFbB39/1.webp", "https://cdn.lzimg.xyz/Manual/CF35BHRR/umvFbB39/2.webp"]}, {"id": "30519", "title": "想让“我爱你”游戏快点结束", "cover": "https://cdn.lzimg.xyz/picY/92f2f666e00674ed2cd1eba7e0e822f8.jpg", "tags": "爱情,校园", "hits": 121849, "chapter_count": 89, "chapters": [{"id": "326509", "name": "第01卷"}, {"id": "326559", "name": "2022年情人节"}, {"id": "326323", "name": "第01话"}, {"id": "326325", "name": "第02话"}, {"id": "326526", "name": "第02卷"}, {"id": "326561", "name": "EXTRA GAME2"}, {"id": "326562", "name": "EXTRA GAME1"}, {"id": "326528", "name": "第03卷"}, {"id": "326326", "name": "第03话"}, {"id": "326568", "name": "SPECIAL GAME"}], "sample_pics": ["https://cdn.lzimg.xyz/Manual/CF35BHRR/umvFbB39/1.webp", "https://cdn.lzimg.xyz/Manual/CF35BHRR/umvFbB39/2.webp"]}, {"id": "27111", "title": "关于邻家的天使大人不知不觉把我惯成废人这档子事-栗子", "cover": "https://cdn.lzimg.xyz/picY/1abeff551e7b3074421b9fae79394dc3.jpg", "tags": "爱情", "hits": 120923, "chapter_count": 116, "chapters": [{"id": "281048", "name": "第1.1话"}, {"id": "281184", "name": "一卷发售纪念"}, {"id": "281050", "name": "第1.2话"}, {"id": "281187", "name": "人设图"}, {"id": "281058", "name": "第1.3话"}, {"id": "281189", "name": "三卷发售纪念"}, {"id": "281059", "name": "第1.4话"}, {"id": "281191", "name": "一卷店铺特典"}, {"id": "281060", "name": "第1.5话"}, {"id": "281061", "name": "第2.1话"}], "sample_pics": ["https://cdn.lzimg.xyz/Manual/CF35BHRR/umvFbB39/1.webp", "https://cdn.lzimg.xyz/Manual/CF35BHRR/umvFbB39/2.webp"]}];
 
-/* ===== MD5 (pure JS, no crypto.subtle) ===== */
-function md5Js(s) {
-  function rotl(x, n) { return (x << n) | (x >>> (32 - n)); }
-  var K = [0xd76aa478,0xe8c7b756,0x242070db,0xc1bdceee,0xf57c0faf,0x4787c62a,0xa8304613,0xfd469501,0x698098d8,0x8b44f7af,0xffff5bb1,0x895cd7be,0x6b901122,0xfd987193,0xa679438e,0x49b40821,0xf61e2562,0xc040b340,0x265e5a51,0xe9b6c7aa,0xd62f105d,0x02441453,0xd8a1e681,0xe7d3fbc8,0x21e1cde6,0xc33707d6,0xf4d50d87,0x455a14ed,0xa9e3e905,0xfcefa3f8,0x676f02d9,0x8d2a4c8a,0xfffa3942,0x8771f681,0x6d9d6122,0xfde5380c,0xa4beea44,0x4bdecfa9,0xf6bb4b60,0xbebfbc70,0x289b7ec6,0xeaa127fa,0xd4ef3085,0x04881d05,0xd9d4d039,0xe6db99e5,0x1fa27cf8,0xc4ac5665,0xf4292244,0x432aff97,0xab9423a7,0xfc93a039,0x655b59c3,0x8f0ccc92,0xffeff47d,0x85845dd1,0x6fa87e4f,0xfe2ce6e0,0xa3014314,0x4e0811a1,0xf7537e82,0xbd3af235,0x2ad7d2bb,0xeb86d391];
-  var S = [7,12,17,22,7,12,17,22,7,12,17,22,7,12,17,22,5,9,14,20,5,9,14,20,5,9,14,20,5,9,14,20,4,11,16,23,4,11,16,23,4,11,16,23,4,11,16,23,6,10,15,21,6,10,15,21,6,10,15,21,6,10,15,21,6,10,15,21];
-  var X = new Array(16);
-  var a0=0x67452301,b0=0xefcdab89,c0=0x98badcfe,d0=0x10325476;
-  var msg = unescape(encodeURIComponent(s));
-  var ml = msg.length;
-  var bitLen = ml * 8;
-  msg += "\x80";
-  while (msg.length % 64 !== 56) msg += "\x00";
-  msg += String.fromCharCode(bitLen&0xff,(bitLen>>>8)&0xff,(bitLen>>>16)&0xff,(bitLen>>>24)&0xff,(bitLen>>>32)&0xff,(bitLen>>>40)&0xff,(bitLen>>>48)&0xff,(bitLen>>>56)&0xff);
-  for (var i = 0; i < msg.length; i += 64) {
-    var a=a0,b=b0,c=c0,d=d0;
-    for (var j = 0; j < 16; j++) X[j] = msg.charCodeAt(i+j*4)|(msg.charCodeAt(i+j*4+1)<<8)|(msg.charCodeAt(i+j*4+2)<<16)|(msg.charCodeAt(i+j*4+3)<<24);
-    for (var j = 0; j < 64; j++) {
-      var g, f, t;
-      if (j < 16) { f=(b&c)|((~b)&d); g=j; }
-      else if (j < 32) { f=(d&b)|((~d)&c); g=(5*j+1)%16; }
-      else if (j < 48) { f=b^c^d; g=(3*j+5)%16; }
-      else { f=c^(b|(~d)); g=(7*j)%16; }
-      t=d; d=c; c=b; b=b+rotl(a+f+K[j]+X[g],S[j]); a=t;
-    }
-    a0+=a; b0+=b; c0+=c; d0+=d;
-  }
-  var r=[a0,b0,c0,d0];
-  var hex="";
-  for (var i=0; i<4; i++) for (var j=0; j<4; j++) hex+=((r[i]>>>(j*8))&0xff).toString(16).padStart(2,"0");
-  return hex;
-}
+var curMangaId = "", allMangas = [], allChapters = [];
 
-function genLzsign(params) {
-  var keys = Object.keys(params).sort();
-  var str = "";
-  for (var i = 0; i < keys.length; i++) str += keys[i] + "=" + params[keys[i]];
-  str += APPSIGN;
-  return md5Js(str).slice(0, 32);
-}
-
-/* API 后端 */
-var BACKEND = "http://ai.xajtl.com";
-/* jina.ai 代理 (HTTPS, 返回 Markdown 包裹的 JSON) */
-var PROXY = "https://r.jina.ai/";
-
-function api(endpoint, extra) {
-  var ts = Math.floor(Date.now()/1000);
-  var p = {platform:PLATFORM, packname:PACKNAME, t:String(ts)};
-  if (extra) for (var k in extra) if(extra.hasOwnProperty(k)) p[k] = extra[k];
-  p.sign = genLzsign(p);
-  var query = "";
-  var keys = Object.keys(p);
-  for (var i = 0; i < keys.length; i++) query += (i>0?"&":"") + keys[i] + "=" + encodeURIComponent(p[keys[i]]);
-  var backendUrl = BACKEND + endpoint + "?" + query;
-  /* 通过 jina.ai 代理转发 HTTPS 请求 */
-  var proxyUrl = PROXY + encodeURIComponent(backendUrl);
-  return fetch(proxyUrl, {
-    headers:{"User-Agent":"Mozilla/5.0"},
-    "signal":AbortSignal.timeout(35000)
-  }).then(function(r){
-    if (!r.ok) throw new Error("HTTP " + r.status);
-    return r.text();
-  }).then(function(text){
-    /* jina 格式: "Title:\n\nURL Source:\n\nMarkdown Content:\n{json}" */
-    var marker = "\n\nMarkdown Content:\n";
-    var idx = text.indexOf(marker);
-    var jsonStr = idx >= 0 ? text.substring(idx + marker.length) : text;
-    return JSON.parse(jsonStr.trim());
-  });
-}
-
-function showView(v) {
-  var tabs = document.querySelectorAll(".tab");
-  for (var i = 0; i < tabs.length; i++) tabs[i].classList.toggle("active", ["list","chapters","reader"].indexOf(v)===i);
+function showView(v){
+  var tabs=document.querySelectorAll(".tab");
+  for(var i=0;i<tabs.length;i++)tabs[i].classList.toggle("active",["list","chapters","reader"].indexOf(v)===i);
   ["mangaGrid","chapterList","readerArea"].forEach(function(id){document.getElementById(id).style.display="none";});
   document.getElementById("navBar").style.display="none";
-  if (v==="list"){document.getElementById("mangaGrid").style.display="grid";document.getElementById("navBar").style.display="flex";}
-  else if (v==="chapters"){document.getElementById("chapterList").style.display="block";document.getElementById("navBar").style.display="flex";}
-  else{document.getElementById("readerArea").style.display="block";}
+  if(v==="list"){document.getElementById("mangaGrid").style.display="grid";document.getElementById("navBar").style.display="flex";document.getElementById("notice").style.display="block";}
+  else if(v==="chapters"){document.getElementById("chapterList").style.display="block";document.getElementById("navBar").style.display="flex";document.getElementById("notice").style.display="none";}
+  else{document.getElementById("readerArea").style.display="block";document.getElementById("notice").style.display="none";}
 }
 
 function s(msg){document.getElementById("status").textContent=msg}
 
-async function loadMangas(){
+function loadMangas(){
   s("加载漫画列表...");
-  try{
-    var d = await api("/app/api/home/data");
-    var items = [];
-    if(d.data&&d.data.home_content_list)items=d.data.home_content_list[0].comic_list||[];
-    else if(d.data&&Array.isArray(d.data))items=d.data;
-    else if(Array.isArray(d.data))items=d.data;
-    allMangas = items.map(function(m){return{id:m.id,title:m.name||m.title||"未知",cover:m.picY?"https://cdn.lzimg.xyz"+m.picY:"",tags:m.tags||"",hits:m.hits||0};});
+  if(typeof EMBEDDED_MANGA_DATA!=="undefined"&&EMBEDDED_MANGA_DATA.length>0){
+    allMangas=EMBEDDED_MANGA_DATA;
     renderMangas(allMangas);
     s("共 "+allMangas.length+" 部漫画");
-  }catch(e){s("加载失败: "+e.message);console.error(e)}
+  }else{
+    s("❌ 数据加载失败，请在本地刷新重试");
+  }
 }
 
 function renderMangas(mangas){
@@ -163,29 +90,21 @@ function renderMangas(mangas){
     var m=mangas[i];
     var card=document.createElement("div");card.className="manga-card";
     (function(mid,mt){card.onclick=function(){loadChapters(mid,mt);};})(m.id,m.title);
-    var img=document.createElement("img");img.className="cover";
-    img.src=m.cover||"";img.onerror=function(){this.style.display="none";};
+    var img=document.createElement("img");img.className="cover";img.src=m.cover||"";img.onerror=function(){this.style.display="none";};
     var title=document.createElement("div");title.className="title";title.textContent=m.title;
-    card.appendChild(img);card.appendChild(title);
-    c.appendChild(card);
+    card.appendChild(img);card.appendChild(title);c.appendChild(card);
   }
 }
 
-async function loadChapters(mangaId,title){
+function loadChapters(mangaId,title){
   curMangaId=mangaId;allChapters=[];
   s("加载章节...");
-  try{
-    var d=await api("/app/api/v2/detail/"+mangaId,{id:mangaId});
-    var ch=[];
-    if(d.data&&Array.isArray(d.data))ch=d.data;
-    else if(d.data&&d.data.chapters)ch=d.data.chapters;
-    else if(d.chapters&&Array.isArray(d.chapters))ch=d.chapters;
-    else if(d.pages&&Array.isArray(d.pages))ch=d.pages;
-    allChapters=ch;
-    renderChapters(title);
-    showView("chapters");
-    s("共 "+allChapters.length+" 章节");
-  }catch(e){s("章节加载失败: "+e.message);console.error(e)}
+  var m=allMangas.find(function(x){return x.id===mangaId;});
+  if(!m){s("漫画未找到");return}
+  allChapters=m.chapters||[];
+  renderChapters(title);
+  showView("chapters");
+  s("共 "+allChapters.length+" 章节");
 }
 
 function renderChapters(title){
@@ -194,64 +113,69 @@ function renderChapters(title){
   c.appendChild(h);
   for(var i=0;i<allChapters.length;i++){
     var ch=allChapters[i];
-    var id=ch.id||ch.chapterId||ch._id;
-    var name=ch.name||ch.title||("章节"+(id||"?"));
     var item=document.createElement("div");item.className="chapter-item";
-    (function(mid,nm){item.onclick=function(){readChapter(mid,nm);};})(id,name);
-    item.innerHTML="<span class='name'>"+name+"</span><span class='arrow'>›</span>";
-    c.appendChild(item);
+    (function(mid,nm){item.onclick=function(){readChapter(mid,nm);};})(String(ch.id||""),ch.name||"");
+    var span=document.createElement("span");span.className="name";span.textContent=ch.name||("章节"+(i+1));
+    var arrow=document.createElement("span");arrow.className="arrow";arrow.innerHTML="›";
+    item.appendChild(span);item.appendChild(arrow);c.appendChild(item);
   }
 }
 
-async function readChapter(chId,title){
+function readChapter(chId,title){
   curChapterId=chId;
   s("加载图片...");
-  try{
-    var d=await api("/app/api/chapter/v2/"+chId,{chapter_id:chId});
-    var area=document.getElementById("readerArea");
-    area.innerHTML="<button class='back-btn' onclick='loadChapters("+JSON.stringify(curMangaId)+",\"\")'>← 返回</button>";
-    var imgs=[];
-    if(d.data&&Array.isArray(d.data))imgs=d.data;
-    else if(d.images&&Array.isArray(d.images))imgs=d.images;
-    else if(d.pages&&Array.isArray(d.pages))imgs=d.pages;
-    else if(d.data&&d.data.pages)imgs=d.data.pages;
-    else if(d.data&&d.data.image_list)imgs=d.data.image_list;
-    else{s("未找到图片");return}
-    var loaded=0;
-    for(var i=0;i<imgs.length;i++){
-      var src=typeof imgs[i]==="string"?imgs[i]:(imgs[i].url||imgs[i].src||imgs[i].image||imgs[i].path||"");
-      if(src&&!src.startsWith("http"))src="https://cdn.lzimg.xyz"+src;
-      if(!src)continue;
-      var el=document.createElement("img");
-      el.src=src;
-      el.style.cssText="width:100%;margin-bottom:4px;border-radius:4px;background:#2a2a4a;min-height:200px;";
-      el.onerror=function(){
-        if(this.src.includes("cdn.lzimg.xyz")){this.src=this.src.replace("https://cdn.lzimg.xyz","http://img.mechat.fun");}
-        else{this.style.display="none";this.alt="加载失败";}
-      };
-      area.appendChild(el);
-      loaded++;
-      s("已加载 "+loaded+"/"+imgs.length+" 张");
-    }
-    showView("reader");
-    s("共 "+loaded+" 张图片");
-  }catch(e){s("图片加载失败: "+e.message);console.error(e)}
+  var area=document.getElementById("readerArea");
+  // Find the manga first
+  var m=allMangas.find(function(x){return String(x.id)===String(curMangaId);});
+  if(!m){area.innerHTML="<p>漫画未找到</p>";showView("reader");return}
+  area.innerHTML="<button class='back-btn' onclick='backToChapters()'>← 返回章节</button>";
+  // Show notice about sample images
+  var notice=document.createElement("div");notice.className="notice";
+  notice.textContent="提示：本页展示嵌入数据中的预览图片，完整章节图片可在本地服务器中查看更多。";
+  area.appendChild(notice);
+  var pics=m.sample_pics||[];
+  if(pics.length===0){
+    var ph=document.createElement("div");ph.className="placeholder";ph.textContent="暂无预览图片";
+    area.appendChild(ph);
+    s("暂无预览图片");
+  }
+  var loaded=0;
+  for(var i=0;i<pics.length;i++){
+    var src=pics[i];
+    if(!src)continue;
+    var el=document.createElement("img");
+    el.src=src;
+    el.style.cssText="width:100%;margin-bottom:4px;border-radius:4px;background:#2a2a4a;min-height:200px;";
+    el.onerror=function(){this.style.display="none";var ph=document.createElement("div");ph.className="placeholder";ph.textContent="图片加载失败 (网络问题)";this.parentNode.insertBefore(ph,this);};
+    area.appendChild(el);
+    loaded++;
+    s("已加载 "+loaded+"/"+pics.length+" 张");
+  }
+  if(loaded===0){s("暂无图片");}
+  else{s("共 "+loaded+" 张图片");}
+  showView("reader");
 }
 
-async function doSearch(){
+function backToChapters(){
+  var m=allMangas.find(function(x){return x.id===curMangaId;});
+  if(m){renderChapters(m.title);}
+  showView("chapters");
+}
+
+function doSearch(){
   var q=document.getElementById("searchInput").value.trim();
-  if(!q){s("请输入搜索关键词");return}
+  if(!q){s("请输入关键词");return}
   s("搜索中...");
-  try{
-    var d=await api("/app/api/search/suggest",{q:q});
-    var items=[];
-    if(d.data&&d.data.search_suggest)items=d.data.search_suggest;
-    else if(d.data&&Array.isArray(d.data))items=d.data;
-    else if(Array.isArray(d.data))items=d.data;
-    allMangas=items.map(function(m){return{id:m.id,title:m.name||m.title||"未知",cover:m.picY?"https://cdn.lzimg.xyz"+m.picY:"",tags:m.tags||"",hits:m.hits||0};});
-    renderMangas(allMangas);
-    s("搜索「"+q+"」→ "+allMangas.length+" 结果");
-  }catch(e){s("搜索失败: "+e.message);console.error(e)}
+  var results=allMangas.filter(function(m){
+    return m.title.indexOf(q)!==-1||m.tags.indexOf(q)!==-1;
+  });
+  if(results.length>0){
+    renderMangas(results);
+    showView("list");
+    s("搜索「"+q+"」→ "+results.length+" 结果");
+  }else{
+    s("搜索「"+q+"」→ 0 结果");
+  }
 }
 
 loadMangas();
