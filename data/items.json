@@ -13616,6 +13616,37 @@
       "note": "没有网页版链接，需要在微信内搜索公众号名称关注。公众号名可能变动或被封，搜不到时试另一个名字。"
     },
     {
+      "id": "manual-manga-7",
+      "name": "瓜子漫画（免费国漫在线）",
+      "section": "manga",
+      "subsection": "site",
+      "description": "免费漫画在线阅读站，主打国漫，每日更新（首页显示今日更新 70+ 部）。题材全：热血、玄幻、都市、恋爱、古风、穿越、耽美、霸总、校园、悬疑、冒险、搞笑等，有更新/排行/分类页和人气·新作·收藏·畅销多种榜单。免登录直接看，另提供 APP 下载。",
+      "url": "https://www.guazimanhua.com/",
+      "links": [
+        {
+          "name": "瓜子漫画官网",
+          "url": "https://www.guazimanhua.com/",
+          "password": ""
+        },
+        {
+          "name": "APP 下载",
+          "url": "https://d.guazimanhua.com/",
+          "password": ""
+        }
+      ],
+      "tags": [
+        "国漫",
+        "免费在线",
+        "每日更新",
+        "免登录",
+        "有APP"
+      ],
+      "kind": "在线漫画网站",
+      "need_login": false,
+      "update_info": "每日更新",
+      "note": "实测国内可直连（首页 200）。作品页形如 /comic.php?id=NNNNN，更新 /update.php、排行 /top.php、分类 /category.php。图片走 img.guazicdn.com CDN。以国漫为主，也有部分韩漫/日漫。站内含耽美等题材，介意自行筛选。"
+    },
+    {
       "id": "manual-manga-6",
       "name": "툰코 tkor149（韩版漫画 / 韩文原版）",
       "section": "manga",
