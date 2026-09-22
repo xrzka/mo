@@ -100,6 +100,15 @@
         { id: "guide", label: "教程" },
       ],
     },
+    // 随手安利：看到啥好东西随手丢进来，按四大类简单分一下。
+    { id: "pickup", label: "随手安利", icon: "🛍",
+      subs: [
+        { id: "novel", label: "小说" },
+        { id: "manga", label: "漫画" },
+        { id: "anime", label: "动画" },
+        { id: "game", label: "游戏" },
+      ],
+    },
     // CS 区：以图片为主（只展示发布过的图）。条目里带 image 字段时，
     // 卡片主体直接展示那张图，不做链接型卡片。
     { id: "cs", label: "CS", icon: "🩹" },
