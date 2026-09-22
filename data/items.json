@@ -13647,6 +13647,25 @@
       "note": "实测国内可直连（首页 200）。作品页形如 /comic.php?id=NNNNN，更新 /update.php、排行 /top.php、分类 /category.php。图片走 img.guazicdn.com CDN。以国漫为主，也有部分韩漫/日漫。站内含耽美等题材，介意自行筛选。"
     },
     {
+      "id": "manual-manga-8",
+      "name": "奇漫屋（免费漫画在线）",
+      "section": "manga",
+      "subsection": "site",
+      "description": "免费漫画在线观看站，热门 + 最新最全，以韩漫/条漫为主，也有国漫。有更新、排行榜（周榜/月榜/收藏）、漫画分类页（韩国、咚漫、原创、恋爱、都市、西幻、宅斗、青春等标签）。免登录直接看。收录的热门有季节之交、错撩、诱敌深入、针锋对决、偷偷藏不住、斗罗大陆、元尊等。",
+      "url": "https://www.qimanwu.app/",
+      "tags": [
+        "韩漫为主",
+        "免费在线",
+        "热门漫画",
+        "免登录",
+        "需代理"
+      ],
+      "kind": "在线漫画网站",
+      "need_login": false,
+      "update_info": "每日更新",
+      "note": "实测国内直连打不开（ERR_CONNECTION_TIMED_OUT），挂代理（本机 7890）走得通、返回 200。所以标「需代理」。作品页形如 /comic/XXXX（短码），更新 /custom/update、排行 /custom/top、分类 /category（标签 /category/tags/NNN）。以韩漫条漫为主，站内有 BL/宅向等题材，介意自行筛选。这类站域名常换，打不开时搜「奇漫屋」找当前域名。"
+    },
+    {
       "id": "manual-manga-6",
       "name": "툰코 tkor149（韩版漫画 / 韩文原版）",
       "section": "manga",
