@@ -13747,6 +13747,42 @@
       "note": "实测国内可直连（首页 200，无需代理）。内容极全：日本动画/国产动画/剧场版/真人特摄（假面骑士、奥特曼）/动态漫画，大量 4K，日语和国语配音都有。有 VIP 和收藏夹功能（应可免费看，VIP 可能是去广告/抢先）。联系邮箱 s@xgcartoon.com，页脚有 DMCA。域名可能变动，打不开时搜「西瓜卡通」找当前域名。"
     },
     {
+      "id": "manual-anime-5",
+      "name": "AGE动漫（agefans，在线看番）",
+      "section": "anime",
+      "subsection": "site",
+      "description": "老牌日本动漫在线站，以新番追更为主，每日/每周更新，有目录、一周更新（按周一到周日放送列表）、排行榜。收录当季新番和大量经典番。免登录看，也提供客户端。是国内最知名的看番站之一。",
+      "url": "https://www.agedm.io/",
+      "links": [
+        {
+          "name": "AGE动漫（主）",
+          "url": "https://www.agedm.io/",
+          "password": ""
+        },
+        {
+          "name": "备用 age.tv",
+          "url": "https://www.age.tv/",
+          "password": ""
+        },
+        {
+          "name": "地址发布页（GitHub）",
+          "url": "https://github.com/agefanscom/website",
+          "password": ""
+        }
+      ],
+      "tags": [
+        "日本新番",
+        "在线看番",
+        "每周更新",
+        "免登录",
+        "有客户端"
+      ],
+      "kind": "在线动画网站",
+      "need_login": false,
+      "update_info": "每日/每周更新",
+      "note": "实测国内可直连（首页 200，无需代理）。以日番追更为主，有一周放送列表和排行榜，建议用 Chrome。永久地址：age.tv / agefans.com / agedm.com，域名常被封，地址发布页在 GitHub github.com/agefanscom/website 和 rentry.org/agefans。站方声明「未在任何应用商店上架 APP，官网下载是唯一渠道，谨防假冒 APP 骗局」。只提供 web 页面、不存储影片。联系 agefans@gmail.com。"
+    },
+    {
       "id": "manual-manga-8",
       "name": "奇漫屋（免费漫画在线）",
       "section": "manga",
