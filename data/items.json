@@ -813,6 +813,31 @@
       ]
     },
     {
+      "id": "manual-novel-9",
+      "name": "哔哩轻小说（linovelib）",
+      "section": "novel",
+      "subsection": "site",
+      "description": "日本动漫轻小说在线阅读平台，持续更新。有分类、最新、排行、完结、热门等板块，收录大量日轻中文翻译。是国内常用的轻小说在线站之一，本地脚本库也有配套抓取脚本。",
+      "url": "https://www.linovelib.com/",
+      "tags": [
+        "日轻",
+        "轻小说",
+        "在线阅读",
+        "免登录",
+        "每日更新"
+      ],
+      "kind": "在线轻小说网站",
+      "need_login": false,
+      "update_info": "每日更新",
+      "note": "实测国内可直连（首页 200）。板块：分类 /top/newhot/、最新 /top/lastupdate/、排行 /top/monthvisit/、完结、热门。以日本轻小说中文翻译为主。注意：linovelib 正文页有字体加密/反爬（部分章节文字用自定义字体混淆），网页直接看没问题，抓取需处理字体映射——本地脚本库 ~/.dsh/scripts 有 linovelib 抓取脚本可复用。域名可能变动（曾用 w.linovelib.com 等）。",
+      "also_in": [
+        {
+          "section": "novel",
+          "subsection": "jp"
+        }
+      ]
+    },
+    {
       "id": "manual-novel-2",
       "name": "新书兔 toki31（뉴토끼 新版）",
       "section": "novel",
