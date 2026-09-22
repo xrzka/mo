@@ -2420,6 +2420,24 @@
       "note": "实测国内可直连（首页 200）。节点：AI / 编程开发 / VPS / 白嫖(baipiao) / 羊毛 / 抽奖(lottery) / 交易(trade) / 闲聊 等。常见福利：免费模型额度（GPT Astra/Sol/Fable、grok4.7、GLM 5.3 Flash 等）、免费 VPS/主机、免费域名/邮箱/网盘、抽奖送号送鸡。有能量星球、开放登录、Wiki 文档。看帖免登录，发帖/回帖需注册。和 Linux.do、烧饼社区(linux.sb)同类，都是白嫖圈的信息源。"
     },
     {
+      "id": "manual-forum-3",
+      "name": "LINUX DO",
+      "section": "forum",
+      "description": "国内最活跃的开发者/技术爱好者社区之一（基于 Discourse 搭建，自称「新的理想型社区」），分享文化浓。板块含开发调优、资源荟萃、福利羊毛、跳蚤市场、非首页(闲聊)、文档共建等。大量免费 AI 中转站额度、白嫖教程、脚本、内测邀请码从这里流出，是白嫖/羊毛圈最核心的信息源。很多中转站会要求「Linux.do 账号 + 信任等级」才给注册或授权登录，所以有个 L.do 账号相当有用。",
+      "url": "https://linux.do/",
+      "tags": [
+        "开发者社区",
+        "AI 资源",
+        "白嫖羊毛",
+        "邀请注册",
+        "信任等级"
+      ],
+      "kind": "论坛 / 社区",
+      "need_login": false,
+      "update_info": "每日活跃",
+      "note": "⚠ 收录时无法抓取实时内容：国内直连超时（ERR_CONNECTION_TIMED_OUT），挂代理也被 Cloudflare 挡（403），以下据公开已知信息记录。基于 Discourse，有信任等级(Trust Level)体系：新号 TL0，靠活跃度升到 TL1/TL2 才解锁更多权限，很多中转站/服务用 L.do 授权登录并卡信任等级≥1。注册需邮箱，历史上时开时关、常需邀请。看帖一般免登录。是 NodeLoc、烧饼社区(linux.sb)的同类且更主流。访问可能需要代理。"
+    },
+    {
       "id": "gal-58c92bd92d",
       "name": "电脑解压教程",
       "section": "tool",
