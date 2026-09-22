@@ -1547,6 +1547,15 @@ h1 {
   font-size: 13px;
   line-height: 1.8;
 }
+.notice-list {
+  margin: 0;
+  padding-left: 20px;
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.8;
+}
+.notice-list li { margin: 0 0 4px; }
+.notice-list li:last-child { margin-bottom: 0; }
 
 .site-footer {
   padding: 24px clamp(16px, 4vw, 40px) 32px;
