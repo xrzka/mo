@@ -13697,6 +13697,32 @@
       "note": "没有网页版链接，需要在微信内搜索公众号名称关注。公众号名可能变动或被封，搜不到时试另一个名字。"
     },
     {
+      "id": "manual-pickup-1",
+      "name": "初雪的「雪顶」咖啡（画师 BrilliantNeko）",
+      "section": "pickup",
+      "subsection": "manga",
+      "description": "画师 BrilliantNeko 的作品《初雪的「雪顶」咖啡》。随手安利的一部漫画/插画作品，作者 P 站（Pixiv）名 BrilliantNeko。想看作者更多图可按名字在 Pixiv 上搜。",
+      "url": "https://www.pixiv.net/en/search/users?nick=BrilliantNeko",
+      "links": [
+        {
+          "name": "Pixiv 搜作者 BrilliantNeko",
+          "url": "https://www.pixiv.net/en/search/users?nick=BrilliantNeko",
+          "password": ""
+        }
+      ],
+      "tags": [
+        "漫画",
+        "插画",
+        "画师BrilliantNeko",
+        "Pixiv",
+        "随手安利"
+      ],
+      "kind": "漫画 / 画师作品",
+      "need_login": false,
+      "update_info": "随手收录",
+      "note": "随手安利的作品，收录时未查到公开的详情页/在线源，先按「作品名 + 画师 P 站名 BrilliantNeko」记着。链接指向 Pixiv 的作者搜索，Pixiv 部分内容需登录、可能含 R18，请自行判断。找不到时也可用「初雪的雪顶咖啡 BrilliantNeko」在搜索引擎里找当前可看的地址。"
+    },
+    {
       "id": "manual-manga-7",
       "name": "瓜子漫画（免费国漫在线）",
       "section": "manga",
