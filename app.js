@@ -388,10 +388,12 @@
     },
   };
 
-  /* ---------- 点赞 & 收藏（本机 localStorage） ---------- */
-  // 点赞：点赞过的卡片在列表里置顶（点赞多的排前面）。收藏：加进个人收藏，
-  // 可用「只看收藏」筛出常用/喜欢的资源。两者都只存本机，不上传后端。
-  const LIKES_KEY = "mo-likes-v1";
+  /* ---------- 点赞 & 收藏 ---------- */
+  // 点赞：全站共享计数（存共用 Cloudflare D1），所有访客一起累加，是真正的
+  // 热度榜；点赞过的卡片在列表里置顶。localStorage 只记「本机赞过哪些」，
+  // 保证每台设备净贡献 +1，后端离线时退回纯本机。
+  // 收藏：加进个人收藏，可用「只看收藏」筛出常用/喜欢的资源，只存本机。
+  const LIKES_KEY = "mo-likes-v1";  // 本机赞过的 id：{ id: 1 }
   const FAVS_KEY = "mo-favs-v1";
   const readMap = (key) => {
     try {
@@ -399,24 +401,65 @@
       return o && typeof o === "object" ? o : {};
     } catch { return {}; }
   };
-  const likesMap = readMap(LIKES_KEY);
+  const myLikes = readMap(LIKES_KEY);
   const favsMap = readMap(FAVS_KEY);
-  const likeCountOf = (id) => (typeof likesMap[id] === "number" && likesMap[id] > 0 ? likesMap[id] : 0);
+  const likeTotals = {};             // 全站计数 { id: n }，从后端拉取
+  const likeCountOf = (id) => (typeof likeTotals[id] === "number" && likeTotals[id] > 0 ? likeTotals[id] : 0);
+  const likedByMe = (id) => myLikes[id] === 1;
   const isFav = (id) => favsMap[id] === true || favsMap[id] === 1;
   const favCount = () => Object.keys(favsMap).filter((k) => isFav(k)).length;
   const persist = (key, map) => {
     try { localStorage.setItem(key, JSON.stringify(map)); } catch { /* 隐私模式忽略 */ }
-  };
-  const toggleLike = (id) => {
-    if (likeCountOf(id) > 0) delete likesMap[id];
-    else likesMap[id] = 1;
-    persist(LIKES_KEY, likesMap);
   };
   const toggleFav = (id) => {
     if (isFav(id)) delete favsMap[id];
     else favsMap[id] = true;
     persist(FAVS_KEY, favsMap);
   };
+
+  // 点赞接口走 stats 用的同一批候选地址（statsApi）。
+  const likeApiBases = () => {
+    const cfg = window.MO_CONFIG || {};
+    const raw = cfg.statsApi;
+    return (Array.isArray(raw) ? raw : raw ? [raw] : [])
+      .map((s) => String(s || "").trim().replace(/\/+$/, ""))
+      .filter(Boolean);
+  };
+  async function loadLikes() {
+    const bases = likeApiBases();
+    for (const base of bases) {
+      try {
+        const res = await fetch(base + "/api/likes?site=mo", { cache: "no-store" });
+        if (!res.ok) continue;
+        const data = await res.json();
+        Object.assign(likeTotals, data.likes || {});
+        return;
+      } catch { /* 换下一个入口 */ }
+    }
+  }
+  // 点赞/取消：乐观更新 + 重排，再打后端。
+  async function toggleLike(id) {
+    const wasLiked = likedByMe(id);
+    const op = wasLiked ? "unlike" : "like";
+    if (wasLiked) { delete myLikes[id]; likeTotals[id] = Math.max((likeTotals[id] || 0) - 1, 0); }
+    else { myLikes[id] = 1; likeTotals[id] = (likeTotals[id] || 0) + 1; }
+    persist(LIKES_KEY, myLikes);
+    renderFeed();
+    const bases = likeApiBases();
+    for (const base of bases) {
+      try {
+        const res = await fetch(base + "/api/likes/toggle", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ site: "mo", id, op }),
+        });
+        if (!res.ok) continue;
+        const data = await res.json();
+        if (typeof data.n === "number") { likeTotals[id] = data.n; renderFeed(); }
+        return;
+      } catch { /* 换下一个入口 */ }
+    }
+  }
 
   const state = {
     items: [],
@@ -1080,16 +1123,16 @@
     if (likeBtn) {
       const syncLike = () => {
         const n = likeCountOf(item.id);
-        likeBtn.setAttribute("aria-pressed", n > 0 ? "true" : "false");
-        likeBtn.classList.toggle("liked", n > 0);
+        const mine = likedByMe(item.id);
+        likeBtn.setAttribute("aria-pressed", mine ? "true" : "false");
+        likeBtn.classList.toggle("liked", mine);
         if (likeCountEl) likeCountEl.textContent = String(n);
-        likeBtn.title = n > 0 ? "已点赞（置顶）· 点击取消" : "点赞置顶";
+        likeBtn.title = mine ? "已点赞 · 点击取消" : "点赞（全站累计）";
       };
       syncLike();
       likeBtn.addEventListener("click", (e) => {
         e.stopPropagation();
         toggleLike(item.id);
-        renderFeed();
       });
     }
 
@@ -5907,6 +5950,8 @@
       $("[data-footer-updated]").textContent = fmtDate(state.generatedAt);
       renderModeUI();
       render();
+      // 全站点赞数后到：拉到就重排一次（点赞多的置顶）。
+      loadLikes().then(() => renderFeed());
       // 远端统计后到：拉到就重渲染，拉不到保持本机数据，不影响已渲染的页面
       if (await stats.pull()) {
         stats.reportVisit();

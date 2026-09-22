@@ -2036,6 +2036,50 @@ async function recordVisit(env, request) {
   }
 }
 
+/* ---------- 全站共享点赞 ---------- */
+
+/** 点赞的站点白名单。mo = 第二站，board = 第一站。 */
+const LIKE_SITES = new Set(["mo", "board"]);
+
+/** 读某个站的全部点赞数（只返回 n>0 的）。公开读，供前端排序 + 显示。 */
+async function readLikes(env, site) {
+  const { results } = await env.DB
+    .prepare("SELECT item, n FROM likes WHERE site = ? AND n > 0")
+    .bind(site)
+    .all();
+  return { likes: Object.fromEntries((results || []).map((r) => [r.item, r.n])) };
+}
+
+/**
+ * 点赞 +1 / 取消 -1。前端 localStorage 保证每台设备最多净 +1，
+ * 这里只把计数落库并 clamp 到 >=0（取消从未赞过的条目不会变成负数）。
+ */
+async function bumpLike(env, site, id, op) {
+  if (op === "like") {
+    await env.DB
+      .prepare(
+        `INSERT INTO likes (site, item, n) VALUES (?, ?, 1)
+         ON CONFLICT (site, item) DO UPDATE SET n = n + 1`
+      )
+      .bind(site, id)
+      .run();
+  } else {
+    // 取消：不为负。用 max(n-1,0)
+    await env.DB
+      .prepare(
+        `INSERT INTO likes (site, item, n) VALUES (?, ?, 0)
+         ON CONFLICT (site, item) DO UPDATE SET n = MAX(n - 1, 0)`
+      )
+      .bind(site, id)
+      .run();
+  }
+  const row = await env.DB
+    .prepare("SELECT n FROM likes WHERE site = ? AND item = ?")
+    .bind(site, id)
+    .first();
+  return row ? row.n : 0;
+}
+
 /** 各周期 Top N 点击 + 访问人数。 */
 async function readStats(env) {
   const b = buckets();
@@ -2871,6 +2915,31 @@ export default {
 
         await recordVisit(env, request);
         return json({ ok: true }, request);
+      }
+
+      /* ---------- 全站共享点赞（两站共用） ---------- */
+
+      // 公开读：返回某站所有 n>0 的点赞数，前端用来排序和显示热度。
+      if (url.pathname === "/api/likes" && request.method === "GET") {
+        const site = url.searchParams.get("site") || "";
+        if (!LIKE_SITES.has(site)) return json({ error: "bad site" }, request, 400);
+        return json(await readLikes(env, site), request);
+      }
+
+      // 写：点赞 / 取消。POST 已被上面的 CORS 白名单拦过（非 xrzka.github.io 直接 403）。
+      if (url.pathname === "/api/likes/toggle" && request.method === "POST") {
+        const ip = request.headers.get("CF-Connecting-IP") || "";
+        if (await rateLimited(env, ip)) return json({ error: "too many requests" }, request, 429);
+
+        const body = await request.json().catch(() => ({}));
+        const site = typeof body.site === "string" ? body.site : "";
+        const id = typeof body.id === "string" ? body.id : "";
+        const op = body.op === "unlike" ? "unlike" : "like";
+        if (!LIKE_SITES.has(site)) return json({ error: "bad site" }, request, 400);
+        if (!ID_RE.test(id)) return json({ error: "bad id" }, request, 400);
+
+        const n = await bumpLike(env, site, id, op);
+        return json({ ok: true, n }, request);
       }
 
       /* ---------- 资源帮找 / 失效反馈 ---------- */

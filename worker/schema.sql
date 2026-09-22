@@ -30,6 +30,21 @@ CREATE TABLE IF NOT EXISTS seen (
 CREATE INDEX IF NOT EXISTS idx_seen_day ON seen (day);
 
 -- ---------------------------------------------------------------
+-- 全站共享点赞数（两站共用一张表，用 site 区分）
+-- ---------------------------------------------------------------
+-- site: 'mo' 第二站 / 'board' 第一站。item 是各自站内的条目 id。
+-- 累计计数，不去重到人：前端用 localStorage 记住本机是否已赞，正常情况下
+-- 每台设备最多净贡献 +1（取消赞发 -1），避免同一人反复刷。服务端只做
+-- 「按 IP 限流 + n 不为负」的兜底。点赞多的条目在前端排到前面。
+CREATE TABLE IF NOT EXISTS likes (
+  site TEXT NOT NULL,
+  item TEXT NOT NULL,
+  n    INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (site, item)
+);
+CREATE INDEX IF NOT EXISTS idx_likes_site_n ON likes (site, n DESC);
+
+-- ---------------------------------------------------------------
 -- 资源帮找 / 失效反馈：同一张表，用 kind 区分
 -- ---------------------------------------------------------------
 
