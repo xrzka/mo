@@ -100,7 +100,7 @@ const SECTION_SUBS = {
   music: ["site", "app", "download"],
   study: ["course", "video", "doc"],
   tool: [],
-  ai: ["relay", "image", "tool"],
+  ai: ["relay", "image", "video", "tool"],
   forum: [],
   guide: [],
   collection: ["site", "app", "cloud", "doc", "guide"],

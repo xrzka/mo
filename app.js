@@ -86,6 +86,7 @@
       subs: [
         { id: "relay", label: "中转站" },
         { id: "image", label: "生图" },
+        { id: "video", label: "视频" },
         { id: "tool", label: "工具" },
       ],
     },

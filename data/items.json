@@ -14412,6 +14412,24 @@
         "cs/cs-bili-2-2.jpg",
         "cs/cs-bili-2-3.jpg"
       ]
+    },
+    {
+      "id": "manual-ai-video-updream",
+      "name": "updream（哔哩哔哩 AI 视频创作助手）",
+      "section": "ai",
+      "subsection": "video",
+      "description": "哔哩哔哩官方自研的 AI 视频创作产品，面向 B 站广大 UP 主，用 AI 辅助完成视频创作。网页端打开即用。",
+      "url": "https://www.updream.cn/",
+      "tags": [
+        "AI 视频",
+        "哔哩哔哩自研",
+        "视频创作",
+        "面向 UP 主"
+      ],
+      "kind": "AI 视频创作工具",
+      "need_login": true,
+      "update_info": "随时可用",
+      "note": "updream 是哔哩哔哩（B 站）官方自研的 AI 视频创作助手，面向 B 站 UP 主。使用需登录 B 站账号。"
     }
   ]
 }
