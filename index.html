@@ -10,12 +10,12 @@
     />
     <title>墨小说漫画 · 资源导航</title>
     <script src="config.js?v=20260915l"></script>
-    <link rel="stylesheet" href="styles.css?v=20260922a" />
+    <link rel="stylesheet" href="styles.css?v=20260922b" />
     <!-- EPUB 本质是 zip。固定版本并随站点托管，不依赖第三方 CDN 运行。 -->
     <script src="vendor/jszip.min.js?v=3.10.1" defer></script>
     <!-- 动画区自建播放器：hls.js 播 m3u8（Safari 走原生，其余走 MSE） -->
     <script src="vendor/hls.min.js?v=1.5.13" defer></script>
-    <script src="app.js?v=20260919b" defer></script>
+    <script src="app.js?v=20260922b" defer></script>
   </head>
   <body>
     <a class="skip-link" href="#feed">跳到资源列表</a>
@@ -242,6 +242,11 @@
               <option value="hits-all">点击数 · 累计</option>
             </select>
           </div>
+          <div class="control fav-only-control">
+            <button type="button" class="fav-only-btn" data-fav-only aria-pressed="false">
+              <span aria-hidden="true">★</span> 只看收藏 <span class="fav-only-count" data-fav-only-count></span>
+            </button>
+          </div>
         </form>
 
         <p class="result-count" data-result-count aria-live="polite"></p>
@@ -377,6 +382,12 @@
               <h3 class="card-title" data-field="name"></h3>
               <span class="section-pill" data-field="section"></span>
               <span class="hits-pill" data-field="hits" hidden></span>
+              <button type="button" class="fav-btn" data-field="favBtn" aria-pressed="false" title="收藏">
+                <span aria-hidden="true">☆</span>
+              </button>
+              <button type="button" class="like-btn" data-field="likeBtn" aria-pressed="false" title="点赞置顶">
+                <span class="like-ico" aria-hidden="true">♥</span><span class="like-count" data-field="likeCount">0</span>
+              </button>
             </div>
             <p class="card-desc" data-field="description"></p>
             <ul class="tag-list" data-field="tags"></ul>

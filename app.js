@@ -388,6 +388,36 @@
     },
   };
 
+  /* ---------- 点赞 & 收藏（本机 localStorage） ---------- */
+  // 点赞：点赞过的卡片在列表里置顶（点赞多的排前面）。收藏：加进个人收藏，
+  // 可用「只看收藏」筛出常用/喜欢的资源。两者都只存本机，不上传后端。
+  const LIKES_KEY = "mo-likes-v1";
+  const FAVS_KEY = "mo-favs-v1";
+  const readMap = (key) => {
+    try {
+      const o = JSON.parse(localStorage.getItem(key) || "{}");
+      return o && typeof o === "object" ? o : {};
+    } catch { return {}; }
+  };
+  const likesMap = readMap(LIKES_KEY);
+  const favsMap = readMap(FAVS_KEY);
+  const likeCountOf = (id) => (typeof likesMap[id] === "number" && likesMap[id] > 0 ? likesMap[id] : 0);
+  const isFav = (id) => favsMap[id] === true || favsMap[id] === 1;
+  const favCount = () => Object.keys(favsMap).filter((k) => isFav(k)).length;
+  const persist = (key, map) => {
+    try { localStorage.setItem(key, JSON.stringify(map)); } catch { /* 隐私模式忽略 */ }
+  };
+  const toggleLike = (id) => {
+    if (likeCountOf(id) > 0) delete likesMap[id];
+    else likesMap[id] = 1;
+    persist(LIKES_KEY, likesMap);
+  };
+  const toggleFav = (id) => {
+    if (isFav(id)) delete favsMap[id];
+    else favsMap[id] = true;
+    persist(FAVS_KEY, favsMap);
+  };
+
   const state = {
     items: [],
     // 观看区由 APK 的网页逻辑适配；数据通过同源 Worker 白名单接口读取。
@@ -416,6 +446,7 @@
     page: 1,
     pageSize: DEFAULT_PAGE_SIZE,
     sort: "default", // default | hits-<period>
+    favOnly: false, // 只看收藏
     statsPeriod: "day", // 排行榜当前展示的周期
     statsOpen: false,
     wantedOpen: false,
@@ -788,15 +819,24 @@
     state.sort.startsWith("hits-") ? state.sort.slice("hits-".length) : null;
 
   const visibleItems = () => {
-    const list = allowedItems().filter(
+    let list = allowedItems().filter(
       (it) => inSection(it, state.section, state.sub) && matchesQuery(it, state.q)
     );
+    // 「只看收藏」：仅保留本机收藏过的条目
+    if (state.favOnly) list = list.filter((it) => isFav(it.id));
     const period = sortPeriod();
-    if (!period) return list;
-    // 点击数相同时按名称排，否则每次渲染顺序会飘（数据里大量 0 次）
+    // 点赞过的卡片一律置顶（点赞多的排前面），其余维持所选排序。
+    // 默认排序下未点赞的按原始加入顺序；点击排序下未点赞的按点击数。
+    const base = period
+      ? (a, b) => {
+          const d = stats.hits(b.id, period) - stats.hits(a.id, period);
+          return d !== 0 ? d : a.name.localeCompare(b.name, "zh-CN");
+        }
+      : null;
     return list.slice().sort((a, b) => {
-      const d = stats.hits(b.id, period) - stats.hits(a.id, period);
-      return d !== 0 ? d : a.name.localeCompare(b.name, "zh-CN");
+      const la = likeCountOf(a.id), lb = likeCountOf(b.id);
+      if (lb !== la) return lb - la;      // 点赞的排前面
+      return base ? base(a, b) : 0;        // 同层维持原顺序 / 点击排序
     });
   };
 
@@ -1033,6 +1073,46 @@
       }
     };
     paintHits();
+
+    // 点赞按钮：本机记录，点赞后卡片置顶。阻止冒泡以免触发卡片展开。
+    const likeBtn = field("likeBtn");
+    const likeCountEl = field("likeCount");
+    if (likeBtn) {
+      const syncLike = () => {
+        const n = likeCountOf(item.id);
+        likeBtn.setAttribute("aria-pressed", n > 0 ? "true" : "false");
+        likeBtn.classList.toggle("liked", n > 0);
+        if (likeCountEl) likeCountEl.textContent = String(n);
+        likeBtn.title = n > 0 ? "已点赞（置顶）· 点击取消" : "点赞置顶";
+      };
+      syncLike();
+      likeBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        toggleLike(item.id);
+        renderFeed();
+      });
+    }
+
+    // 收藏按钮：加入个人收藏，可用「只看收藏」筛出。
+    const favBtn = field("favBtn");
+    if (favBtn) {
+      const syncFav = () => {
+        const on = isFav(item.id);
+        favBtn.setAttribute("aria-pressed", on ? "true" : "false");
+        favBtn.classList.toggle("faved", on);
+        favBtn.querySelector("span").textContent = on ? "★" : "☆";
+        favBtn.title = on ? "已收藏 · 点击取消" : "收藏";
+      };
+      syncFav();
+      favBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        toggleFav(item.id);
+        syncFav();
+        renderFavOnlyControl();
+        // 正在「只看收藏」时取消收藏，要把它从列表里移除
+        if (state.favOnly) renderFeed();
+      });
+    }
 
     // 提取码：多个网盘源可能各有各的码，所以放在每个源的按钮旁边
     const pwWrap = field("passwordWrap");
@@ -5746,6 +5826,30 @@
         state.page = 1; // 换排序后原页码没有意义
         render();
       });
+    }
+
+    const favOnlyBtn = $("[data-fav-only]");
+    if (favOnlyBtn) {
+      favOnlyBtn.addEventListener("click", () => {
+        state.favOnly = !state.favOnly;
+        state.page = 1;
+        renderFavOnlyControl();
+        render();
+      });
+    }
+    renderFavOnlyControl();
+  }
+
+  /** 「只看收藏」按钮的状态与计数同步。 */
+  function renderFavOnlyControl() {
+    const btn = $("[data-fav-only]");
+    if (!btn) return;
+    btn.setAttribute("aria-pressed", String(state.favOnly));
+    btn.classList.toggle("active", state.favOnly);
+    const cnt = $("[data-fav-only-count]");
+    if (cnt) {
+      const n = favCount();
+      cnt.textContent = n ? `(${n})` : "";
     }
   }
 
