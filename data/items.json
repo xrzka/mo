@@ -13690,6 +13690,38 @@
       "note": "实测国内可直连（首页 200，无需代理）。有漫画分类/最近更新/热门/随机推荐板块，国漫日漫韩漫都有。站方声明「所有内容均收集自互联网」。运营年份标 2022–2026。这类站域名可能变动，打不开时搜「W漫画」找当前域名。"
     },
     {
+      "id": "manual-manga-12",
+      "name": "漫蛙 MANWA（网页入口）",
+      "section": "manga",
+      "subsection": "site",
+      "description": "以韩漫为主的漫画站，大量 19R 成人向 BL/耽美/TL 内容，也有部分全年龄条漫。有分类、排行、书架、漫单广场、签到、VIP 无码专区。收录周一的救星、错撩、说谎的小狗会被吃掉的、小蘑菇等。需登录看完整内容，VIP 可看无码/无广告。",
+      "url": "https://manwaxu.cc/",
+      "links": [
+        {
+          "name": "漫蛙网页入口",
+          "url": "https://manwaxu.cc/",
+          "password": ""
+        },
+        {
+          "name": "防失联地址 manwala.cc",
+          "url": "https://manwala.cc/",
+          "password": ""
+        }
+      ],
+      "tags": [
+        "韩漫",
+        "BL/耽美",
+        "19R成人",
+        "需登录",
+        "VIP无码"
+      ],
+      "kind": "在线漫画网站",
+      "need_login": true,
+      "update_info": "每日更新",
+      "note": "实测国内可直连（首页 200）。以韩漫为主，站内绝大多数是 19R 成人向 BL/耽美/TL，热门漫画需登录后观看，VIP 无码专区独立资源、去广告。防失联地址 manwala.cc（兄弟站），域名常换，打不开搜「漫蛙 MANWA」。⚠ 成人向内容为主，未成年勿入。",
+      "adult": true
+    },
+    {
       "id": "manual-manga-10",
       "name": "漫画站（临圣，manhuazhan）",
       "section": "manga",
