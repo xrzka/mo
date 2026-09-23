@@ -14722,6 +14722,25 @@
       "note": "小技巧：任意 B 站视频链接把 bilibili.com 改成 bilibilia.com 即可直达该视频的封面提取页。"
     },
     {
+      "id": "manual-pickup-panshi",
+      "name": "磐石 PANSHI（竞彩数据分析工作台）",
+      "section": "pickup",
+      "subsection": "app",
+      "description": "量化数据驱动的竞彩数据分析工作台。四库数据、赛程浏览、单场赛前卡、晚场 2~8 串组合推荐与候选池，支持全键盘操作。免费试用 3 天全功能，4~8 串永久免费；后续走会员制 + 磐石币（1:1 人民币，只退本金）。",
+      "url": "https://panshi.cloud/",
+      "tags": [
+        "竞彩",
+        "数据分析",
+        "量化",
+        "足球",
+        "会员制"
+      ],
+      "kind": "在线数据分析平台",
+      "need_login": true,
+      "update_info": "随时可用",
+      "note": "需注册登录（邮箱 + 密码）。站点声明：仅提供数据分析与参考，不构成投注指令或建议、不参与赌博，预测存在不确定性，请理性对待勿沉迷。"
+    },
+    {
       "id": "manual-pickup-gpt-sovits",
       "name": "GPT-SoVITS（少样本语音克隆 TTS）",
       "section": "pickup",
