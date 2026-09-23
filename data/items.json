@@ -13837,6 +13837,38 @@
       "note": "随手安利的作品，收录时未查到公开的详情页/在线源，先按「作品名 + 画师 P 站名 BrilliantNeko」记着。链接指向 Pixiv 的作者搜索，Pixiv 部分内容需登录、可能含 R18，请自行判断。找不到时也可用「初雪的雪顶咖啡 BrilliantNeko」在搜索引擎里找当前可看的地址。"
     },
     {
+      "id": "manual-pickup-kawagawa",
+      "name": "漫画作者 KawaGawa（明日方舟同人）",
+      "section": "pickup",
+      "subsection": "manga",
+      "adult": true,
+      "description": "AI 绘制的明日方舟（Arknights）同人漫画 / 画师，代表作「姐姐大赛」系列等。想看更多可按名字在 Pixiv 搜作者，或在动漫屋按 KawaGawa 搜在线阅读。",
+      "url": "https://www.pixiv.net/en/search/users?nick=KawaGawa",
+      "links": [
+        {
+          "name": "Pixiv 搜作者 KawaGawa",
+          "url": "https://www.pixiv.net/en/search/users?nick=KawaGawa",
+          "password": ""
+        },
+        {
+          "name": "动漫屋搜 KawaGawa 明日方舟漫画",
+          "url": "https://www.dm5.com/search?title=KawaGawa",
+          "password": ""
+        }
+      ],
+      "tags": [
+        "漫画",
+        "明日方舟同人",
+        "画师KawaGawa",
+        "AI绘制",
+        "随手安利"
+      ],
+      "kind": "漫画 / 画师作品",
+      "need_login": false,
+      "update_info": "随手收录",
+      "note": "AI 生成的明日方舟同人，多为角色擦边向，默认按成人向收录（介意可在后台把 adult 关掉）。Pixiv 部分内容需登录、可能含 R18；动漫屋可在线读，找不到时用「KawaGawa 明日方舟」在搜索引擎找当前地址。"
+    },
+    {
       "id": "manual-manga-7",
       "name": "瓜子漫画（免费国漫在线）",
       "section": "manga",
