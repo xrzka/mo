@@ -12676,6 +12676,25 @@
       "note": "许可证 PolyForm Noncommercial 1.0.0：仅限学习 / 研究 / 非商业用途，商用、SaaS、转售或集成进商业产品需单独书面授权（不是 MIT，别直接商用）。官网见配套条目 kun-agent.com。"
     },
     {
+      "id": "manual-ai-fd3api",
+      "name": "FD3API（多号池模型网关）",
+      "section": "ai",
+      "subsection": "relay",
+      "description": "多号池模型网关，把 DeepSeek、Qwen、MiMo、Kimi 与 WorkBuddy（CodeBuddy）统一调度，兼容 OpenAI 与 Claude 协议，支持故障自动转移、用量实时可见。",
+      "url": "https://wyh.baby/",
+      "tags": [
+        "模型网关",
+        "多号池",
+        "兼容 OpenAI",
+        "兼容 Claude",
+        "故障转移"
+      ],
+      "kind": "AI 模型网关 / 中转",
+      "need_login": false,
+      "update_info": "随时可用",
+      "note": "FD3API，多家国产模型统一入口，OpenAI / Claude 协议双兼容，首页可看实时用量。"
+    },
+    {
       "id": "manual-collection-4",
       "name": "电脑微信快捷方式多开",
       "section": "collection",
