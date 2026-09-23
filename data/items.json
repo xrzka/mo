@@ -14741,6 +14741,25 @@
       "note": "需注册登录（邮箱 + 密码）。站点声明：仅提供数据分析与参考，不构成投注指令或建议、不参与赌博，预测存在不确定性，请理性对待勿沉迷。"
     },
     {
+      "id": "manual-pickup-hhhl-uf",
+      "name": "Universe Federation（HHHL 社区）",
+      "section": "pickup",
+      "adult": true,
+      "description": "综合资源 / AI 社区论坛（X 风格 / Discourse 风格，支持联邦）。板块含网盘资源区、社区官方中转站合集、教程与资源、写真图集 cosplay、每日新闻等；热搜多为免费 Claude / DeepSeek 免费 API / 公益站 / key 等 AI 白嫖向内容。",
+      "url": "https://dc.hhhl.cc/",
+      "tags": [
+        "社区论坛",
+        "AI资源",
+        "中转站合集",
+        "网盘资源",
+        "白嫖"
+      ],
+      "kind": "社区论坛",
+      "need_login": false,
+      "update_info": "活跃更新",
+      "note": "可直接浏览，参与发帖需注册。主打中转站合集 / 网盘 / 教程等资源；也有写真图集 cosplay 板块，部分内容成人向，故默认按成人向收录，介意可在后台把 adult 关掉。"
+    },
+    {
       "id": "manual-pickup-gpt-sovits",
       "name": "GPT-SoVITS（少样本语音克隆 TTS）",
       "section": "pickup",
