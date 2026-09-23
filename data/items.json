@@ -14625,11 +14625,12 @@
       "note": "包子漫画（bzmgcn）在线阅读站，无需注册即可看，PC 网页与移动端自适应。域名可能有多个镜像，失效时留意官方最新地址。"
     },
     {
-      "id": "manual-manga-henhen-hougong-qigenvfanpai",
+      "id": "manual-pickup-henhen-hougong-qigenvfanpai",
       "name": "狠狠后宫了之拯救七个女反派",
-      "section": "manga",
+      "section": "pickup",
+      "subsection": "manga",
       "adult": true,
-      "description": "穿书后宫漫。主角穿成《天元大陆之唯我独尊》(又名《我的七个老婆是大反派》)里三天就要死的反派男炮灰，带系统，任务是拯救世界——七位女主全黑化世界就会灭亡，于是要用爱感化她们。桔子文化出品，包子漫画可在线看。",
+      "description": "在追的后宫漫。主角穿书成《天元大陆之唯我独尊》(又名《我的七个老婆是大反派》)里三天就要死的反派男炮灰，带系统要拯救世界——七位女主全黑化世界就会灭亡，于是用爱感化她们。桔子文化出品，包子漫画可在线看。",
       "url": "https://cn.bzmgcn.com/comic/henhenhougongliaozhizhengjiuqigenufanpai-jieziwenhua",
       "tags": [
         "后宫",
@@ -14638,10 +14639,10 @@
         "国漫",
         "擦边"
       ],
-      "kind": "在线漫画",
+      "kind": "在看漫画",
       "need_login": false,
-      "update_info": "连载中",
-      "note": "桔子文化，包子漫画（bzmgcn）源。你提到已到 76 话；该源当前显示到第 71 话，可能略滞后，以站内最新章节为准。"
+      "update_info": "在看 · 进度约 76 话",
+      "note": "桔子文化，包子漫画（bzmgcn）源。当前进度约 76 话；包子这个源显示到第 71 话，可能略滞后，以站内最新章节为准。"
     },
     {
       "id": "manual-pickup-claude-desktop-cn",
