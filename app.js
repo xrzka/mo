@@ -481,6 +481,7 @@
     watchError: "",
     watchRequest: 0,
     watchViewRequest: 0,
+    watchMusicObjectUrl: null, // 音乐区整首预下载后的 blob 对象 URL，切歌/关闭时回收
     watchViewerOpen: false,
     watchLimit: 20,
     watchSource: "", // 漫画线路，空字符串 = 自动
@@ -4422,42 +4423,57 @@
     renderWatchMessage(body, `${prefix}：${message}`, retry ? { label: "重试", run: retry } : null);
   }
 
+  // 回收上一首歌的 blob 对象 URL，避免边下边放时反复发 Range 续传导致卡顿，也防内存泄漏。
+  function revokeWatchMusicUrl() {
+    if (state.watchMusicObjectUrl) {
+      try { URL.revokeObjectURL(state.watchMusicObjectUrl); } catch {}
+      state.watchMusicObjectUrl = null;
+    }
+  }
+
   async function openWatchMusic(item, body, requestId) {
+    // 关键：网易云 CDN 单连接限速 + Worker 跨网回源延迟高，`<audio>` 边下边放时
+    // 缓冲一放完就要重发 Range 续传，续传那一跳常卡几秒，于是「放几秒—停—再放」循环。
+    // 改成整首预下载成 blob 再用本地对象 URL 播放：起播多等几秒，之后完全不卡。
+    revokeWatchMusicUrl();
+    const controller = new AbortController();
     try {
       const data = await watchApi(`/api/watch/music?action=getAlgerListenUrl&id=${encodeURIComponent(item.id)}`);
       if (!watchViewCurrent(requestId)) return;
       const remote = typeof data?.data === "string" ? data.data : data?.data?.url || data?.url || "";
       if (!remote) throw new Error("上游没有返回播放地址");
+
+      body.textContent = "";
+      renderWatchMessage(body, "音频加载中，请稍候…");
+      const response = await fetch(watchProxyAudio(remote), { cache: "force-cache", signal: controller.signal });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const blob = await response.blob();
+      if (!watchViewCurrent(requestId)) return; // 下载过程中用户已切歌/关闭，丢弃
+
+      const objectUrl = URL.createObjectURL(blob);
+      state.watchMusicObjectUrl = objectUrl;
+
       const audio = document.createElement("audio");
       audio.className = "watch-player";
       audio.controls = true;
       audio.autoplay = true;
-      audio.preload = "metadata";
-      audio.src = watchProxyAudio(remote);
+      audio.preload = "auto";
+      audio.src = objectUrl;
+
       const bar = document.createElement("div");
       bar.className = "watch-action-bar";
-      bar.appendChild(watchButton("下载音频", async (event) => {
+      bar.appendChild(watchButton("下载音频", (event) => {
+        // 复用已下载的 blob，无需二次请求
+        watchSaveBlob(blob, watchDownloadName(item, ".mp3"));
         const button = event.currentTarget;
         const original = button.textContent;
-        button.disabled = true;
-        button.textContent = "下载中…";
-        try {
-          const response = await fetch(watchProxyAudio(remote), { cache: "force-cache" });
-          if (!response.ok) throw new Error(`HTTP ${response.status}`);
-          const blob = await response.blob();
-          watchSaveBlob(blob, watchDownloadName(item, ".mp3"));
-          button.textContent = "已下载";
-        } catch (error) {
-          button.textContent = "失败";
-          watchStatus(`下载失败：${error.message}`, true);
-        } finally {
-          button.disabled = false;
-          setTimeout(() => { button.textContent = original; }, 1800);
-        }
+        button.textContent = "已下载";
+        setTimeout(() => { button.textContent = original; }, 1800);
       }, "watch-download"));
       body.replaceChildren(bar, audio);
       saveWatchProgress("music", item);
     } catch (error) {
+      if (error?.name === "AbortError") return;
       if (watchViewCurrent(requestId)) watchError(body, "播放失败", error, () => openWatchItem(item));
     }
   }
@@ -5676,6 +5692,7 @@
     const body = $("[data-watch-viewer-body]");
     const media = body?.querySelector("audio, video");
     if (media) media.pause();
+    revokeWatchMusicUrl();
     // 关掉可能开着的全屏视频模式：清 overlay、恢复滚动。
     const vmOv = document.querySelector(".anime-vm");
     if (vmOv) {
