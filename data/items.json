@@ -12638,6 +12638,41 @@
       "note": "MIT 协议，可自部署自用。README 写明支持 chatgpt2api、grok2api、flow2api、newapi 等渠道接入 —— 也就是本站 AI 区收录的中转站可以直接配进去。不想折腾就用在线版。"
     },
     {
+      "id": "manual-ai-kun-web",
+      "name": "Kun Agent（官网）",
+      "section": "ai",
+      "subsection": "tool",
+      "description": "KunAgent 团队的开源 AI Agent（智能体）项目官网入口，可接入自己的模型 / API 使用。",
+      "url": "https://kun-agent.com/",
+      "tags": [
+        "AI Agent",
+        "智能体",
+        "开源"
+      ],
+      "kind": "AI Agent 官网",
+      "need_login": false,
+      "update_info": "随时可用",
+      "note": "开源项目 KunAgent/Kun 的官方站，源码见配套仓库条目。"
+    },
+    {
+      "id": "manual-ai-kun-repo",
+      "name": "Kun（开源仓库）",
+      "section": "ai",
+      "subsection": "tool",
+      "description": "上面 Kun Agent 的开源源码仓库，可自部署自用。",
+      "url": "https://github.com/KunAgent/Kun",
+      "tags": [
+        "开源",
+        "GitHub",
+        "AI Agent",
+        "可自部署"
+      ],
+      "kind": "开源项目仓库",
+      "need_login": false,
+      "update_info": "持续更新",
+      "note": "官网见配套条目 kun-agent.com。"
+    },
+    {
       "id": "manual-collection-4",
       "name": "电脑微信快捷方式多开",
       "section": "collection",
