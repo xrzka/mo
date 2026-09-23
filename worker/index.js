@@ -54,6 +54,28 @@ const REQ_OPEN_MAX = 500;
 /** 两种请求类型：want 想要没有的资源，broken 报告站内资源失效。 */
 const REQ_KINDS = ["want", "broken"];
 
+/* ---------- 答疑 / 提问的约束 ---------- */
+
+/** 提问正文与回复的长度上限，按字符数算。 */
+const QA_BODY_MAX = 500;
+const QA_REPLY_MAX = 1000;
+
+/** 同一访客每天最多提交几条提问，防刷屏。 */
+const QA_PER_DAY = 5;
+
+/** 库里最多保留多少条待回答，满了拒绝新增。 */
+const QA_OPEN_MAX = 500;
+
+/** 提问类型：找不到资源 / 用不了 / 不会用 / 其他。 */
+const QA_CATEGORIES = ["notfound", "broken", "howto", "other"];
+
+/** 提问状态：open 待回答 / answered 已回答 / hidden 隐藏（不对访客展示）。 */
+const QA_STATUSES = ["open", "answered", "hidden"];
+
+/** 屏蔽词长度上限与数量上限。 */
+const QA_WORD_MAX = 40;
+const QA_WORD_LIMIT = 2000;
+
 /* ---------- 管理员编辑的约束 ---------- */
 
 /**
@@ -2399,6 +2421,178 @@ async function purgeRequests(env, body) {
   return { status: 200, body: { ok: true, deleted: ids.length } };
 }
 
+/* ---------- 答疑 / 提问 ---------- */
+
+/**
+ * 屏蔽词命中判断。屏蔽词与正文都转小写后做子串匹配 —— 只要提问里包含
+ * 任意一个屏蔽词就算命中。sanitizeText 已去掉零宽字符，防「攻<ZWSP>击」绕过。
+ * 表很小（站长手动维护），每次提问全量读一遍即可。
+ */
+async function containsBlockedWord(env, text) {
+  const hay = String(text || "").toLowerCase();
+  if (!hay) return false;
+  const { results } = await env.DB.prepare("SELECT word FROM blocked_words").all();
+  for (const r of results || []) {
+    const w = String(r.word || "").toLowerCase();
+    if (w && hay.includes(w)) return true;
+  }
+  return false;
+}
+
+/**
+ * 列出提问。访客只看到 open + answered，按新在前；
+ * 站长（带有效 token）额外能看到 hidden 的，用于复查被屏蔽的内容。
+ */
+async function listQuestions(env, url, isAdmin) {
+  const limit = Math.min(
+    Math.max(parseInt(url.searchParams.get("limit") || "80", 10) || 80, 1),
+    REQ_PAGE_MAX
+  );
+  const clause = isAdmin ? "" : "WHERE status IN ('open','answered')";
+  const sql =
+    `SELECT id, category, body, reply, status, created, replied ` +
+    `FROM questions ${clause} ORDER BY id DESC LIMIT ?`;
+  const { results } = await env.DB.prepare(sql).bind(limit).all();
+
+  const counts = await env.DB
+    .prepare("SELECT status, COUNT(*) c FROM questions GROUP BY status")
+    .all();
+  const summary = { open: 0, answered: 0, hidden: 0 };
+  (counts.results || []).forEach((r) => {
+    if (r.status in summary) summary[r.status] = r.c;
+  });
+
+  return { items: results || [], summary };
+}
+
+/** 访客提交提问。命中屏蔽词直接拒绝；按指纹限流；待回答满了拒绝。 */
+async function createQuestion(env, request, body) {
+  const category = QA_CATEGORIES.includes(body.category) ? body.category : "other";
+  const text = sanitizeText(body.body, QA_BODY_MAX);
+  if (!text) return { status: 400, body: { error: "问题描述不能为空" } };
+
+  if (await containsBlockedWord(env, text)) {
+    // 不回显命中了哪个词，免得被用来试探屏蔽词表
+    return { status: 400, body: { error: "提问包含被屏蔽的内容，请友好提问" } };
+  }
+
+  const fp = await visitorFp(request);
+  const b = buckets();
+
+  const mine = await env.DB
+    .prepare("SELECT COUNT(*) c FROM questions WHERE fp = ? AND created LIKE ?")
+    .bind(fp, b.day + "%")
+    .first();
+  if (mine && mine.c >= QA_PER_DAY) {
+    return { status: 429, body: { error: `今天已提交 ${QA_PER_DAY} 条提问，明天再来吧` } };
+  }
+
+  const open = await env.DB
+    .prepare("SELECT COUNT(*) c FROM questions WHERE status = 'open'")
+    .first();
+  if (open && open.c >= QA_OPEN_MAX) {
+    return { status: 503, body: { error: "待回答的提问太多了，等站长处理一批后再提交" } };
+  }
+
+  const created = new Date().toISOString();
+  const res = await env.DB
+    .prepare(
+      `INSERT INTO questions (category, body, reply, status, created, replied, fp)
+       VALUES (?, ?, '', 'open', ?, '', ?)`
+    )
+    .bind(category, text, created, fp)
+    .run();
+  return { status: 200, body: { ok: true, id: res.meta.last_row_id } };
+}
+
+/** 站长回复 / 改状态。给了回复而没显式给状态时，自动标为已回答。 */
+async function updateQuestion(env, body) {
+  const id = Number(body.id);
+  if (!Number.isInteger(id) || id <= 0) {
+    return { status: 400, body: { error: "缺少有效的提问 id" } };
+  }
+  const row = await env.DB.prepare("SELECT id FROM questions WHERE id = ?").bind(id).first();
+  if (!row) return { status: 404, body: { error: "提问不存在" } };
+
+  const sets = [];
+  const args = [];
+
+  if (body.reply !== undefined) {
+    const reply = sanitizeText(body.reply, QA_REPLY_MAX);
+    sets.push("reply = ?");
+    args.push(reply);
+    sets.push("replied = ?");
+    args.push(new Date().toISOString());
+    if (body.status === undefined) {
+      sets.push("status = ?");
+      args.push(reply ? "answered" : "open");
+    }
+  }
+
+  if (body.status !== undefined) {
+    const status = String(body.status ?? "").trim();
+    if (!QA_STATUSES.includes(status)) {
+      return { status: 400, body: { error: `未知状态：${status}` } };
+    }
+    sets.push("status = ?");
+    args.push(status);
+  }
+
+  if (!sets.length) return { status: 400, body: { error: "没有要改的字段" } };
+
+  await env.DB
+    .prepare(`UPDATE questions SET ${sets.join(", ")} WHERE id = ?`)
+    .bind(...args, id)
+    .run();
+  return { status: 200, body: { ok: true, id } };
+}
+
+/** 删除一条提问。 */
+async function deleteQuestion(env, rawId) {
+  const id = Number(rawId);
+  if (!Number.isInteger(id) || id <= 0) {
+    return { status: 400, body: { error: "缺少有效的提问 id" } };
+  }
+  const res = await env.DB.prepare("DELETE FROM questions WHERE id = ?").bind(id).run();
+  if (!res.meta || res.meta.changes !== 1) {
+    return { status: 404, body: { error: "提问不存在" } };
+  }
+  return { status: 200, body: { ok: true, id } };
+}
+
+/* ---------- 屏蔽词（仅站长可管理） ---------- */
+
+async function listBlockedWords(env) {
+  const { results } = await env.DB
+    .prepare("SELECT word, created FROM blocked_words ORDER BY created DESC")
+    .all();
+  return { words: results || [] };
+}
+
+async function addBlockedWord(env, body) {
+  // 屏蔽词按原样存（大小写不敏感靠匹配时统一转小写），但要去掉零宽/控制字符
+  const word = sanitizeText(body.word, QA_WORD_MAX).toLowerCase();
+  if (!word) return { status: 400, body: { error: "屏蔽词不能为空" } };
+
+  const cnt = await env.DB.prepare("SELECT COUNT(*) c FROM blocked_words").first();
+  if (cnt && cnt.c >= QA_WORD_LIMIT) {
+    return { status: 503, body: { error: "屏蔽词已达上限" } };
+  }
+
+  await env.DB
+    .prepare("INSERT OR IGNORE INTO blocked_words (word, created) VALUES (?, ?)")
+    .bind(word, new Date().toISOString())
+    .run();
+  return { status: 200, body: { ok: true, word } };
+}
+
+async function deleteBlockedWord(env, rawWord) {
+  const word = String(rawWord ?? "").trim().toLowerCase();
+  if (!word) return { status: 400, body: { error: "缺少屏蔽词" } };
+  await env.DB.prepare("DELETE FROM blocked_words WHERE word = ?").bind(word).run();
+  return { status: 200, body: { ok: true, word } };
+}
+
 /* ---------- 管理员编辑 ---------- */
 
 /** 随机 hex 串，用于 session token。crypto.getRandomValues 是 CSPRNG。 */
@@ -2966,6 +3160,69 @@ export default {
 
         const body = await request.json().catch(() => ({}));
         const r = await voteRequest(env, request, body.id);
+        return json(r.body, request, r.status);
+      }
+
+      /* ---------- 答疑 / 提问 ---------- */
+
+      if (url.pathname === "/api/questions" && request.method === "GET") {
+        // 带有效 token 的站长能多看到被隐藏的提问；访客只看 open + answered
+        const isAdmin = !!(await adminAuth(env, request));
+        return json(await listQuestions(env, url, isAdmin), request);
+      }
+
+      if (url.pathname === "/api/questions" && request.method === "POST") {
+        const ip = request.headers.get("CF-Connecting-IP") || "";
+        if (await rateLimited(env, ip)) return json({ error: "too many requests" }, request, 429);
+
+        const body = await request.json().catch(() => null);
+        if (!body || typeof body !== "object") {
+          return json({ error: "bad request body" }, request, 400);
+        }
+        const r = await createQuestion(env, request, body);
+        return json(r.body, request, r.status);
+      }
+
+      if (url.pathname === "/api/admin/question" && request.method === "POST") {
+        const token = await adminAuth(env, request);
+        if (!token) return json({ error: "未登录或登录已过期" }, request, 401);
+        const body = await request.json().catch(() => null);
+        if (!body || typeof body !== "object") {
+          return json({ error: "bad request body" }, request, 400);
+        }
+        const r = await updateQuestion(env, body);
+        return json(r.body, request, r.status);
+      }
+
+      if (url.pathname === "/api/admin/question/delete" && request.method === "POST") {
+        const token = await adminAuth(env, request);
+        if (!token) return json({ error: "未登录或登录已过期" }, request, 401);
+        const body = await request.json().catch(() => ({}));
+        const r = await deleteQuestion(env, body.id);
+        return json(r.body, request, r.status);
+      }
+
+      /* ---------- 屏蔽词（仅站长） ---------- */
+
+      if (url.pathname === "/api/admin/blocked-words" && request.method === "GET") {
+        const token = await adminAuth(env, request);
+        if (!token) return json({ error: "未登录或登录已过期" }, request, 401);
+        return json(await listBlockedWords(env), request);
+      }
+
+      if (url.pathname === "/api/admin/blocked-word" && request.method === "POST") {
+        const token = await adminAuth(env, request);
+        if (!token) return json({ error: "未登录或登录已过期" }, request, 401);
+        const body = await request.json().catch(() => ({}));
+        const r = await addBlockedWord(env, body || {});
+        return json(r.body, request, r.status);
+      }
+
+      if (url.pathname === "/api/admin/blocked-word/delete" && request.method === "POST") {
+        const token = await adminAuth(env, request);
+        if (!token) return json({ error: "未登录或登录已过期" }, request, 401);
+        const body = await request.json().catch(() => ({}));
+        const r = await deleteBlockedWord(env, body.word);
         return json(r.body, request, r.status);
       }
 

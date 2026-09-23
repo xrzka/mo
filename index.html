@@ -9,13 +9,13 @@
       content="墨小说漫画 · 小说、漫画、动画、游戏、AI 资源导航，分区整理，点击直达。"
     />
     <title>墨小说漫画 · 资源导航</title>
-    <script src="config.js?v=20260923m"></script>
-    <link rel="stylesheet" href="styles.css?v=20260923m" />
+    <script src="config.js?v=20260923n"></script>
+    <link rel="stylesheet" href="styles.css?v=20260923n" />
     <!-- EPUB 本质是 zip。固定版本并随站点托管，不依赖第三方 CDN 运行。 -->
     <script src="vendor/jszip.min.js?v=3.10.1" defer></script>
     <!-- 动画区自建播放器：hls.js 播 m3u8（Safari 走原生，其余走 MSE） -->
     <script src="vendor/hls.min.js?v=1.5.13" defer></script>
-    <script src="app.js?v=20260923m" defer></script>
+    <script src="app.js?v=20260923n" defer></script>
   </head>
   <body>
     <a class="skip-link" href="#feed">跳到资源列表</a>
@@ -82,7 +82,9 @@
             ><span data-notice-broken-fallback>有问题或资源失效，可在页面底部的反馈群里反馈。</span>
             找不到想看的作品，可以去
             <button type="button" class="inline-link" data-goto-wanted>资源帮找</button>
-            留言。
+            留言。用不了、不会用等问题可以去
+            <button type="button" class="inline-link" data-goto-qa>答疑 / 提问</button>
+            提问。
           </p>
         </div>
       </section>
@@ -328,6 +330,71 @@
 
           <ol class="wanted-list" data-wanted-list></ol>
           <p class="wanted-empty" data-wanted-empty hidden>还没有人留言。</p>
+        </div>
+      </section>
+
+      <section class="qa-section" id="qa" data-qa-panel hidden aria-labelledby="qa-title">
+        <div class="qa-head">
+          <div class="qa-head-copy">
+            <h2 id="qa-title"><span aria-hidden="true">❓</span> 答疑 / 提问</h2>
+            <p class="qa-sub" data-qa-sub>想用的资源找不到、用不了，或者不会用？在这里提问，站长会来回答。</p>
+          </div>
+          <button
+            type="button"
+            class="qa-toggle"
+            data-qa-toggle
+            aria-expanded="false"
+            aria-controls="qa-body"
+          >
+            展开
+          </button>
+        </div>
+
+        <div class="qa-body" id="qa-body" data-qa-body hidden>
+          <form class="qa-form" data-qa-form>
+            <div class="qa-field">
+              <label for="qa-category">问题类型</label>
+              <select id="qa-category" data-qa-input="category">
+                <option value="notfound">想用的资源找不到</option>
+                <option value="broken">资源用不了 / 打不开</option>
+                <option value="howto">不会用 / 求教程</option>
+                <option value="other">其他问题</option>
+              </select>
+            </div>
+            <div class="qa-field">
+              <label for="qa-body-input">问题描述</label>
+              <textarea
+                id="qa-body-input"
+                maxlength="500"
+                rows="3"
+                placeholder="具体说说你的问题，例如：想找某部作品但搜不到 / 某个站打不开 / 某个工具不会用"
+                data-qa-input="body"
+                aria-required="true"
+              ></textarea>
+            </div>
+            <div class="qa-actions">
+              <button type="submit" class="qa-submit" data-qa-submit>提交提问</button>
+              <span class="qa-msg" data-qa-msg aria-live="polite"></span>
+            </div>
+            <p class="qa-privacy">
+              不需要注册，也不记录你的身份。只能提问，回答由站长给出；攻击谩骂等内容会被过滤或删除。
+            </p>
+          </form>
+
+          <!-- 屏蔽词管理：只有站长登录后才显示，内容由 app.js 生成 -->
+          <div class="qa-admin" data-qa-admin hidden>
+            <span class="qa-admin-label">站长 · 屏蔽词</span>
+            <form class="qa-block-form" data-qa-block-form>
+              <input type="text" maxlength="40" placeholder="新增屏蔽词" data-qa-block-input autocomplete="off" />
+              <button type="submit" data-qa-block-add>加入</button>
+            </form>
+            <div class="qa-block-list" data-qa-block-list></div>
+            <span class="qa-admin-msg" data-qa-admin-msg aria-live="polite"></span>
+          </div>
+
+          <div class="qa-tabs" role="tablist" aria-label="提问状态" data-qa-tabs></div>
+          <ol class="qa-list" data-qa-list></ol>
+          <p class="qa-empty" data-qa-empty hidden>还没有人提问。</p>
         </div>
       </section>
 

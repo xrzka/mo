@@ -38,7 +38,12 @@ for (const m of js.matchAll(/data-filter="([^"]+)"/g)) filters.add(m[1]);
 const htmlFilters = new Set();
 for (const m of html.matchAll(/data-filter="([^"]+)"/g)) htmlFilters.add(m[1]);
 
-const skip = new Set(["field", "filter", "stat", "card-template", "item-id"]);
+const skip = new Set([
+  "field", "filter", "stat", "card-template", "item-id",
+  // 答疑/提问里这几个节点是 app.js 运行时动态创建的（列表项、回复框、运维按钮），
+  // 不写在 index.html 静态结构里，和 watch 的动态节点同理。
+  "qa-act", "qa-item", "qa-reply-input",
+]);
 
 [...attrs].sort().forEach((a) => {
   if (skip.has(a)) return;
@@ -86,6 +91,26 @@ const skip = new Set(["field", "filter", "stat", "card-template", "item-id"]);
   "wanted-purge",
   "wanted-admin-msg",
 ].forEach((a) => check(`帮找节点 data-${a}`, htmlAttrs.has(a)));
+
+// 答疑/提问的关键静态节点
+[
+  "qa-panel",
+  "qa-toggle",
+  "qa-body",
+  "qa-sub",
+  "qa-form",
+  "qa-submit",
+  "qa-msg",
+  "qa-tabs",
+  "qa-list",
+  "qa-empty",
+  "qa-admin",
+  "qa-block-form",
+  "qa-block-input",
+  "qa-block-list",
+  "qa-admin-msg",
+  "goto-qa",
+].forEach((a) => check(`答疑节点 data-${a}`, htmlAttrs.has(a)));
 
 // 后台的关键节点。漏一个整块后台就静默失效（$() 拿不到就 return）
 [

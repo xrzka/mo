@@ -216,3 +216,28 @@ CREATE TABLE IF NOT EXISTS board_admin_throttle (
   window  TEXT NOT NULL
 );
 
+-- ---------------------------------------------------------------
+-- 第二站 答疑 / 提问：访客提问，站长回复。status: open 待回答 /
+-- answered 已回答 / hidden 隐藏（攻击谩骂等，隐藏后访客看不到）。
+-- category: notfound 找不到资源 / broken 用不了 / howto 不会用 / other 其他。
+-- fp 是提交者指纹（IP+UA+日期哈希），只用于限流，无法反查 IP。
+-- ---------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS questions (
+  id       INTEGER PRIMARY KEY AUTOINCREMENT,
+  category TEXT NOT NULL DEFAULT 'other',
+  body     TEXT NOT NULL,
+  reply    TEXT NOT NULL DEFAULT '',
+  status   TEXT NOT NULL DEFAULT 'open',
+  created  TEXT NOT NULL,
+  replied  TEXT NOT NULL DEFAULT '',
+  fp       TEXT NOT NULL DEFAULT ''
+);
+CREATE INDEX IF NOT EXISTS idx_questions_list ON questions (status, id DESC);
+CREATE INDEX IF NOT EXISTS idx_questions_created ON questions (created);
+
+-- 屏蔽词：站长维护。提交提问时正文包含任意屏蔽词即拒绝。word 存小写。
+CREATE TABLE IF NOT EXISTS blocked_words (
+  word    TEXT PRIMARY KEY,
+  created TEXT NOT NULL
+);
+

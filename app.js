@@ -1721,6 +1721,7 @@
         // 帮找那块的运维入口同样只在登录态下存在，会话失效后也得撤掉 ——
         // 否则按钮还留在页面上，点了只会一直报「登录已过期」。
         if (state.wantedLoaded) renderWanted();
+        onQaAuthChange();
         return { ok: false, error: "登录已过期，请重新登录" };
       }
       return res.ok ? { ok: true, data } : { ok: false, error: data.error || "操作失败" };
@@ -1831,6 +1832,7 @@
       render(); // 重渲染让卡片长出编辑按钮
       // 帮找那块的运维按钮也只在登录后显示，一并刷新
       if (state.wantedLoaded) renderWanted();
+      onQaAuthChange();
     });
 
     const logout = $("[data-admin-logout]");
@@ -1842,6 +1844,7 @@
         renderAdmin();
         render();
         if (state.wantedLoaded) renderWanted();
+        onQaAuthChange();
       });
     }
 
@@ -5935,6 +5938,7 @@
     bindWantedForm();
     bindWantedPurge();
     bindWantedJump();
+    bindQa();
     stats.init();
     // 卡片渲染时要读它来决定反馈按钮是否已完成态，所以得在首次 render 之前
     reportedSet = loadReported();
@@ -5971,6 +5975,8 @@
         await loadWanted();
         render();
         renderWanted();
+        await loadQa();
+        renderQa();
         refreshScrollDock();
       }
       // 后台入口：地址带 #admin 时展开登录面板
@@ -5983,6 +5989,397 @@
       p.textContent = "数据加载失败：" + err.message + "（请确认 data/items.json 存在）";
       feed.appendChild(p);
     }
+  }
+
+  /* ---------- 答疑 / 提问 ---------- */
+
+  const QA_CAT_LABEL = {
+    notfound: "找不到资源",
+    broken: "用不了",
+    howto: "不会用",
+    other: "其他",
+  };
+  const QA_STATUS_LABEL = { open: "待回答", answered: "已回答", hidden: "已隐藏" };
+
+  const qaState = {
+    loaded: false,
+    items: [],
+    summary: { open: 0, answered: 0, hidden: 0 },
+    expanded: false,
+    filter: "all",
+    blocked: [],
+    blockedLoaded: false,
+  };
+
+  /** 提问依赖后端，和统计同一个 Worker。拿不到接口就不显示这一块。 */
+  const qaApi = () => (stats.mode === "site" ? stats.api : "");
+
+  function qaEl(tag, cls, text) {
+    const e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text != null) e.textContent = text;
+    return e;
+  }
+
+  /** 带（可选）登录态的 GET。站长登录后能多看到被隐藏的提问。 */
+  async function qaGet(path) {
+    const api = qaApi() || apiBase();
+    if (!api) return null;
+    try {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 8000);
+      let res;
+      try {
+        res = await fetch(api + path, {
+          cache: "no-store",
+          signal: ctrl.signal,
+          headers: adminToken ? { Authorization: "Bearer " + adminToken } : {},
+        });
+      } finally {
+        clearTimeout(timer);
+      }
+      if (!res.ok) return null;
+      return await res.json();
+    } catch {
+      return null;
+    }
+  }
+
+  async function loadQa() {
+    const data = await qaGet("/api/questions");
+    if (data && Array.isArray(data.items)) {
+      qaState.items = data.items;
+      qaState.summary = Object.assign({ open: 0, answered: 0, hidden: 0 }, data.summary || {});
+      qaState.loaded = true;
+    }
+    return qaState.loaded;
+  }
+
+  async function loadBlockedWords() {
+    if (!adminToken) {
+      qaState.blocked = [];
+      qaState.blockedLoaded = false;
+      return;
+    }
+    const data = await qaGet("/api/admin/blocked-words");
+    if (data && Array.isArray(data.words)) {
+      qaState.blocked = data.words.map((w) => (w && w.word) || "").filter(Boolean);
+      qaState.blockedLoaded = true;
+    }
+  }
+
+  /** 登录态变化时（登录 / 退出 / 会话过期）刷新提问区。 */
+  function onQaAuthChange() {
+    if (!$("[data-qa-panel]")) return;
+    loadBlockedWords().then(renderQa);
+    loadQa().then(renderQa);
+    renderQa();
+  }
+
+  function bindQa() {
+    const panel = $("[data-qa-panel]");
+    if (!panel) return;
+
+    const toggle = $("[data-qa-toggle]");
+    const body = $("[data-qa-body]");
+    if (toggle && body) {
+      toggle.addEventListener("click", () => {
+        qaState.expanded = !qaState.expanded;
+        body.hidden = !qaState.expanded;
+        toggle.setAttribute("aria-expanded", String(qaState.expanded));
+        toggle.textContent = qaState.expanded ? "收起" : "展开";
+        if (qaState.expanded && !qaState.loaded) loadQa().then(renderQa);
+      });
+    }
+
+    const form = $("[data-qa-form]");
+    if (form) form.addEventListener("submit", submitQa);
+
+    // 屏蔽词新增
+    const blockForm = $("[data-qa-block-form]");
+    if (blockForm) blockForm.addEventListener("submit", addQaBlockWord);
+
+    // 屏蔽词删除 / 提问运维：列表内按钮走事件委托
+    panel.addEventListener("click", onQaPanelClick);
+
+    // 从公告跳转过来自动展开
+    const jump = $("[data-goto-qa]");
+    if (jump) {
+      jump.addEventListener("click", () => {
+        if (!qaState.expanded && toggle) toggle.click();
+        const p = $("[data-qa-panel]");
+        if (p) p.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    }
+  }
+
+  async function submitQa(e) {
+    e.preventDefault();
+    const msg = $("[data-qa-msg]");
+    const say = (t, kind = "") => {
+      if (msg) {
+        msg.textContent = t;
+        msg.className = "qa-msg" + (kind ? " " + kind : "");
+      }
+    };
+    const api = qaApi() || apiBase();
+    if (!api) return say("提问功能暂时不可用", "bad");
+
+    const cat = $('[data-qa-input="category"]');
+    const bodyInput = $('[data-qa-input="body"]');
+    const category = cat ? cat.value : "other";
+    const text = (bodyInput && bodyInput.value ? bodyInput.value : "").trim();
+    if (!text) return say("请先填写问题描述", "bad");
+
+    const submit = $("[data-qa-submit]");
+    if (submit) submit.disabled = true;
+    say("提交中…");
+    try {
+      const res = await fetch(api + "/api/questions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ category, body: text }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        say(data.error || "提交失败", "bad");
+        return;
+      }
+      if (bodyInput) bodyInput.value = "";
+      say("提交成功，站长会尽快回答", "ok");
+      await loadQa();
+      renderQa();
+    } catch {
+      say("网络不通，稍后再试", "bad");
+    } finally {
+      if (submit) submit.disabled = false;
+    }
+  }
+
+  async function addQaBlockWord(e) {
+    e.preventDefault();
+    const input = $("[data-qa-block-input]");
+    const msg = $("[data-qa-admin-msg]");
+    const say = (t, kind = "") => {
+      if (msg) {
+        msg.textContent = t;
+        msg.className = "qa-admin-msg" + (kind ? " " + kind : "");
+      }
+    };
+    const word = (input && input.value ? input.value : "").trim();
+    if (!word) return say("请输入屏蔽词", "bad");
+    const r = await adminFetch("/api/admin/blocked-word", { word });
+    if (!r.ok) return say(r.error || "添加失败", "bad");
+    if (input) input.value = "";
+    say("已加入屏蔽词", "ok");
+    await loadBlockedWords();
+    renderQa();
+  }
+
+  function onQaPanelClick(e) {
+    const btn = e.target.closest("button[data-qa-act]");
+    if (!btn) return;
+    const act = btn.dataset.qaAct;
+    if (act === "unblock") {
+      const word = btn.dataset.qaWord || "";
+      removeQaBlockWord(word);
+      return;
+    }
+    const id = Number(btn.dataset.qaId);
+    if (!id) return;
+    if (act === "answer") saveQaReply(id, btn);
+    else if (act === "reopen") qaAdminUpdate(id, { status: "open" });
+    else if (act === "hide") qaAdminUpdate(id, { status: "hidden" });
+    else if (act === "delete") deleteQa(id);
+  }
+
+  async function removeQaBlockWord(word) {
+    if (!word) return;
+    const r = await adminFetch("/api/admin/blocked-word/delete", { word });
+    const msg = $("[data-qa-admin-msg]");
+    if (msg) {
+      msg.textContent = r.ok ? "已删除" : r.error || "删除失败";
+      msg.className = "qa-admin-msg" + (r.ok ? " ok" : " bad");
+    }
+    if (r.ok) {
+      await loadBlockedWords();
+      renderQa();
+    }
+  }
+
+  async function saveQaReply(id, btn) {
+    const box = btn.closest("[data-qa-item]");
+    const ta = box ? box.querySelector("[data-qa-reply-input]") : null;
+    const reply = ta && ta.value ? ta.value.trim() : "";
+    await qaAdminUpdate(id, { reply });
+  }
+
+  async function qaAdminUpdate(id, payload) {
+    const r = await adminFetch("/api/admin/question", Object.assign({ id }, payload));
+    if (r.ok) {
+      await loadQa();
+      renderQa();
+    } else {
+      window.alert(r.error || "操作失败");
+    }
+  }
+
+  async function deleteQa(id) {
+    if (!window.confirm("彻底删除这条提问？不可撤销。")) return;
+    const r = await adminFetch("/api/admin/question/delete", { id });
+    if (r.ok) {
+      await loadQa();
+      renderQa();
+    } else {
+      window.alert(r.error || "删除失败");
+    }
+  }
+
+  function renderQa() {
+    const panel = $("[data-qa-panel]");
+    if (!panel) return;
+    // 后端可用才显示整块（和资源帮找一致）
+    if (!(qaApi() || apiBase())) {
+      panel.hidden = true;
+      return;
+    }
+    panel.hidden = false;
+
+    const logged = !!adminToken;
+
+    // 副标题带待回答数
+    const sub = $("[data-qa-sub]");
+    if (sub) {
+      const open = qaState.summary.open || 0;
+      sub.textContent =
+        "想用的资源找不到、用不了，或者不会用？在这里提问，站长会来回答。" +
+        (qaState.loaded ? ` 当前 ${open} 条待回答。` : "");
+    }
+
+    // 屏蔽词管理区（仅登录）
+    const adminWrap = $("[data-qa-admin]");
+    if (adminWrap) {
+      adminWrap.hidden = !logged;
+      if (logged) {
+        const list = $("[data-qa-block-list]");
+        if (list) {
+          list.textContent = "";
+          if (!qaState.blocked.length) {
+            list.appendChild(qaEl("span", "qa-block-empty", "暂无屏蔽词"));
+          } else {
+            qaState.blocked.forEach((w) => {
+              const chip = qaEl("span", "qa-block-chip");
+              chip.appendChild(qaEl("span", "qa-block-word", w));
+              const del = qaEl("button", "qa-block-del", "×");
+              del.type = "button";
+              del.dataset.qaAct = "unblock";
+              del.dataset.qaWord = w;
+              del.title = "删除该屏蔽词";
+              chip.appendChild(del);
+              list.appendChild(chip);
+            });
+          }
+        }
+      }
+    }
+
+    // 状态筛选标签（登录后多一个「已隐藏」）
+    const tabsWrap = $("[data-qa-tabs]");
+    if (tabsWrap) {
+      const tabs = [
+        { id: "all", label: "全部" },
+        { id: "open", label: `待回答${qaState.summary.open ? " " + qaState.summary.open : ""}` },
+        { id: "answered", label: `已回答${qaState.summary.answered ? " " + qaState.summary.answered : ""}` },
+      ];
+      if (logged) {
+        tabs.push({ id: "hidden", label: `已隐藏${qaState.summary.hidden ? " " + qaState.summary.hidden : ""}` });
+      }
+      if (!logged && qaState.filter === "hidden") qaState.filter = "all";
+      tabsWrap.textContent = "";
+      tabs.forEach((t) => {
+        const b = qaEl("button", "qa-tab" + (qaState.filter === t.id ? " active" : ""), t.label);
+        b.type = "button";
+        b.setAttribute("role", "tab");
+        b.setAttribute("aria-selected", String(qaState.filter === t.id));
+        b.addEventListener("click", () => {
+          qaState.filter = t.id;
+          renderQa();
+        });
+        tabsWrap.appendChild(b);
+      });
+    }
+
+    // 列表
+    const listEl = $("[data-qa-list]");
+    const empty = $("[data-qa-empty]");
+    if (!listEl) return;
+    listEl.textContent = "";
+
+    let items = qaState.items.slice();
+    if (qaState.filter !== "all") items = items.filter((q) => q.status === qaState.filter);
+
+    if (!items.length) {
+      if (empty) {
+        empty.hidden = false;
+        empty.textContent = qaState.loaded ? "这里还没有提问。" : "加载中…";
+      }
+      return;
+    }
+    if (empty) empty.hidden = true;
+
+    items.forEach((q) => listEl.appendChild(buildQaItem(q, logged)));
+  }
+
+  function buildQaItem(q, logged) {
+    const li = qaEl("li", "qa-item");
+    li.dataset.qaItem = String(q.id);
+    if (q.status === "hidden") li.classList.add("qa-item-hidden");
+
+    const head = qaEl("div", "qa-item-head");
+    head.appendChild(qaEl("span", "qa-cat", QA_CAT_LABEL[q.category] || "其他"));
+    head.appendChild(
+      qaEl("span", "qa-status qa-status-" + q.status, QA_STATUS_LABEL[q.status] || q.status)
+    );
+    head.appendChild(qaEl("span", "qa-date", fmtDate(q.created)));
+    li.appendChild(head);
+
+    li.appendChild(qaEl("p", "qa-question", q.body));
+
+    if (q.reply) {
+      const rep = qaEl("div", "qa-reply");
+      rep.appendChild(qaEl("span", "qa-reply-label", "站长回复"));
+      rep.appendChild(qaEl("p", "qa-reply-text", q.reply));
+      li.appendChild(rep);
+    }
+
+    if (logged) {
+      const ops = qaEl("div", "qa-item-ops");
+      const ta = qaEl("textarea", "qa-reply-input");
+      ta.rows = 2;
+      ta.maxLength = 1000;
+      ta.placeholder = "输入回复…";
+      ta.dataset.qaReplyInput = "1";
+      if (q.reply) ta.value = q.reply;
+      ops.appendChild(ta);
+
+      const btns = qaEl("div", "qa-op-btns");
+      const mkBtn = (label, act, cls) => {
+        const b = qaEl("button", "qa-op-btn" + (cls ? " " + cls : ""), label);
+        b.type = "button";
+        b.dataset.qaAct = act;
+        b.dataset.qaId = String(q.id);
+        return b;
+      };
+      btns.appendChild(mkBtn("保存回复", "answer", "primary"));
+      if (q.status !== "open") btns.appendChild(mkBtn("标为待回答", "reopen"));
+      if (q.status !== "hidden") btns.appendChild(mkBtn("隐藏", "hide"));
+      else btns.appendChild(mkBtn("取消隐藏", "reopen"));
+      btns.appendChild(mkBtn("删除", "delete", "danger"));
+      ops.appendChild(btns);
+      li.appendChild(ops);
+    }
+
+    return li;
   }
 
   document.addEventListener("DOMContentLoaded", init);
