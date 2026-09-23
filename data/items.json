@@ -14664,6 +14664,25 @@
       "note": "桔子文化，包子漫画（bzmgcn）源。当前进度约 76 话；包子这个源显示到第 71 话，可能略滞后，以站内最新章节为准。"
     },
     {
+      "id": "manual-pickup-bilibilia",
+      "name": "BILIBILIA（B站封面提取）",
+      "section": "pickup",
+      "subsection": "app",
+      "description": "B站视频封面提取工具网页版。输入视频链接 / BV 号一键拿封面；配合浏览器插件还能下封面、专栏封面、视频高清截图。免费、免注册，数据存本地。",
+      "url": "https://bilibilia.com/",
+      "tags": [
+        "B站",
+        "封面提取",
+        "在线工具",
+        "免注册",
+        "浏览器插件"
+      ],
+      "kind": "在线工具",
+      "need_login": false,
+      "update_info": "随时可用",
+      "note": "小技巧：任意 B 站视频链接把 bilibili.com 改成 bilibilia.com 即可直达该视频的封面提取页。"
+    },
+    {
       "id": "manual-pickup-claude-desktop-cn",
       "name": "Claude Desktop 中文版（claude-desktop-cn）",
       "section": "pickup",
