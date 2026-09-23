@@ -12642,35 +12642,38 @@
       "name": "Kun Agent（官网）",
       "section": "ai",
       "subsection": "tool",
-      "description": "KunAgent 团队的开源 AI Agent（智能体）项目官网入口，可接入自己的模型 / API 使用。",
+      "description": "本地优先的 AI Agent 工作台：桌面 GUI + 终端 TUI 共用同一本地运行时。Code 模式管编程交付（文件编辑 / 终端 / Git / Diff / 测试 / Design 画布），Work 模式管写作、文档分析与演示。支持接入 ChatGPT / Claude / Gemini / DeepSeek / Qwen 等及自托管模型，兼容 OpenAI / Anthropic 接口。",
       "url": "https://kun-agent.com/",
       "tags": [
         "AI Agent",
-        "智能体",
-        "开源"
+        "本地优先",
+        "GUI + TUI",
+        "编程 / 写作",
+        "兼容 OpenAI 接口"
       ],
-      "kind": "AI Agent 官网",
+      "kind": "本地 AI Agent 工作台",
       "need_login": false,
       "update_info": "随时可用",
-      "note": "开源项目 KunAgent/Kun 的官方站，源码见配套仓库条目。"
+      "note": "官网提供桌面版下载（macOS / Windows / Linux）；源码见配套仓库条目 KunAgent/Kun。"
     },
     {
       "id": "manual-ai-kun-repo",
       "name": "Kun（开源仓库）",
       "section": "ai",
       "subsection": "tool",
-      "description": "上面 Kun Agent 的开源源码仓库，可自部署自用。",
+      "description": "上面 Kun 工作台的源码仓库，TypeScript 为主，Electron 桌面 + 终端 TUI，可从源码构建（Node 22.19+，npm run dev）。GitHub 6k+ star，含 MCP / Skills / 扩展 / 多代理等能力。",
       "url": "https://github.com/KunAgent/Kun",
       "tags": [
         "开源",
         "GitHub",
-        "AI Agent",
-        "可自部署"
+        "TypeScript",
+        "Electron",
+        "非商业许可"
       ],
       "kind": "开源项目仓库",
       "need_login": false,
       "update_info": "持续更新",
-      "note": "官网见配套条目 kun-agent.com。"
+      "note": "许可证 PolyForm Noncommercial 1.0.0：仅限学习 / 研究 / 非商业用途，商用、SaaS、转售或集成进商业产品需单独书面授权（不是 MIT，别直接商用）。官网见配套条目 kun-agent.com。"
     },
     {
       "id": "manual-collection-4",
