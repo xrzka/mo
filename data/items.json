@@ -14622,6 +14622,26 @@
       "note": "没有网页版链接，需要在微信内搜索公众号名称「遇漫天堂」关注。公众号名可能变动或被封，搜不到时留意是否改名。默认按成人向收录，如属全年龄可在后台把 adult 关掉。"
     },
     {
+      "id": "manual-manga-site-manhuayu",
+      "name": "漫画鱼",
+      "section": "manga",
+      "subsection": "site",
+      "description": "免费在线看漫画网站，收录国漫 / 日漫 / 韩漫，热血 / 玄幻 / 都市 / 言情 / 校园 / 恋爱等分类齐全，有排行榜、最近更新、全部漫画，无需注册在线看。",
+      "url": "https://www.manhuayu88.com/",
+      "tags": [
+        "漫画大全",
+        "免费阅读",
+        "在线看",
+        "国漫",
+        "日漫",
+        "韩漫"
+      ],
+      "kind": "漫画在线阅读网站",
+      "need_login": false,
+      "update_info": "随时可用",
+      "note": "站点自述漫画来源于网络、仅提供低品质在线试看、不提供下载。域名可能有镜像或变动，失效时留意官方最新地址。"
+    },
+    {
       "id": "manual-manga-site-songzi",
       "name": "松子漫画",
       "section": "manga",
