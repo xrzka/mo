@@ -14773,6 +14773,25 @@
       "note": "需注册登录（邮箱 + 密码）。站点声明：仅提供数据分析与参考，不构成投注指令或建议、不参与赌博，预测存在不确定性，请理性对待勿沉迷。"
     },
     {
+      "id": "manual-pickup-gptplus-ca",
+      "name": "GPTPlus.ca（ChatGPT Plus 共享/镜像站）",
+      "section": "pickup",
+      "subsection": "app",
+      "description": "ChatGPT Plus 共享 / 镜像站，免翻墙使用 ChatGPT，官网 1:1 界面。支持 GPT-6 Astra（Work 模式）、GPT-5.6 全系列、GPT Image 2.5 生图、语音、GPTs、Codex 氛围编程；按「车队 / 专属车队」共享 Plus/Pro 账号，注册可免费试用。",
+      "url": "https://www.gptplus.ca/home",
+      "tags": [
+        "ChatGPT Plus",
+        "镜像站",
+        "共享账号",
+        "免翻",
+        "GPT-6"
+      ],
+      "kind": "ChatGPT 共享/镜像站",
+      "need_login": true,
+      "update_info": "随时可用",
+      "note": "第三方共享/镜像站（非 OpenAI 官方），付费订阅 + 车队共享账号模式，优惠码 SUB2GPTPLUS（9 折起）。第三方共享站存在账号安全、隐私与稳定性风险，别在里面输入敏感信息，自行评估。"
+    },
+    {
       "id": "manual-pickup-hhhl-uf",
       "name": "Universe Federation（HHHL 社区）",
       "section": "pickup",
