@@ -14702,6 +14702,25 @@
       "note": "小技巧：任意 B 站视频链接把 bilibili.com 改成 bilibilia.com 即可直达该视频的封面提取页。"
     },
     {
+      "id": "manual-pickup-gpt-sovits",
+      "name": "GPT-SoVITS（少样本语音克隆 TTS）",
+      "section": "pickup",
+      "subsection": "code",
+      "description": "花儿不哭（RVC-Boss）的开源 TTS / 语音克隆项目。5 秒参考音频即可零样本 TTS，1 分钟数据微调就能高相似度克隆音色——正适合复刻二游角色音色。支持中 / 日 / 英 / 韩 / 粤，Windows 有整合包双击即用。MIT 协议，免费。",
+      "url": "https://github.com/RVC-Boss/GPT-SoVITS",
+      "tags": [
+        "TTS",
+        "语音克隆",
+        "二游音色",
+        "开源",
+        "花儿不哭"
+      ],
+      "kind": "开源项目",
+      "need_login": false,
+      "update_info": "持续更新",
+      "note": "圈内很多人分享现成的原神 / 星铁等二游角色 GPT-SoVITS 模型，直接拿来推理即可；想自定义就喂角色语音切片微调。GitHub 62k star，MIT 协议。同类免费开源还有 IndexTTS、Fish Speech、CosyVoice。"
+    },
+    {
       "id": "manual-pickup-claude-desktop-cn",
       "name": "Claude Desktop 中文版（claude-desktop-cn）",
       "section": "pickup",
