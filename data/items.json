@@ -14566,6 +14566,24 @@
       "note": "没有网页版链接，需要在微信内搜索公众号名称「米鸭米」关注。公众号名可能变动或被封，搜不到时留意是否改名。"
     },
     {
+      "id": "manual-manga-wechat-yuman-tiantang",
+      "name": "遇漫天堂",
+      "section": "manga",
+      "subsection": "wechat",
+      "adult": true,
+      "description": "漫画相关的微信公众号。在微信里搜「遇漫天堂」关注，更新推送走公众号。",
+      "url": "",
+      "tags": [
+        "漫画",
+        "微信公众号",
+        "站外渠道"
+      ],
+      "kind": "微信公众号",
+      "need_login": true,
+      "update_info": "公众号推送",
+      "note": "没有网页版链接，需要在微信内搜索公众号名称「遇漫天堂」关注。公众号名可能变动或被封，搜不到时留意是否改名。默认按成人向收录，如属全年龄可在后台把 adult 关掉。"
+    },
+    {
       "id": "manual-manga-site-songzi",
       "name": "松子漫画",
       "section": "manga",
@@ -14629,6 +14647,7 @@
       "id": "manual-pickup-claude-desktop-cn",
       "name": "Claude Desktop 中文版（claude-desktop-cn）",
       "section": "pickup",
+      "subsection": "app",
       "description": "GitHub 开源项目，Claude Desktop 桌面客户端的中文版 / 汉化打包，方便中文用户使用 Claude 桌面端。",
       "url": "https://github.com/Qiao-920/claude-desktop-cn",
       "tags": [
@@ -14648,6 +14667,7 @@
       "id": "manual-pickup-qwen2api",
       "name": "qwen2API",
       "section": "pickup",
+      "subsection": "code",
       "description": "GitHub 开源项目，把通义千问（Qwen）转成 OpenAI 兼容 API 的中转服务，方便在支持 OpenAI 接口的工具里调用 Qwen。",
       "url": "https://github.com/YuJunZhiXue/qwen2API/",
       "tags": [
@@ -14707,6 +14727,7 @@
       "id": "manual-pickup-fakegps-changer",
       "name": "Location Changer（Fake GPS 虚拟定位）",
       "section": "pickup",
+      "subsection": "app",
       "description": "Google Play 上架的安卓虚拟定位 App，可把设备 GPS 位置修改/模拟到任意地点（fake GPS / location spoof），常用于测试定位相关功能。",
       "url": "https://play.google.com/store/apps/details?id=location.changer.fake.gps.spoof.emulator",
       "tags": [
