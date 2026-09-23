@@ -14761,6 +14761,25 @@
       "note": "可直接浏览，参与发帖需注册。主打中转站合集 / 网盘 / 教程等资源；也有写真图集 cosplay 板块，部分内容成人向，故默认按成人向收录，介意可在后台把 adult 关掉。"
     },
     {
+      "id": "manual-pickup-fiimeopc",
+      "name": "FiimeOPC（一人公司社区）",
+      "section": "pickup",
+      "subsection": "site",
+      "description": "「一人公司」(OPC) 社区平台。查全国 OPC 社区 / 园区、找创业搭子、展示项目，聚合 AI 情报站、资源分享（白皮书 / 工具 / 模板 / 教程）、AI 工具库，以及 CodePlan——国内主流 AI 编程订阅套餐横向对比（价格 / 模型 / 额度 / 测速）。",
+      "url": "https://opc.fiime.cn/zh-cn/",
+      "tags": [
+        "一人公司",
+        "创业社区",
+        "AI工具库",
+        "AI情报",
+        "CodePlan"
+      ],
+      "kind": "社区 / 导航平台",
+      "need_login": false,
+      "update_info": "活跃更新",
+      "note": "逛社区 / 看资源可直接浏览，发帖 / 入驻社区需注册。里头的 CodePlan（AI 编程订阅套餐横向对比）和 AI 工具库，挑 AI 订阅时比较实用。"
+    },
+    {
       "id": "manual-pickup-gpt-sovits",
       "name": "GPT-SoVITS（少样本语音克隆 TTS）",
       "section": "pickup",
