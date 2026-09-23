@@ -14607,6 +14607,25 @@
       "need_login": false,
       "update_info": "随时可用",
       "note": "站点标语「六漫画 - 好看的热门漫画_最新最全漫画_免费观看」，无需注册即可在线阅读，PC 网页与移动端自适应。可用性以站内实际为准。"
+    },
+    {
+      "id": "manual-pickup-fakegps-changer",
+      "name": "Location Changer（Fake GPS 虚拟定位）",
+      "section": "pickup",
+      "description": "Google Play 上架的安卓虚拟定位 App，可把设备 GPS 位置修改/模拟到任意地点（fake GPS / location spoof），常用于测试定位相关功能。",
+      "url": "https://play.google.com/store/apps/details?id=location.changer.fake.gps.spoof.emulator",
+      "tags": [
+        "安卓",
+        "Google Play",
+        "虚拟定位",
+        "Fake GPS",
+        "定位修改",
+        "随手安利"
+      ],
+      "kind": "安卓 App（Google Play）",
+      "need_login": false,
+      "update_info": "随手收录",
+      "note": "包名 location.changer.fake.gps.spoof.emulator。需安卓，通常要开启「开发者选项 - 模拟位置」授权后使用；部分 App 会检测虚拟定位。名称/评分/功能以 Play 商店页面为准，收录时未逐项核实。"
     }
   ]
 }
