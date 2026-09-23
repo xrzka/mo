@@ -14626,6 +14626,26 @@
       "need_login": false,
       "update_info": "随手收录",
       "note": "包名 location.changer.fake.gps.spoof.emulator。需安卓，通常要开启「开发者选项 - 模拟位置」授权后使用；部分 App 会检测虚拟定位。名称/评分/功能以 Play 商店页面为准，收录时未逐项核实。"
+    },
+    {
+      "id": "manual-manga-site-benzhu",
+      "name": "笨猪漫画",
+      "section": "manga",
+      "subsection": "site",
+      "description": "免费漫画在线阅读平台，收录热门与最新漫画，支持下拉式阅读，可在线免费看，支持 PC 与移动端。",
+      "url": "http://www.benzhu.cc/",
+      "tags": [
+        "免费漫画",
+        "在线看",
+        "下拉式阅读",
+        "最新漫画",
+        "热门漫画",
+        "多端支持"
+      ],
+      "kind": "漫画在线阅读网站",
+      "need_login": false,
+      "update_info": "随时可用",
+      "note": "站点标语「笨猪漫画 - 最新漫画_热门漫画免费阅读下拉式」，无需注册即可在线阅读，支持下拉式看图。注意本站为 http（非 https），可用性与安全性以站内实际为准。"
     }
   ]
 }
