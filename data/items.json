@@ -12733,6 +12733,25 @@
       "note": "在线 ComfyUI / AI 生图生视频平台，浏览器直接跑工作流，免本地 GPU；需注册登录使用。"
     },
     {
+      "id": "manual-ai-miora",
+      "name": "Miora（记忆型 AI 创意工作室）",
+      "section": "ai",
+      "subsection": "video",
+      "description": "带记忆的 AI 创意智能体工作室。一份 brief 输入，产出整套统一品牌风格的视觉素材——图片、视频、UI/UX、3D 全在同一块画布上生成，还能记住你的创作偏好与风格。腾讯出品。",
+      "url": "https://miora.design/",
+      "tags": [
+        "AI 视频",
+        "AI 生图",
+        "3D",
+        "UI/UX",
+        "创作记忆"
+      ],
+      "kind": "在线 AI 创作平台",
+      "need_login": true,
+      "update_info": "随时可用",
+      "note": "图片 / 视频 / UI/UX / 3D 同一画布生成，带创作记忆；也可作为 WorkBuddy 的 MCP App 嵌入使用。需登录。"
+    },
+    {
       "id": "manual-collection-4",
       "name": "电脑微信快捷方式多开",
       "section": "collection",
