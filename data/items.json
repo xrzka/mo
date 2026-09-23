@@ -866,6 +866,60 @@
       "note": "百度网盘分享，提取码 h9qx，含 1-2 卷。"
     },
     {
+      "id": "manual-novel-taohun-qingleng-taizi",
+      "name": "逃婚后被清冷太子娇养了",
+      "section": "novel",
+      "subsection": "download",
+      "description": "古代言情甜宠小说。女主逃婚之后，被清冷太子一路娇养的故事。本资源为网盘下载。",
+      "url": "https://pan.baidu.com/s/1xxdHynH2bNF-QgXB7jgHJw?pwd=jgkf",
+      "password": "jgkf",
+      "links": [
+        {
+          "name": "百度网盘",
+          "url": "https://pan.baidu.com/s/1xxdHynH2bNF-QgXB7jgHJw?pwd=jgkf",
+          "password": "jgkf",
+          "label": ""
+        }
+      ],
+      "tags": [
+        "言情",
+        "古言",
+        "甜宠",
+        "太子",
+        "网盘下载"
+      ],
+      "kind": "小说下载",
+      "need_login": false,
+      "update_info": "网盘分享",
+      "note": "百度网盘分享，提取码 jgkf。"
+    },
+    {
+      "id": "manual-novel-geinide-wocongwei",
+      "name": "给你的我从未",
+      "section": "novel",
+      "subsection": "download",
+      "description": "言情小说《给你的我从未》。本资源为网盘下载。",
+      "url": "https://pan.baidu.com/s/1zhcDacHGUwlQ5cqAI6DmDg?pwd=9dan",
+      "password": "9dan",
+      "links": [
+        {
+          "name": "百度网盘",
+          "url": "https://pan.baidu.com/s/1zhcDacHGUwlQ5cqAI6DmDg?pwd=9dan",
+          "password": "9dan",
+          "label": ""
+        }
+      ],
+      "tags": [
+        "言情",
+        "小说",
+        "网盘下载"
+      ],
+      "kind": "小说下载",
+      "need_login": false,
+      "update_info": "网盘分享",
+      "note": "百度网盘分享，提取码 9dan。"
+    },
+    {
       "id": "manual-novel-10",
       "name": "노벨피아 Novelpia（韩国网络小说平台）",
       "section": "novel",
