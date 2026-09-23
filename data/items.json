@@ -14488,6 +14488,26 @@
       "need_login": true,
       "update_info": "公众号推送",
       "note": "没有网页版链接，需要在微信内搜索公众号名称「米鸭米」关注。公众号名可能变动或被封，搜不到时留意是否改名。"
+    },
+    {
+      "id": "manual-manga-site-songzi",
+      "name": "松子漫画",
+      "section": "manga",
+      "subsection": "site",
+      "description": "免费漫画在线阅读平台，提供漫画大全与最新章节更新，可在线免费阅读热门漫画，支持 PC 与移动端。",
+      "url": "https://songzimanhua.com/",
+      "tags": [
+        "漫画大全",
+        "免费阅读",
+        "最新章节",
+        "在线看",
+        "热门漫画",
+        "多端支持"
+      ],
+      "kind": "漫画在线阅读网站",
+      "need_login": false,
+      "update_info": "随时可用",
+      "note": "站点标语「漫画大全免费阅读_热门漫画与最新章节 | 松子漫画」，无需注册即可在线阅读，PC 网页与移动端自适应。可用性以站内实际为准。"
     }
   ]
 }
