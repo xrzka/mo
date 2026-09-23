@@ -12695,6 +12695,25 @@
       "note": "FD3API，多家国产模型统一入口，OpenAI / Claude 协议双兼容，首页可看实时用量。"
     },
     {
+      "id": "manual-ai-rikkahub",
+      "name": "RikkaHub（安卓多模型 AI 客户端）",
+      "section": "ai",
+      "subsection": "tool",
+      "description": "原生 Android LLM 聊天客户端，可自由切换多家模型（兼容 OpenAI / Google / Anthropic 接口）。Material You 设计 + 暗色模式，支持多模态输入（图片 / PDF / Docx）、MCP、联网搜索、消息分支、Agent 自定义、记忆、AI 翻译、SillyTavern 角色卡导入，还带 proot Linux 工作区。Kotlin + Jetpack Compose，AGPL-3.0。",
+      "url": "https://github.com/rikkahub/rikkahub",
+      "tags": [
+        "安卓",
+        "AI 客户端",
+        "多模型",
+        "开源",
+        "MCP"
+      ],
+      "kind": "开源安卓 App",
+      "need_login": false,
+      "update_info": "持续更新",
+      "note": "官网 rikka-ai.com 或 Google Play 下载，GitHub 7.8k star。AGPL-3.0 开源；注意山寨 fork 很多，认准官方仓库/官网，避免隐私泄露或过度权限。"
+    },
+    {
       "id": "manual-collection-4",
       "name": "电脑微信快捷方式多开",
       "section": "collection",
