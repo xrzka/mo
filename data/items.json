@@ -14665,6 +14665,24 @@
       "need_login": false,
       "update_info": "随时可用",
       "note": "站点标语「首页 | 轻小说机翻机器人」，主打轻小说机器翻译在线阅读。机翻质量有限，仅供参考，可用性以站内实际为准。"
+    },
+    {
+      "id": "manual-novel-site-novalpie",
+      "name": "novalpie",
+      "section": "novel",
+      "subsection": "site",
+      "description": "小说在线阅读站，支持收藏功能（「我的收藏」），可在线阅读小说，支持 PC 与移动端。",
+      "url": "https://novalpie.cc/",
+      "tags": [
+        "小说",
+        "在线阅读",
+        "可收藏",
+        "多端支持"
+      ],
+      "kind": "小说在线阅读网站",
+      "need_login": false,
+      "update_info": "随时可用",
+      "note": "收录页标题为「我的收藏 - novalpie」，站点提供小说在线阅读与收藏功能。具体收录范围、是否需登录使用收藏等以站内实际为准，收录时未逐项核实。"
     }
   ]
 }
