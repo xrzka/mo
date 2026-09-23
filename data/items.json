@@ -14797,7 +14797,7 @@
       "section": "pickup",
       "subsection": "app",
       "description": "长亭科技出品的一站式 AI 办公开发平台。浏览器打开即用、云端开发环境（每个任务一台真实服务器），接入 GLM / Kimi / MiniMax / Qwen / DeepSeek 等国产模型，需求→开发→测试→开 PR 全链路；有桌面 / 移动客户端（MonkeyWork 可处理本地文件），完全开源、支持私有化部署，个人永久免费档。",
-      "url": "https://monkeycode-ai.com/?ic=01a07536-cb17-7116-bfa7-3c74abf128ea",
+      "url": "https://monkeycode-ai.com/",
       "tags": [
         "AI编程",
         "云端开发",
@@ -14808,7 +14808,7 @@
       "kind": "AI 开发平台",
       "need_login": true,
       "update_info": "随时可用",
-      "note": "长亭科技出品，完全开源（GitHub）+ 私有化部署。个人免费档：每天 10M Token、1 并发。链接带的是你的邀请码（ic=…），公开后他人从这注册会算你的推荐；不想公开可以让我去掉。"
+      "note": "长亭科技出品，完全开源（GitHub）+ 私有化部署。个人免费档：每天 10M Token、1 并发。"
     },
     {
       "id": "manual-pickup-hhhl-uf",
