@@ -14567,6 +14567,26 @@
       "need_login": false,
       "update_info": "随手收录",
       "note": "仓库地址 https://github.com/YuJunZhiXue/qwen2API/ 。部署方式、鉴权与可用模型以仓库 README 为准，收录时未逐项核实。"
+    },
+    {
+      "id": "manual-manga-site-manwang",
+      "name": "漫网",
+      "section": "manga",
+      "subsection": "site",
+      "description": "免费漫画在线阅读平台，收录热门国漫、日漫、韩漫全集，可在线免费看，支持 PC 与移动端。",
+      "url": "https://manwang.net/",
+      "tags": [
+        "免费漫画",
+        "在线看",
+        "国漫",
+        "日漫",
+        "韩漫",
+        "多端支持"
+      ],
+      "kind": "漫画在线阅读网站",
+      "need_login": false,
+      "update_info": "随时可用",
+      "note": "站点标语「漫网-免费漫画在线看-最好看的漫画就在漫网」，无需注册即可在线阅读，PC 网页与移动端自适应。可用性以站内实际为准。"
     }
   ]
 }
