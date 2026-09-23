@@ -14721,6 +14721,63 @@
       "note": "圈内很多人分享现成的原神 / 星铁等二游角色 GPT-SoVITS 模型，直接拿来推理即可；想自定义就喂角色语音切片微调。GitHub 62k star，MIT 协议。同类免费开源还有 IndexTTS、Fish Speech、CosyVoice。"
     },
     {
+      "id": "manual-pickup-indextts",
+      "name": "IndexTTS（B站零样本语音克隆 TTS）",
+      "section": "pickup",
+      "subsection": "code",
+      "description": "哔哩哔哩开源的工业级零样本 TTS，单条参考音频即可克隆音色。最新 IndexTTS-2.5 支持中 / 英 / 日 / 西 / 阿，带情感控制、语速控制、发音（拼音 / 音素）控制，推理快——克隆二游角色音色效果稳。",
+      "url": "https://github.com/index-tts/index-tts",
+      "tags": [
+        "TTS",
+        "零样本克隆",
+        "情感控制",
+        "开源",
+        "B站"
+      ],
+      "kind": "开源项目",
+      "need_login": false,
+      "update_info": "持续更新",
+      "note": "bilibili Model Use License（非纯 MIT，商用先看协议）。GitHub 24k star。官方只认这个仓库，第三方同名站慎用。"
+    },
+    {
+      "id": "manual-pickup-fish-speech",
+      "name": "Fish Speech / Fish Audio S2（SOTA 开源 TTS）",
+      "section": "pickup",
+      "subsection": "code",
+      "description": "Fish Audio 开源的 SOTA 多语种 TTS（S2 Pro），支持 80+ 语言，10-30 秒参考音频即可快速克隆音色。支持 [whisper]/[angry] 等自然语言情感标签做细粒度控制，还有多说话人、多轮对话。",
+      "url": "https://github.com/fishaudio/fish-speech",
+      "tags": [
+        "TTS",
+        "语音克隆",
+        "情感标签",
+        "多语种",
+        "开源"
+      ],
+      "kind": "开源项目",
+      "need_login": false,
+      "update_info": "持续更新",
+      "note": "FISH AUDIO RESEARCH LICENSE（研究许可，商用注意条款）。在线体验 fish.audio；GitHub 32k star。"
+    },
+    {
+      "id": "manual-pickup-cosyvoice",
+      "name": "CosyVoice（阿里多语种语音生成）",
+      "section": "pickup",
+      "subsection": "code",
+      "description": "阿里通义 FunAudioLLM 的开源多语种语音生成大模型，零样本跨语种音色克隆。覆盖中 / 英 / 日 / 韩 / 德 / 西 / 法 / 意 / 俄 9 种语言 + 18 种中文方言，支持情感 / 方言 / 语速指令控制，低延迟流式。",
+      "url": "https://github.com/FunAudioLLM/CosyVoice",
+      "tags": [
+        "TTS",
+        "零样本克隆",
+        "方言",
+        "多语种",
+        "开源"
+      ],
+      "kind": "开源项目",
+      "need_login": false,
+      "update_info": "持续更新",
+      "note": "Apache-2.0 许可，商用友好。阿里出品，模型走 ModelScope / HuggingFace 下载。GitHub 23k star。"
+    },
+    {
       "id": "manual-pickup-claude-desktop-cn",
       "name": "Claude Desktop 中文版（claude-desktop-cn）",
       "section": "pickup",
