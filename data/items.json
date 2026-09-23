@@ -14508,6 +14508,27 @@
       "need_login": false,
       "update_info": "随时可用",
       "note": "站点标语「漫画大全免费阅读_热门漫画与最新章节 | 松子漫画」，无需注册即可在线阅读，PC 网页与移动端自适应。可用性以站内实际为准。"
+    },
+    {
+      "id": "manual-manga-site-baozi",
+      "name": "包子漫画",
+      "section": "manga",
+      "subsection": "site",
+      "description": "免费漫画在线阅读平台，收录国漫、日漫、韩漫热门作品全集与最新章节，可在线免费阅读，支持 PC 与移动端。",
+      "url": "https://cn.bzmgcn.com/",
+      "tags": [
+        "漫画大全",
+        "免费阅读",
+        "在线看",
+        "国漫",
+        "日漫",
+        "韩漫",
+        "多端支持"
+      ],
+      "kind": "漫画在线阅读网站",
+      "need_login": false,
+      "update_info": "随时可用",
+      "note": "包子漫画（bzmgcn）在线阅读站，无需注册即可看，PC 网页与移动端自适应。域名可能有多个镜像，失效时留意官方最新地址。"
     }
   ]
 }
