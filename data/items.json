@@ -14744,6 +14744,7 @@
       "id": "manual-pickup-hhhl-uf",
       "name": "Universe Federation（HHHL 社区）",
       "section": "pickup",
+      "subsection": "site",
       "adult": true,
       "description": "综合资源 / AI 社区论坛（X 风格 / Discourse 风格，支持联邦）。板块含网盘资源区、社区官方中转站合集、教程与资源、写真图集 cosplay、每日新闻等；热搜多为免费 Claude / DeepSeek 免费 API / 公益站 / key 等 AI 白嫖向内容。",
       "url": "https://dc.hhhl.cc/",
