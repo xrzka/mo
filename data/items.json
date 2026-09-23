@@ -14529,6 +14529,44 @@
       "need_login": false,
       "update_info": "随时可用",
       "note": "包子漫画（bzmgcn）在线阅读站，无需注册即可看，PC 网页与移动端自适应。域名可能有多个镜像，失效时留意官方最新地址。"
+    },
+    {
+      "id": "manual-pickup-claude-desktop-cn",
+      "name": "Claude Desktop 中文版（claude-desktop-cn）",
+      "section": "pickup",
+      "description": "GitHub 开源项目，Claude Desktop 桌面客户端的中文版 / 汉化打包，方便中文用户使用 Claude 桌面端。",
+      "url": "https://github.com/Qiao-920/claude-desktop-cn",
+      "tags": [
+        "GitHub",
+        "开源",
+        "Claude",
+        "桌面客户端",
+        "汉化",
+        "随手安利"
+      ],
+      "kind": "GitHub 开源项目",
+      "need_login": false,
+      "update_info": "随手收录",
+      "note": "仓库地址 https://github.com/Qiao-920/claude-desktop-cn 。具体功能、支持平台与安装方式以仓库 README 为准，收录时未逐项核实。"
+    },
+    {
+      "id": "manual-pickup-qwen2api",
+      "name": "qwen2API",
+      "section": "pickup",
+      "description": "GitHub 开源项目，把通义千问（Qwen）转成 OpenAI 兼容 API 的中转服务，方便在支持 OpenAI 接口的工具里调用 Qwen。",
+      "url": "https://github.com/YuJunZhiXue/qwen2API/",
+      "tags": [
+        "GitHub",
+        "开源",
+        "Qwen",
+        "OpenAI兼容",
+        "API中转",
+        "随手安利"
+      ],
+      "kind": "GitHub 开源项目",
+      "need_login": false,
+      "update_info": "随手收录",
+      "note": "仓库地址 https://github.com/YuJunZhiXue/qwen2API/ 。部署方式、鉴权与可用模型以仓库 README 为准，收录时未逐项核实。"
     }
   ]
 }
