@@ -12714,6 +12714,25 @@
       "note": "官网 rikka-ai.com 或 Google Play 下载，GitHub 7.8k star。AGPL-3.0 开源；注意山寨 fork 很多，认准官方仓库/官网，避免隐私泄露或过度权限。"
     },
     {
+      "id": "manual-ai-runninghub",
+      "name": "RunningHub（AI 内容创作平台）",
+      "section": "ai",
+      "subsection": "video",
+      "description": "原生 AI 智能体内容创作平台，在线跑 ComfyUI 工作流做 AI 生图 / 生视频，无限画布交互，无需本地显卡与部署，社区有大量现成工作流可直接套用。",
+      "url": "https://www.runninghub.cn/",
+      "tags": [
+        "AI 视频",
+        "AI 生图",
+        "ComfyUI",
+        "无限画布",
+        "在线创作"
+      ],
+      "kind": "在线 AI 创作平台",
+      "need_login": true,
+      "update_info": "随时可用",
+      "note": "在线 ComfyUI / AI 生图生视频平台，浏览器直接跑工作流，免本地 GPU；需注册登录使用。"
+    },
+    {
       "id": "manual-collection-4",
       "name": "电脑微信快捷方式多开",
       "section": "collection",
