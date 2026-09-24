@@ -14125,6 +14125,42 @@
       "note": "实测国内可直连（首页 200，无需代理）。以日番追更为主，有一周放送列表和排行榜，建议用 Chrome。永久地址：age.tv / agefans.com / agedm.com，域名常被封，地址发布页在 GitHub github.com/agefanscom/website 和 rentry.org/agefans。站方声明「未在任何应用商店上架 APP，官网下载是唯一渠道，谨防假冒 APP 骗局」。只提供 web 页面、不存储影片。联系 agefans@gmail.com。"
     },
     {
+      "id": "manual-anime-site-yingzhikong",
+      "name": "樱之空动漫基地（skr.cc / dmjd.com）",
+      "section": "anime",
+      "subsection": "site",
+      "description": "老牌动漫在线播放采集站（skr = sakura 樱）。有番组时间表、桜漫（新番 / 热门动漫）、桜歌（动漫 OP/ED 音乐）、桜剧（日剧 / 特摄）、桜学（日语教材 / 小说）、影视与儿童专区，免费在线看番，每日更新。",
+      "url": "https://skr.skr3.cc:666/",
+      "links": [
+        {
+          "name": "当前入口 skr3.cc:666",
+          "url": "https://skr.skr3.cc:666/",
+          "password": ""
+        },
+        {
+          "name": "主域名 skr.cc",
+          "url": "https://www.skr.cc/",
+          "password": ""
+        },
+        {
+          "name": "新域名 动漫基地 dmjd.com",
+          "url": "https://www.dmjd.com/",
+          "password": ""
+        }
+      ],
+      "tags": [
+        "动漫在线",
+        "新番",
+        "采集站",
+        "免费",
+        "日剧/特摄"
+      ],
+      "kind": "动漫在线播放网站",
+      "need_login": false,
+      "update_info": "每日更新",
+      "note": "主域名 www.skr.cc、新域名动漫基地 www.dmjd.com，当前入口 skr.skr3.cc:666（带端口）。采集站、资源采集自国外互联网、带广告水印；部分老番/影视需登录看。域名与入口常变动，打不开时试主域名或搜「樱之空动漫」。"
+    },
+    {
       "id": "manual-manga-8",
       "name": "奇漫屋（免费漫画在线）",
       "section": "manga",
