@@ -15067,6 +15067,25 @@
       "note": "长亭科技出品，完全开源（GitHub）+ 私有化部署。个人免费档：每天 10M Token、1 并发。"
     },
     {
+      "id": "manual-pickup-miniapps-ai",
+      "name": "MiniApps.ai（AI 迷你应用平台）",
+      "section": "pickup",
+      "subsection": "app",
+      "description": "发现 + 创建各类免费 AI 迷你应用、聊天机器人与 AI 工具的平台，覆盖健康、社媒、SEO、写作、生图等场景。聚合多家主流模型（ChatGPT / Claude / Gemini(Nano Banana) / GLM / Grok 等），可无代码搭建自己的 chatbot / mini app。",
+      "url": "https://miniapps.ai/",
+      "tags": [
+        "AI工具",
+        "迷你应用",
+        "聊天机器人",
+        "多模型",
+        "免费"
+      ],
+      "kind": "AI 应用平台",
+      "need_login": false,
+      "update_info": "持续更新",
+      "note": "免费探索 / 使用现成 AI 小应用，创建自己的 chatbot / mini app 需登录。聚合多模型（含免费档）。实测国内直连超时，需代理 / 梯子访问。"
+    },
+    {
       "id": "manual-pickup-hhhl-uf",
       "name": "Universe Federation（HHHL 社区）",
       "section": "pickup",
