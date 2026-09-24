@@ -14910,6 +14910,26 @@
       "note": "站点自述漫画来源于网络、仅提供低品质在线试看、不提供下载。域名可能有镜像或变动，失效时留意官方最新地址。"
     },
     {
+      "id": "manual-manga-site-18comic",
+      "name": "禁漫天堂（18comic）",
+      "section": "manga",
+      "subsection": "site",
+      "adult": true,
+      "description": "成人向漫画（A 漫 / H 漫 / 本子 / 同人志 / 单行本）在线观看与下载站，收录海量中文本子与同人，支持分类 / 标签检索、排行与收藏。全站 18+ 成人内容。",
+      "url": "https://18comic.vip/",
+      "tags": [
+        "A漫",
+        "H漫",
+        "本子",
+        "同人",
+        "18禁"
+      ],
+      "kind": "成人漫画在线站",
+      "need_login": false,
+      "update_info": "持续更新",
+      "note": "全站 18+ 成人向内容，默认按成人向收录（仅成年模式可见）。域名常被封 / 更换（18comic 系列有 .vip/.org/.name 等多个镜像），失效时搜「禁漫天堂」或 JMComic 找当前地址。"
+    },
+    {
       "id": "manual-manga-site-songzi",
       "name": "松子漫画",
       "section": "manga",
