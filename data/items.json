@@ -14161,6 +14161,24 @@
       "note": "主域名 www.skr.cc、新域名动漫基地 www.dmjd.com，当前入口 skr.skr3.cc:666（带端口）。采集站、资源采集自国外互联网、带广告水印；部分老番/影视需登录看。域名与入口常变动，打不开时试主域名或搜「樱之空动漫」。"
     },
     {
+      "id": "manual-anime-site-fanshu",
+      "name": "番薯动漫（fsdm）",
+      "section": "anime",
+      "subsection": "site",
+      "description": "在线追番动漫站，主打日本新番追更与在线播放，站点标语「您追番的最佳归属」。",
+      "url": "https://www.fsdm02.com/",
+      "tags": [
+        "在线动画",
+        "追番",
+        "新番",
+        "免费"
+      ],
+      "kind": "在线动画网站",
+      "need_login": false,
+      "update_info": "每日更新",
+      "note": "站点挂了 Cloudflare 人机验证，收录时未能抓到内页详情，先按追番站记着。域名带序号（fsdm02），这类站常换号，失效时搜「番薯动漫」找当前地址。"
+    },
+    {
       "id": "manual-manga-8",
       "name": "奇漫屋（免费漫画在线）",
       "section": "manga",
