@@ -15086,6 +15086,25 @@
       "note": "免费探索 / 使用现成 AI 小应用，创建自己的 chatbot / mini app 需登录。聚合多模型（含免费档）。实测国内直连超时，需代理 / 梯子访问。"
     },
     {
+      "id": "manual-pickup-findharness",
+      "name": "FindHarness（DeepSeek Harness 插件目录）",
+      "section": "pickup",
+      "subsection": "plugin",
+      "description": "浏览、筛选、安装 DeepSeek Harness 插件的目录站。收录 6900+ 插件，可按分类（UI / 主题 / 记忆 / 工具 / 技能 / 工作流 / MCP / 模型 / 多模态等）、许可证、活跃度、star / 安装量筛选排序，一键找到并安装。",
+      "url": "https://findharness.com/plugins",
+      "tags": [
+        "DeepSeek Harness",
+        "插件市场",
+        "插件目录",
+        "MCP",
+        "技能"
+      ],
+      "kind": "插件目录",
+      "need_login": false,
+      "update_info": "持续更新",
+      "note": "DSH（DeepSeek Harness）插件生态导航站，支持按分类 / 许可证 / star / 安装量筛选。收录 dsh-web、weknora、archify、browserskill 等热门插件。"
+    },
+    {
       "id": "manual-pickup-hhhl-uf",
       "name": "Universe Federation（HHHL 社区）",
       "section": "pickup",
