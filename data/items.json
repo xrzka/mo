@@ -838,6 +838,31 @@
       ]
     },
     {
+      "id": "manual-novel-site-huanmeng",
+      "name": "幻梦轻小说（huanmengacg）",
+      "section": "novel",
+      "subsection": "site",
+      "description": "免费日本轻小说在线阅读 + TXT 下载站。以日轻中文翻译为主，分类齐全（校园 / 青春 / 恋爱 / 治愈 / 群像 / 竞技 / 音乐 / 奇幻 / 异世界等），有排行榜、完本、金牌作家推荐。收录无职转生、Re:从零开始、青春恋爱物语、败犬女主、转生成蜘蛛等热门。免登录在线看，也可下 TXT。",
+      "url": "https://www.huanmengacg.com/",
+      "tags": [
+        "日轻",
+        "轻小说",
+        "在线阅读",
+        "TXT下载",
+        "免登录"
+      ],
+      "kind": "在线轻小说网站",
+      "need_login": false,
+      "update_info": "每日更新",
+      "note": "日轻中文翻译在线阅读 + TXT 下载，站方另有 APP / TTS 语音 / 阅读书源整合下载和 TG 交流群（需梯子）。站点自述小说均来源于网络。域名可能变动，失效时搜「幻梦轻小说」找当前地址。",
+      "also_in": [
+        {
+          "section": "novel",
+          "subsection": "jp"
+        }
+      ]
+    },
+    {
       "id": "manual-novel-lujin-siji-yonvzhu",
       "name": "身为路人祭司的我，发现世界是乙女游戏于是开始培养女主角（1-2卷）",
       "section": "novel",
