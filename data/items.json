@@ -14234,6 +14234,26 @@
       "note": "主打电影 / 电视剧的综合影视采集站，不止动画（含动漫区所以归这）。首页大量 SEO 关键词堆砌、内页未抓到详情，简介按标题记。采集聚合、资源来自互联网、广告勿信。域名 dyrsvip.cc 可能变动，失效时搜「电影人生」找当前地址。"
     },
     {
+      "id": "manual-anime-site-hanime1",
+      "name": "Hanime1.me（H动漫/里番在线）",
+      "section": "anime",
+      "subsection": "site",
+      "adult": true,
+      "description": "成人向动画（H 动漫 / 里番 / 泡面番）在线观看站，支持在线播放、分类与标签检索、排行榜。全站 18+ 成人内容。",
+      "url": "https://hanime1.me/",
+      "tags": [
+        "里番",
+        "H动漫",
+        "成人动画",
+        "在线看",
+        "18禁"
+      ],
+      "kind": "成人动画在线站",
+      "need_login": false,
+      "update_info": "持续更新",
+      "note": "全站 18+ 成人向内容，默认按成人向收录（仅成年模式可见）。在线播放、资源来自网络，域名可能变动，失效时搜「Hanime1」找当前地址。"
+    },
+    {
       "id": "manual-manga-8",
       "name": "奇漫屋（免费漫画在线）",
       "section": "manga",
