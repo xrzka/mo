@@ -14179,6 +14179,42 @@
       "note": "站点挂了 Cloudflare 人机验证，收录时未能抓到内页详情，先按追番站记着。域名带序号（fsdm02），这类站常换号，失效时搜「番薯动漫」找当前地址。"
     },
     {
+      "id": "manual-anime-site-freeok",
+      "name": "FreeOK（追剧也很卷 · 综合影视）",
+      "section": "anime",
+      "subsection": "site",
+      "description": "综合影视在线站（电影 / 剧集 / 综艺 / 动漫全都有），采集聚合、每日更新，有追剧周表和各类热榜（电影 / 剧集 / 综艺 / 动漫榜）。动漫区收录当季新番与国产动漫。免登录在线看。",
+      "url": "https://freeokk.pro/",
+      "links": [
+        {
+          "name": "官方 freeokk.pro",
+          "url": "https://www.freeokk.pro/",
+          "password": ""
+        },
+        {
+          "name": "最新 freeokk.lol",
+          "url": "https://www.freeokk.lol/",
+          "password": ""
+        },
+        {
+          "name": "备用 freeokk.top",
+          "url": "https://www.freeokk.top/",
+          "password": ""
+        }
+      ],
+      "tags": [
+        "影视",
+        "动漫",
+        "追剧",
+        "采集站",
+        "免费"
+      ],
+      "kind": "综合影视在线站",
+      "need_login": false,
+      "update_info": "每日更新",
+      "note": "其实是综合影视站（影 / 剧 / 综 / 动漫），不止动画，含动漫区所以归这。采集聚合站、资源来自互联网、剧中广告勿信。官方 www.freeokk.pro、最新 www.freeokk.lol、备用 www.freeokk.top，域名常变；打不开可把 DNS 换成 8.8.8.8 或 223.5.5.5。"
+    },
+    {
       "id": "manual-manga-8",
       "name": "奇漫屋（免费漫画在线）",
       "section": "manga",
