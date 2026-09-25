@@ -9,13 +9,13 @@
       content="墨小说漫画 · 小说、漫画、动画、游戏、AI 资源导航，分区整理，点击直达。"
     />
     <title>墨小说漫画 · 资源导航</title>
-    <script src="config.js?v=20260923n"></script>
-    <link rel="stylesheet" href="styles.css?v=20260923n" />
+    <script src="config.js?v=20260925a"></script>
+    <link rel="stylesheet" href="styles.css?v=20260925a" />
     <!-- EPUB 本质是 zip。固定版本并随站点托管，不依赖第三方 CDN 运行。 -->
     <script src="vendor/jszip.min.js?v=3.10.1" defer></script>
     <!-- 动画区自建播放器：hls.js 播 m3u8（Safari 走原生，其余走 MSE） -->
     <script src="vendor/hls.min.js?v=1.5.13" defer></script>
-    <script src="app.js?v=20260923r" defer></script>
+    <script src="app.js?v=20260925a" defer></script>
   </head>
   <body>
     <a class="skip-link" href="#feed">跳到资源列表</a>
@@ -38,6 +38,17 @@
         >
           <span aria-hidden="true">🔒</span>
           <span data-mode-label>未成年模式</span>
+        </button>
+        <button
+          type="button"
+          class="healthy-toggle"
+          data-healthy-toggle
+          aria-pressed="false"
+          title="健康模式：开启后自动过滤成人向内容"
+          hidden
+        >
+          <span aria-hidden="true">🌿</span>
+          <span data-healthy-label>健康模式：关</span>
         </button>
         <button type="button" class="theme-toggle" data-theme-toggle aria-pressed="false">
           <span aria-hidden="true">◐</span>
@@ -427,15 +438,31 @@
       <div class="age-panel">
         <h2 id="age-title">确认年龄</h2>
         <p class="age-text">
-          成年模式会显示包含成人向内容的资源。请确认你已满 18 周岁，
-          且所在地区法律允许浏览此类内容。
+          成年模式会显示包含成人向内容的资源。请填写你的出生年份，
+          仅用于判定是否年满 18 周岁，不会保存、不会上传。
         </p>
+        <div class="age-year-row">
+          <label for="age-birthyear">出生年份</label>
+          <input
+            type="number"
+            id="age-birthyear"
+            data-age-year
+            inputmode="numeric"
+            placeholder="例如 2000"
+            autocomplete="off"
+          />
+        </div>
+        <p class="age-error" data-age-error hidden aria-live="assertive"></p>
+        <label class="age-healthy">
+          <input type="checkbox" data-age-healthy />
+          <span>开启健康模式：即使已满 18 周岁，也自动过滤成人向内容</span>
+        </label>
         <p class="age-sub">
           本站资源均为网络搜集，仅供学习交流，不得用于商业用途或传播给未成年人。
         </p>
         <div class="age-actions">
           <button type="button" class="age-cancel" data-age-cancel>取消</button>
-          <button type="button" class="age-confirm" data-age-confirm>我已满 18 周岁</button>
+          <button type="button" class="age-confirm" data-age-confirm>确认</button>
         </div>
       </div>
     </div>

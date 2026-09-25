@@ -501,7 +501,9 @@
     section: "all",
     sub: "all",
     q: "",
-    adultMode: false, // 默认未成年模式，成人向内容不显示
+    adultMode: false, // 成人向内容是否可见（= 已验证年龄 且 未开健康模式）
+    ageVerified: false, // 是否已通过出生年份判定为成年
+    healthyMode: false, // 已成年时仍自动过滤成人向内容
     page: 1,
     pageSize: DEFAULT_PAGE_SIZE,
     sort: "default", // default | hits-<period>
@@ -5759,69 +5761,151 @@
 
   /* ---------- 成年 / 未成年模式 ---------- */
 
-  /** 更新模式按钮的文字与状态。 */
+  /** 成人向内容是否可见：已验证年龄且未开启健康模式。 */
+  function applyAdultVisibility() {
+    state.adultMode = state.ageVerified && !state.healthyMode;
+  }
+
+  /** 更新模式按钮与健康模式按钮的文字与状态。 */
   function renderModeUI() {
     const btn = $("[data-mode-toggle]");
     if (!btn) return;
-    btn.setAttribute("aria-pressed", String(state.adultMode));
-    $("[data-mode-label]").textContent = state.adultMode ? "成年模式" : "未成年模式";
+    btn.setAttribute("aria-pressed", String(state.ageVerified));
+    const modeLabel = $("[data-mode-label]");
+    if (modeLabel) {
+      modeLabel.textContent = state.ageVerified ? "成年模式" : "未成年模式";
+    }
+
+    // 健康模式按钮只在已验证成年后出现，可随时开关
+    const healthyBtn = $("[data-healthy-toggle]");
+    if (healthyBtn) {
+      healthyBtn.hidden = !state.ageVerified;
+      healthyBtn.setAttribute("aria-pressed", String(state.healthyMode));
+      const hl = $("[data-healthy-label]");
+      if (hl) hl.textContent = state.healthyMode ? "健康模式：开" : "健康模式：关";
+    }
 
     const hidden = state.items.filter((it) => it.adult).length;
     const hint = $("[data-mode-hint]");
     if (hint) {
-      hint.textContent = state.adultMode
-        ? ""
-        : hidden
-          ? `已隐藏 ${hidden} 个成人向资源`
-          : "";
+      if (state.adultMode) {
+        hint.textContent = "";
+      } else if (state.ageVerified && state.healthyMode) {
+        hint.textContent = hidden ? `健康模式已开启，已过滤 ${hidden} 个成人向资源` : "";
+      } else {
+        hint.textContent = hidden ? `已隐藏 ${hidden} 个成人向资源` : "";
+      }
     }
   }
 
-  /** 切到成年模式必须经过确认弹窗；关掉不需要确认。 */
+  /**
+   * 切到成年模式要先填出生年份判定是否满 18；
+   * 通过后可自行选择是否开启「健康模式」（成年但仍过滤成人向内容）。
+   * 全程不做持久化：每次打开页面都回到未成年模式。
+   */
   function bindMode() {
     const btn = $("[data-mode-toggle]");
     const dialog = $("[data-age-dialog]");
     if (!btn || !dialog) return;
 
-    // 刻意不做持久化：每次打开页面都回到未成年模式
+    const yearInput = $("[data-age-year]");
+    const errorEl = $("[data-age-error]");
+    const healthyCheck = $("[data-age-healthy]");
+    const healthyBtn = $("[data-healthy-toggle]");
+
+    const showError = (msg) => {
+      if (!errorEl) return;
+      errorEl.textContent = msg;
+      errorEl.hidden = false;
+    };
+    const clearError = () => {
+      if (!errorEl) return;
+      errorEl.textContent = "";
+      errorEl.hidden = true;
+    };
+    const closeDialog = () => {
+      dialog.hidden = true;
+      btn.focus();
+    };
+
+    // 点主按钮：已成年 → 退回未成年（清空验证与健康模式）；未成年 → 打开年龄弹窗
     btn.addEventListener("click", () => {
-      if (state.adultMode) {
-        state.adultMode = false;
+      if (state.ageVerified) {
+        state.ageVerified = false;
+        state.healthyMode = false;
+        applyAdultVisibility();
         state.page = 1;
         renderModeUI();
         render();
         return;
       }
+      clearError();
+      if (yearInput) yearInput.value = "";
+      if (healthyCheck) healthyCheck.checked = false;
       dialog.hidden = false;
-      $("[data-age-confirm]").focus();
+      if (yearInput) yearInput.focus();
     });
 
-    $("[data-age-confirm]").addEventListener("click", () => {
-      state.adultMode = true;
+    // 确认：校验出生年份 → 判定是否满 18
+    const submit = () => {
+      const raw = (yearInput && yearInput.value || "").trim();
+      const year = Number(raw);
+      const now = new Date().getFullYear();
+      if (!raw || !Number.isInteger(year)) {
+        showError("请填写有效的出生年份（4 位数字）。");
+        return;
+      }
+      if (year < 1900 || year > now) {
+        showError(`出生年份需在 1900 至 ${now} 之间。`);
+        return;
+      }
+      const age = now - year;
+      if (age < 18) {
+        showError("未满 18 周岁，无法开启成年模式。");
+        return;
+      }
+      // 通过判定
+      state.ageVerified = true;
+      state.healthyMode = healthyCheck ? healthyCheck.checked : false;
+      applyAdultVisibility();
       state.page = 1;
       dialog.hidden = true;
       renderModeUI();
       render();
-    });
+    };
 
-    $("[data-age-cancel]").addEventListener("click", () => {
-      dialog.hidden = true;
-      btn.focus();
-    });
+    $("[data-age-confirm]").addEventListener("click", submit);
+    if (yearInput) {
+      yearInput.addEventListener("input", clearError);
+      yearInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          submit();
+        }
+      });
+    }
+
+    $("[data-age-cancel]").addEventListener("click", closeDialog);
 
     dialog.addEventListener("click", (e) => {
-      if (e.target === dialog) {
-        dialog.hidden = true;
-        btn.focus();
-      }
+      if (e.target === dialog) closeDialog();
     });
 
     document.addEventListener("keydown", (e) => {
-      if (e.key === "Escape" && !dialog.hidden) {
-        dialog.hidden = true;
-        btn.focus();
-      }
+      if (e.key === "Escape" && !dialog.hidden) closeDialog();
     });
+
+    // 健康模式按钮：成年后随时开关，开启即自动过滤成人向内容
+    if (healthyBtn) {
+      healthyBtn.addEventListener("click", () => {
+        if (!state.ageVerified) return;
+        state.healthyMode = !state.healthyMode;
+        applyAdultVisibility();
+        state.page = 1;
+        renderModeUI();
+        render();
+      });
+    }
   }
 
   /** 公告里的「教程 / 问题区」跳转。 */

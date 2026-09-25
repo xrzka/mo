@@ -637,6 +637,29 @@ h1 {
   font-weight: 600;
 }
 
+.healthy-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 13px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-elevated);
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.healthy-toggle[hidden] { display: none; }
+.healthy-toggle:hover { border-color: #3aa675; color: #3aa675; }
+.healthy-toggle[aria-pressed="true"] {
+  background: rgba(58, 166, 117, 0.14);
+  border-color: #3aa675;
+  color: #2f8a61;
+  font-weight: 600;
+}
+
 .mode-hint {
   margin: -6px 0 12px;
   color: var(--text-muted);
@@ -666,7 +689,48 @@ h1 {
 }
 .age-panel h2 { margin: 0 0 12px; font-size: 19px; }
 .age-text { margin: 0 0 10px; font-size: 14px; line-height: 1.75; }
-.age-sub { margin: 0 0 20px; color: var(--text-muted); font-size: 12.5px; line-height: 1.7; }
+.age-sub { margin: 16px 0 20px; color: var(--text-muted); font-size: 12.5px; line-height: 1.7; }
+
+.age-year-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 10px;
+}
+.age-year-row label { font-size: 13.5px; color: var(--text-muted); white-space: nowrap; }
+.age-year-row input {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 11px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+}
+.age-year-row input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+.age-error {
+  margin: 0 0 10px;
+  color: #e5484d;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.age-error[hidden] { display: none; }
+.age-healthy {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+  cursor: pointer;
+}
+.age-healthy input { margin-top: 2px; flex-shrink: 0; }
 
 .age-actions { display: flex; gap: 10px; justify-content: flex-end; }
 .age-cancel, .age-confirm {
