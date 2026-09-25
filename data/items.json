@@ -13874,6 +13874,26 @@
       "note": "下载后视频文件 mp4 后缀改为 zip 使用 WinRAR 解压，解压密码 mg。"
     },
     {
+      "id": "manual-game-site-cien",
+      "name": "Ci-en（DLsite 创作者支援平台）",
+      "section": "game",
+      "subsection": "site",
+      "adult": true,
+      "description": "DLsite 运营的创作者支援 / 订阅平台（类似 Fanbox / Patreon）。大量同人 / 成人（R18）游戏、绘师、漫画作者在此发布开发进度与幕后，提供免费与付费会员，付费可看限定图文、开发版、素材等。想追某个同人 / Galgame 作者的进度或支援众筹时常用。",
+      "url": "https://ci-en.dlsite.com/",
+      "tags": [
+        "创作者支援",
+        "同人",
+        "Galgame作者",
+        "订阅众筹",
+        "R18"
+      ],
+      "kind": "创作者支援平台",
+      "need_login": false,
+      "update_info": "持续更新",
+      "note": "全站日文，DLsite 旗下。内容以同人 / 成人向为主（大量 R18），默认按成人向收录（仅成年模式可见）。免费帖可看，限定内容需付费会员，成人内容需登录并年龄确认。实测国内直连超时，需代理 / 梯子访问。"
+    },
+    {
       "id": "manual-tool-unzip-winrar",
       "name": "WinRAR（电脑解压）",
       "section": "tool",
