@@ -2582,6 +2582,22 @@
       "note": "⚠ 收录时无法抓取实时内容：国内直连超时（ERR_CONNECTION_TIMED_OUT），挂代理也被 Cloudflare 挡（403），以下据公开已知信息记录。基于 Discourse，有信任等级(Trust Level)体系：新号 TL0，靠活跃度升到 TL1/TL2 才解锁更多权限，很多中转站/服务用 L.do 授权登录并卡信任等级≥1。注册需邮箱，历史上时开时关、常需邀请。看帖一般免登录。是 NodeLoc、烧饼社区(linux.sb)的同类且更主流。访问可能需要代理。"
     },
     {
+      "id": "manual-forum-4",
+      "name": "烧饼论坛（sb.sb）",
+      "section": "forum",
+      "description": "烧饼论坛，社区/论坛站点。与论坛区的「LINUX SB（烧饼社区）linux.sb」同为「烧饼」相关站点，疑为同一社区的另一域名。",
+      "url": "https://sb.sb/",
+      "tags": [
+        "论坛",
+        "社区",
+        "限地区访问"
+      ],
+      "kind": "论坛 / 社区",
+      "need_login": false,
+      "update_info": "长期有效",
+      "note": "实测：国内 IP 直接被地区限制拦截，返回 403「本站暂未对您所在地区开放」（ERR_IP_REGION_BLOCKED，检测到 China），需挂代理/换非中国 IP 才能访问。管理员邮箱 sb@sb.sb。正文因地区拦截未能核实，与 linux.sb 是否同一社区待确认。"
+    },
+    {
       "id": "gal-58c92bd92d",
       "name": "电脑解压教程",
       "section": "tool",
@@ -15741,6 +15757,25 @@
       "need_login": true,
       "update_info": "随时可用",
       "note": "国内直连超时/被拦，正文未能核实，简介按站点一贯定位填写。成人向（R18）图库聚合站，含大量同人图片，按标签检索，很多内容需注册登录且通常要挂代理访问。"
+    },
+    {
+      "id": "manual-pickup-piclabai",
+      "name": "Pic Lab AI（AI 职业头像）",
+      "section": "pickup",
+      "subsection": "site",
+      "description": "AI 职业头像生成服务：上传自拍，AI 生成专业级商务/写实头像，支持企业、旅行、社媒、地产、医疗等多种风格主题，高分辨率下载。按套餐付费（$27 起 10 张 / $69 30 张 / $129 50 张），48-72 小时出图。",
+      "url": "https://www.piclabai.com/",
+      "tags": [
+        "AI头像",
+        "职业头像",
+        "写实",
+        "商务",
+        "付费"
+      ],
+      "kind": "AI 头像生成服务",
+      "need_login": false,
+      "update_info": "随手收录",
+      "note": "实测抓取到的是 Pic Lab AI —— 一个把自拍转成专业头像的 AI 服务（商务/旅行/社媒等风格，按套餐付费，联系邮箱 Workwithmonae@gmail.com）。这是正经的职业头像工具，不是成人/二次元内容，故未标 adult；若你指的是同名的另一个站，请把准确网址发我。"
     }
   ]
 }
