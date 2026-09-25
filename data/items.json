@@ -15646,6 +15646,25 @@
       "need_login": true,
       "update_info": "随手收录",
       "note": "国内直连超时（web_fetch 与浏览器都 ERR_CONNECTION_TIMED_OUT），页面正文未能核实，简介按站点定位填写，具体功能以实际访问为准，可能需要挂代理并注册登录。"
+    },
+    {
+      "id": "manual-anime-site-iwara",
+      "name": "Iwara",
+      "section": "anime",
+      "subsection": "site",
+      "adult": true,
+      "description": "以 MMD / 3D 同人动画为主的视频分享社区，用户上传为主，收录大量 MMD 舞蹈、3D 动画等作品，含大量成人向（R18）内容。",
+      "url": "https://www.iwara.tv/",
+      "tags": [
+        "MMD",
+        "3D同人",
+        "视频社区",
+        "R18"
+      ],
+      "kind": "同人动画视频站",
+      "need_login": true,
+      "update_info": "随时可用",
+      "note": "国内直连超时（web_fetch 与浏览器都无法访问），正文未能核实，简介按站点一贯定位填写。以 MMD / 3D 同人视频为主，含大量成人向内容，通常需挂代理访问，部分内容与上传需注册登录。"
     }
   ]
 }
