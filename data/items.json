@@ -2598,6 +2598,24 @@
       "note": "实测：国内 IP 直接被地区限制拦截，返回 403「本站暂未对您所在地区开放」（ERR_IP_REGION_BLOCKED，检测到 China），需挂代理/换非中国 IP 才能访问。管理员邮箱 sb@sb.sb。正文因地区拦截未能核实，与 linux.sb 是否同一社区待确认。"
     },
     {
+      "id": "manual-forum-5",
+      "name": "Agents Ci（agents.ci）",
+      "section": "forum",
+      "description": "面向中文独立开发者、Agents 创业者和 AI Builder 的社区，主打「下一代智能体技术栈」。版块含 AI/Agents、VPS/云服务、dev/visual、独立开发、bot、苹果、域名、项目、推广、反馈、公告等。设有「刮刮乐矿区」和社区代币积分玩法。",
+      "url": "https://www.agents.ci/",
+      "tags": [
+        "AI社区",
+        "Agents",
+        "独立开发",
+        "AI Builder",
+        "白嫖资源"
+      ],
+      "kind": "论坛 / 社区",
+      "need_login": false,
+      "update_info": "每日活跃",
+      "note": "实测国内可直连（首页 200）。中文 AI/Agents 开发者社区，帖子偏日常闲聊 + AI 工具/中转站/VPS/白嫖话题。社区统计约 279 帖 / 1490 回复 / 877 用户（收录时）。因广告增多，新用户改为「加密注册」。看帖免登录，签到/发帖需注册。站内有帖子讨论它可能是之前 Linux.bi 的站，是否同源待确认。"
+    },
+    {
       "id": "gal-58c92bd92d",
       "name": "电脑解压教程",
       "section": "tool",
