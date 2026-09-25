@@ -15163,6 +15163,25 @@
       "note": "可直接浏览，部分板块 / 附件下载需注册会员。国内老牌软件安全与逆向社区，公众号 ikanxue。"
     },
     {
+      "id": "manual-pickup-duokaiya",
+      "name": "多开鸭（模拟器多开资源技术站）",
+      "section": "pickup",
+      "subsection": "site",
+      "description": "专注安卓模拟器多开的资源技术站。内容涵盖 Magisk（面具）/Xposed/LSPosed 框架、改机与「过检测」、雷电 / MuMu / 逍遥模拟器多开与优化、单窗口单 IP、多开系统母盘、环境备份包 / 模块，配套大量教程干货，另有付费小店卖备份包 / 模块等。",
+      "url": "https://duokaiya.com/",
+      "tags": [
+        "模拟器多开",
+        "改机",
+        "过检测",
+        "Magisk/Xposed",
+        "教程"
+      ],
+      "kind": "多开/改机资源站",
+      "need_login": false,
+      "update_info": "持续更新",
+      "note": "模拟器多开、改机、过检测方向的教程与资源站，框架下载 / 干货免费看，部分资源（备份包、模块等）走站内小店付费。商务 / 投诉邮箱 admin@duokaiya.com。"
+    },
+    {
       "id": "manual-pickup-gpt-sovits",
       "name": "GPT-SoVITS（少样本语音克隆 TTS）",
       "section": "pickup",
