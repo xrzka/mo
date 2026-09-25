@@ -15307,6 +15307,43 @@
       "note": "全站 18+ 成人向内容，默认按成人向收录（仅成年模式可见）。域名已被墙、国内直连打不开，需代理 / 梯子访问。第三方安全评分偏低、广告较多，注意甄别、别乱点广告 / 下载。配有「阅读」(Legado) App 书源（GitHub 上有整理）。"
     },
     {
+      "id": "manual-pickup-hentai4daily",
+      "name": "Hentai4Daily（H动漫在线）",
+      "section": "pickup",
+      "subsection": "anime",
+      "adult": true,
+      "description": "成人向动画（H 动漫 / 里番 / 泡面番）在线观看站，每日更新，支持在线播放与分类检索。全站 18+ 成人内容，英文界面为主。",
+      "url": "https://hentai4daily.com/",
+      "tags": [
+        "里番",
+        "H动漫",
+        "成人动画",
+        "在线看",
+        "18禁"
+      ],
+      "kind": "成人动画在线站",
+      "need_login": false,
+      "update_info": "每日更新",
+      "note": "全站 18+ 成人向内容，默认按成人向收录（仅成年模式可见）。收录时抓取被拒（403），按 H 动漫在线站记着。国内访问可能需代理，域名可能变动。"
+    },
+    {
+      "id": "manual-pickup-cawd368",
+      "name": "CAWD-368（番号备忘）",
+      "section": "pickup",
+      "adult": true,
+      "description": "番号备忘（真人 AV，CAWD 厂牌）。仅作文本记录，未附任何观看 / 下载链接，想看自行用番号到 JAV 数据库 / 番号搜索站查询。",
+      "url": "",
+      "tags": [
+        "番号",
+        "AV",
+        "备忘"
+      ],
+      "kind": "番号备忘",
+      "need_login": false,
+      "update_info": "文本备忘",
+      "note": "应要求仅存番号做备忘，未收录任何资源链接。默认按成人向收录（仅成年模式可见）。"
+    },
+    {
       "id": "manual-pickup-gpt-sovits",
       "name": "GPT-SoVITS（少样本语音克隆 TTS）",
       "section": "pickup",
