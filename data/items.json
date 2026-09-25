@@ -15355,6 +15355,24 @@
       "note": "站点标语「六漫画 - 好看的热门漫画_最新最全漫画_免费观看」，无需注册即可在线阅读，PC 网页与移动端自适应。可用性以站内实际为准。"
     },
     {
+      "id": "manual-manga-site-wnacg",
+      "name": "紳士漫畫-專註分享漢化本子|邪惡漫畫",
+      "section": "manga",
+      "subsection": "site",
+      "description": "專注分享漢化本子和邪惡漫畫的漫畫網站。",
+      "url": "https://www.wnacg.com/",
+      "tags": [
+        "漢化本子",
+        "邪惡漫畫",
+        "在線看",
+        "繁體中文"
+      ],
+      "kind": "漫畫在線閱讀網站",
+      "need_login": false,
+      "update_info": "隨時可用",
+      "note": "站點名稱：紳士漫畫-專註分享漢化本子|邪惡漫畫。內容以站內實際為準。"
+    },
+    {
       "id": "manual-pickup-fakegps-changer",
       "name": "Location Changer（Fake GPS 虚拟定位）",
       "section": "pickup",
