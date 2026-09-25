@@ -15794,6 +15794,25 @@
       "need_login": false,
       "update_info": "随手收录",
       "note": "GPL-3.0 开源。Releases 页提供预编译 Hark-1.0.0.apk（arm64 PRoot Alpine 沙箱）。也可从源码编译（Android 需 JDK17/NDK r28+/CMake 3.22+）。语言 Swift/Kotlin 为主。官方交流 QQ 群 338431075。收录时 star 数还很低（新项目）。"
+    },
+    {
+      "id": "manual-game-app-everything",
+      "name": "Everything（voidtools 极速文件搜索）",
+      "section": "game",
+      "subsection": "app",
+      "description": "voidtools 出品的 Windows 极速文件/文件夹搜索工具，按名称即时定位全盘文件，索引快、占用小、完全免费。找游戏本体、存档、解压出来的散落文件很方便。官网下载页提供安装版/便携版、32/64 位、精简版等多种版本。",
+      "url": "https://www.voidtools.com/zh-cn/downloads/",
+      "tags": [
+        "Windows",
+        "文件搜索",
+        "工具",
+        "免费",
+        "官网下载"
+      ],
+      "kind": "Windows 工具软件",
+      "need_login": false,
+      "update_info": "长期有效",
+      "note": "官网下载页（国内可直连，200）。稳定版 Everything 1.4.1.1032，另有 1.5.0 Beta。有安装版(.exe/.msi)、便携版(.zip)、精简版、x86/x64/ARM/ARM64 多种。voidtools 还出 voidImageViewer 等工具。游戏区没有单独的「工具」小分区，暂归到「游戏 - 软件」，需要的话可挪到顶部的「工具」区。"
     }
   ]
 }
