@@ -15671,7 +15671,8 @@
       "name": "bad.news",
       "section": "anime",
       "subsection": "site",
-      "description": "动画相关在线站点。",
+      "adult": true,
+      "description": "动画相关在线站点，成人向内容。",
       "url": "https://bad.news/",
       "tags": [
         "动画",
@@ -15680,7 +15681,26 @@
       "kind": "动画在线站",
       "need_login": false,
       "update_info": "随手收录",
-      "note": "国内直连超时（web_fetch 与浏览器都 ERR_CONNECTION_TIMED_OUT），页面正文未能核实。按「动画 - 网站」分类收录，具体内容、是否含成人向、是否需登录/代理均以实际访问为准。"
+      "note": "国内直连超时（web_fetch 与浏览器都 ERR_CONNECTION_TIMED_OUT），页面正文未能核实。按「动画 - 网站」分类收录，用户确认为成人向，已标 adult。是否需登录/代理以实际访问为准。"
+    },
+    {
+      "id": "manual-anime-site-rule34",
+      "name": "Rule34.xxx",
+      "section": "anime",
+      "subsection": "site",
+      "adult": true,
+      "description": "知名成人向同人内容聚合站（booru 类），收录海量 R18 图片、动图、动画视频与同人作品，可按标签检索。",
+      "url": "https://rule34.xxx/",
+      "tags": [
+        "同人",
+        "R18",
+        "标签检索",
+        "booru"
+      ],
+      "kind": "成人同人内容站",
+      "need_login": false,
+      "update_info": "随时可用",
+      "note": "国内直连超时，正文未能核实，简介按站点一贯定位填写。成人向（R18）内容站，含大量同人图片/动图/视频，按标签检索，通常需挂代理访问。"
     }
   ]
 }
