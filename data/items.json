@@ -15775,6 +15775,25 @@
       "need_login": true,
       "update_info": "随时可用",
       "note": "国内直连超时/被拦，正文未能核实，简介按站点一贯定位填写。成人向（R18）图库聚合站，含大量同人图片，按标签检索，很多内容需注册登录且通常要挂代理访问。"
+    },
+    {
+      "id": "manual-pickup-hark-agent",
+      "name": "Hark Agent Mobile",
+      "section": "pickup",
+      "subsection": "code",
+      "description": "移动端自主 AI 智能体 App（Android/iOS）。给 AI 配了一台设备端独立 Linux 沙箱（PRoot/iSH Alpine，免 Root），能装软件、跑脚本、自动化浏览网页、多步任务规划。含多子代理协同、自定义 System Prompt（SYSTEM.md/CLAUDE.md）、TodoWrite 任务引擎、上下文压缩，支持 Claude/OpenAI/Gemini/DeepSeek 等多模型与自动 Fallback。",
+      "url": "https://github.com/Minglink/hark-agent-mobile",
+      "tags": [
+        "GitHub",
+        "开源",
+        "移动端AI Agent",
+        "Linux沙箱",
+        "多子代理"
+      ],
+      "kind": "GitHub 开源项目",
+      "need_login": false,
+      "update_info": "随手收录",
+      "note": "GPL-3.0 开源。Releases 页提供预编译 Hark-1.0.0.apk（arm64 PRoot Alpine 沙箱）。也可从源码编译（Android 需 JDK17/NDK r28+/CMake 3.22+）。语言 Swift/Kotlin 为主。官方交流 QQ 群 338431075。收录时 star 数还很低（新项目）。"
     }
   ]
 }
