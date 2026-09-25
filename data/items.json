@@ -13894,6 +13894,26 @@
       "note": "全站日文，DLsite 旗下。内容以同人 / 成人向为主（大量 R18），默认按成人向收录（仅成年模式可见）。免费帖可看，限定内容需付费会员，成人内容需登录并年龄确认。实测国内直连超时，需代理 / 梯子访问。"
     },
     {
+      "id": "manual-game-site-2dfan",
+      "name": "2DFan（二次元爱好者门户）",
+      "section": "game",
+      "subsection": "site",
+      "adult": true,
+      "description": "老牌二次元爱好者门户站（2005 年至今），专注日本游戏（尤其 Galgame / エロゲ）与动漫。有游戏库、标签目录、本月新作、排行榜、发售日历，以及汉化补丁 / 攻略 / 资源、玩家小组与吐槽点评。找日式黄油介绍、汉化和攻略的核心站之一。",
+      "url": "https://2dfan.com/",
+      "tags": [
+        "Galgame",
+        "エロゲ",
+        "汉化资源",
+        "攻略",
+        "二次元门户"
+      ],
+      "kind": "游戏门户/资源社区",
+      "need_login": false,
+      "update_info": "持续更新",
+      "note": "内容以成人向日式游戏（Galgame / エロゲ）为主，默认按成人向收录（仅成年模式可见）。介绍 / 攻略免登录看，下载 / 发帖等需注册。域名 2dfan.com / 2dfan.org，实测国内直连超时、需代理访问。"
+    },
+    {
       "id": "manual-tool-unzip-winrar",
       "name": "WinRAR（电脑解压）",
       "section": "tool",
