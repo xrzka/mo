@@ -15701,6 +15701,46 @@
       "need_login": false,
       "update_info": "随时可用",
       "note": "国内直连超时，正文未能核实，简介按站点一贯定位填写。成人向（R18）内容站，含大量同人图片/动图/视频，按标签检索，通常需挂代理访问。"
+    },
+    {
+      "id": "manual-pickup-nekoimage",
+      "name": "NekoImage（AI 图像生成器）",
+      "section": "pickup",
+      "subsection": "site",
+      "adult": true,
+      "description": "免费 AI 图像生成器，文字转图，支持 anime 二次元与写实两种风格，出图快、高分辨率下载。有免费额度与付费套餐。",
+      "url": "https://nekoimage.com/",
+      "tags": [
+        "AI绘画",
+        "文生图",
+        "二次元",
+        "写实",
+        "免费"
+      ],
+      "kind": "AI 绘画工具",
+      "need_login": true,
+      "update_info": "随手收录",
+      "note": "站点英文界面，免费层免信用卡即可生成，付费套餐提供更多额度与商用授权。用户标注为成人向，已标 adult。生成/下载可能需登录注册。国内可直连（首页 200）。"
+    },
+    {
+      "id": "manual-pickup-sankaku",
+      "name": "Sankaku Complex",
+      "section": "pickup",
+      "subsection": "site",
+      "adult": true,
+      "description": "老牌动漫 / 成人向同人图库聚合站（booru 类），收录海量 ACG 同人图片，可按标签检索，含大量 R18 内容，另设 ACG 资讯博客。",
+      "url": "https://www.sankakucomplex.com/",
+      "tags": [
+        "同人图库",
+        "R18",
+        "标签检索",
+        "booru",
+        "ACG资讯"
+      ],
+      "kind": "成人同人图库站",
+      "need_login": true,
+      "update_info": "随时可用",
+      "note": "国内直连超时/被拦，正文未能核实，简介按站点一贯定位填写。成人向（R18）图库聚合站，含大量同人图片，按标签检索，很多内容需注册登录且通常要挂代理访问。"
     }
   ]
 }
