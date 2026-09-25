@@ -15505,6 +15505,20 @@
       "need_login": false,
       "update_info": "随手收录",
       "note": "收录时未详细核查内容，可用性以站内实际为准。"
+    },
+    {
+      "id": "manual-pickup-youmind",
+      "name": "YouMind",
+      "section": "pickup",
+      "description": "随手收录的网站资源。",
+      "url": "https://youmind.com/",
+      "tags": [
+        "随手安利"
+      ],
+      "kind": "网站",
+      "need_login": false,
+      "update_info": "随手收录",
+      "note": "收录时未详细核查内容，可用性以站内实际为准。"
     }
   ]
 }
