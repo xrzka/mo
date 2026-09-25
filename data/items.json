@@ -13993,6 +13993,24 @@
       "note": "AI 生成的明日方舟同人，多为角色擦边向，默认按成人向收录（介意可在后台把 adult 关掉）。Pixiv 部分内容需登录、可能含 R18；动漫屋可在线读，找不到时用「KawaGawa 明日方舟」在搜索引擎找当前地址。"
     },
     {
+      "id": "manual-pickup-mezashi",
+      "name": "漫画作者 只野めざし",
+      "section": "pickup",
+      "subsection": "manga",
+      "adult": true,
+      "description": "漫画作者只野めざし（只野目差し），想看作品可按名字在 Pixiv 或其他平台搜索。",
+      "url": "https://www.pixiv.net/search?q=%E5%8F%AA%E9%87%8E%E3%82%81%E3%81%96%E3%81%97",
+      "tags": [
+        "漫画",
+        "画师只野めざし",
+        "随手安利"
+      ],
+      "kind": "漫画 / 画师作品",
+      "need_login": false,
+      "update_info": "随手收录",
+      "note": "随手安利的画师，收录时未核查具体内容，请自行判断。Pixiv 部分内容需登录，可能含 R18。"
+    },
+    {
       "id": "manual-manga-7",
       "name": "瓜子漫画（免费国漫在线）",
       "section": "manga",
