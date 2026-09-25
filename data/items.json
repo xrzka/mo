@@ -15494,31 +15494,36 @@
     },
     {
       "id": "manual-pickup-hvoyai",
-      "name": "Hvoyai",
+      "name": "禾维 AI（Hvoy AI）",
       "section": "pickup",
-      "description": "随手收录的网站资源。",
-      "url": "https://www.hvoyai.com",
+      "description": "AI API 中转站检测与实测排名站。用真实 API Key 持续实测 Claude / GPT / Gemini 等模型，提供中转站推荐榜单、站点目录、API 地址与模型鉴定、连通性/延迟/一致性检测。",
+      "url": "https://www.hvoyai.com/",
       "tags": [
+        "AI中转站",
+        "实测榜单",
+        "API检测",
         "随手安利"
       ],
-      "kind": "网站",
+      "kind": "AI 中转站测评站",
       "need_login": false,
-      "update_info": "随手收录",
-      "note": "收录时未详细核查内容，可用性以站内实际为准。"
+      "update_info": "持续更新",
+      "note": "站点主题与第一站中转站榜单高度重合——它自己就是个中转站实测排名站（含 API 鉴定工具、按模型分的推荐榜、站点目录与人工评测）。需要的话可以挪到第一站或在第一站参考它的实测数据。"
     },
     {
       "id": "manual-pickup-youmind",
       "name": "YouMind",
       "section": "pickup",
-      "description": "随手收录的网站资源。",
+      "description": "AI 内容创作工作台，围绕「收集灵感 → 整理 → 创作」的一站式创作平台。",
       "url": "https://youmind.com/",
       "tags": [
+        "AI创作",
+        "内容工作台",
         "随手安利"
       ],
-      "kind": "网站",
-      "need_login": false,
+      "kind": "AI 创作工具",
+      "need_login": true,
       "update_info": "随手收录",
-      "note": "收录时未详细核查内容，可用性以站内实际为准。"
+      "note": "国内直连超时（web_fetch 与浏览器都 ERR_CONNECTION_TIMED_OUT），页面正文未能核实，简介按站点定位填写，具体功能以实际访问为准，可能需要挂代理并注册登录。"
     }
   ]
 }
