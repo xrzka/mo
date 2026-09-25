@@ -13849,6 +13849,31 @@
       "note": "解压密码 qfafa.com。体验版，非完整版。"
     },
     {
+      "id": "manual-game-x068",
+      "name": "不知怎么的我经营了剑道馆～秘密的NTR～ / なんか、剣道場やることにした~秘密のNTR~",
+      "section": "game",
+      "subsection": "gal",
+      "description": "Galgame 资源，PC 平台，官方中文版。",
+      "url": "https://pan.quark.cn/s/6adc2114109d",
+      "links": [
+        {
+          "name": "夸克网盘",
+          "url": "https://pan.quark.cn/s/6adc2114109d",
+          "password": ""
+        }
+      ],
+      "tags": [
+        "PC",
+        "官方中文",
+        "Galgame"
+      ],
+      "kind": "Galgame 资源",
+      "need_login": false,
+      "update_info": "网盘分享",
+      "adult": true,
+      "note": "下载后视频文件 mp4 后缀改为 zip 使用 WinRAR 解压，解压密码 mg。"
+    },
+    {
       "id": "manual-tool-unzip-winrar",
       "name": "WinRAR（电脑解压）",
       "section": "tool",
