@@ -15491,6 +15491,20 @@
       "need_login": false,
       "update_info": "随时可用",
       "note": "收录页标题为「我的收藏 - novalpie」，站点提供小说在线阅读与收藏功能。具体收录范围、是否需登录使用收藏等以站内实际为准，收录时未逐项核实。"
+    },
+    {
+      "id": "manual-pickup-hvoyai",
+      "name": "Hvoyai",
+      "section": "pickup",
+      "description": "随手收录的网站资源。",
+      "url": "https://www.hvoyai.com",
+      "tags": [
+        "随手安利"
+      ],
+      "kind": "网站",
+      "need_login": false,
+      "update_info": "随手收录",
+      "note": "收录时未详细核查内容，可用性以站内实际为准。"
     }
   ]
 }
