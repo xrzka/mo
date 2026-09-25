@@ -15757,25 +15757,8 @@
       "need_login": true,
       "update_info": "随时可用",
       "note": "国内直连超时/被拦，正文未能核实，简介按站点一贯定位填写。成人向（R18）图库聚合站，含大量同人图片，按标签检索，很多内容需注册登录且通常要挂代理访问。"
-    },
-    {
-      "id": "manual-pickup-piclabai",
-      "name": "Pic Lab AI（AI 职业头像）",
-      "section": "pickup",
-      "subsection": "site",
-      "description": "AI 职业头像生成服务：上传自拍，AI 生成专业级商务/写实头像，支持企业、旅行、社媒、地产、医疗等多种风格主题，高分辨率下载。按套餐付费（$27 起 10 张 / $69 30 张 / $129 50 张），48-72 小时出图。",
-      "url": "https://www.piclabai.com/",
-      "tags": [
-        "AI头像",
-        "职业头像",
-        "写实",
-        "商务",
-        "付费"
-      ],
-      "kind": "AI 头像生成服务",
-      "need_login": false,
-      "update_info": "随手收录",
-      "note": "实测抓取到的是 Pic Lab AI —— 一个把自拍转成专业头像的 AI 服务（商务/旅行/社媒等风格，按套餐付费，联系邮箱 Workwithmonae@gmail.com）。这是正经的职业头像工具，不是成人/二次元内容，故未标 adult；若你指的是同名的另一个站，请把准确网址发我。"
     }
+  ]
+}
   ]
 }
