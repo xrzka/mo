@@ -15287,6 +15287,26 @@
       "note": "模拟器多开、改机、过检测方向的教程与资源站，框架下载 / 干货免费看，部分资源（备份包、模块等）走站内小店付费。商务 / 投诉邮箱 admin@duokaiya.com。"
     },
     {
+      "id": "manual-pickup-hlib",
+      "name": "H图书馆（hlib.cc）",
+      "section": "pickup",
+      "subsection": "novel",
+      "adult": true,
+      "description": "成人（H）向电子书 / 小说在线图书馆，收录大量 18+ 文本作品，支持在线阅读，并提供「阅读（Legado）」App 书源可导入。",
+      "url": "https://hlib.cc/",
+      "tags": [
+        "成人小说",
+        "H文",
+        "图书馆",
+        "阅读书源",
+        "18禁"
+      ],
+      "kind": "成人小说图书馆",
+      "need_login": false,
+      "update_info": "持续更新",
+      "note": "全站 18+ 成人向内容，默认按成人向收录（仅成年模式可见）。域名已被墙、国内直连打不开，需代理 / 梯子访问。第三方安全评分偏低、广告较多，注意甄别、别乱点广告 / 下载。配有「阅读」(Legado) App 书源（GitHub 上有整理）。"
+    },
+    {
       "id": "manual-pickup-gpt-sovits",
       "name": "GPT-SoVITS（少样本语音克隆 TTS）",
       "section": "pickup",
