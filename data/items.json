@@ -15010,6 +15010,31 @@
       "note": "全站 18+ 成人向内容，默认按成人向收录（仅成年模式可见）。域名常被封 / 更换（18comic 系列有 .vip/.org/.name 等多个镜像），失效时搜「禁漫天堂」或 JMComic 找当前地址。"
     },
     {
+      "id": "manual-manga-site-pixiv",
+      "name": "Pixiv（日本最大插画/漫画/小说社区）",
+      "section": "manga",
+      "subsection": "site",
+      "description": "日本最大的插画 / 漫画 / 小说创作与分享社区。海量原创插画、同人图、漫画与小说（pixiv 小説），可按标签 / 排行 / 收藏检索，关注画师追更新。是找图、追画师、看同人的核心平台之一。",
+      "url": "https://www.pixiv.net/",
+      "tags": [
+        "插画",
+        "同人",
+        "画师",
+        "漫画",
+        "小说"
+      ],
+      "kind": "插画/漫画/小说社区",
+      "need_login": false,
+      "update_info": "持续更新",
+      "note": "日本最大插画社区，也有漫画和小说（pixiv 小説）。全年龄内容免登录可看；收藏 / 关注 / 发作品需登录，R18 内容需登录并在设置里开启显示。国内直连通常打不开，需代理 / 梯子访问。",
+      "also_in": [
+        {
+          "section": "novel",
+          "subsection": "site"
+        }
+      ]
+    },
+    {
       "id": "manual-manga-site-songzi",
       "name": "松子漫画",
       "section": "manga",
