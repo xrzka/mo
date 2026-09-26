@@ -15813,6 +15813,25 @@
       "need_login": false,
       "update_info": "长期有效",
       "note": "官网下载页（国内可直连，200）。稳定版 Everything 1.4.1.1032，另有 1.5.0 Beta。有安装版(.exe/.msi)、便携版(.zip)、精简版、x86/x64/ARM/ARM64 多种。voidtools 还出 voidImageViewer 等工具。游戏区没有单独的「工具」小分区，暂归到「游戏 - 软件」，需要的话可挪到顶部的「工具」区。"
+    },
+    {
+      "id": "manual-pickup-dsh-purge",
+      "name": "dsh-purge（DeepSeek Harness 破甲）",
+      "section": "pickup",
+      "subsection": "code",
+      "description": "针对本机已装的 DeepSeek Harness 的破甲/红队插件：分离「主机层策略」与「模型层拒答」，可调主机安全策略、换提示词，不同模型用不同提示词，默认提示词面向国模「小码酱」。设置页提供规则分组、Apply/Restore/Uninstall、提示词编辑与多规则集。",
+      "url": "https://github.com/YuJunZhiXue/dsh-purge",
+      "tags": [
+        "GitHub",
+        "开源",
+        "破甲",
+        "DeepSeek Harness",
+        "红队插件"
+      ],
+      "kind": "GitHub 开源项目",
+      "need_login": false,
+      "update_info": "随手收录",
+      "note": "MIT 开源，收录时约 2.3k star / 234 fork。当前适配目标 dsh 0.1.7-rc.2（也兼容部分旧版本）。装到本机 DSH 后需在设置页 Apply + 重启才生效，重启后新开对话注入才进会话。按 $DSH_HOME → dsh 启动器旁的 .dsh → ~/.dsh 定位，不改 Harness 源码树。提示词已从仓库下线，需自行填。Hub 页仅供阅读，勿走 deepseek.stream 的下载接口安装。"
     }
   ]
 }
