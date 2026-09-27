@@ -15832,6 +15832,25 @@
       "need_login": false,
       "update_info": "随手收录",
       "note": "MIT 开源，收录时约 2.3k star / 234 fork。当前适配目标 dsh 0.1.7-rc.2（也兼容部分旧版本）。装到本机 DSH 后需在设置页 Apply + 重启才生效，重启后新开对话注入才进会话。按 $DSH_HOME → dsh 启动器旁的 .dsh → ~/.dsh 定位，不改 Harness 源码树。提示词已从仓库下线，需自行填。Hub 页仅供阅读，勿走 deepseek.stream 的下载接口安装。"
+    },
+    {
+      "id": "manual-manga-site-mangakakalot",
+      "name": "Mangakakalot",
+      "section": "manga",
+      "subsection": "site",
+      "description": "老牌英文漫画在线阅读站，收录海量 manga / manhwa / manhua，更新快、免登录直接看。可按热门、最新、分类检索。",
+      "url": "https://www.mangakakalot.gg/",
+      "tags": [
+        "在线阅读",
+        "英译",
+        "manga/manhwa/manhua",
+        "免登录",
+        "每日更新"
+      ],
+      "kind": "漫画在线阅读网站",
+      "need_login": false,
+      "update_info": "每日更新",
+      "note": "收录时该 .gg 域名跳转到 ww3.mangakakalot.gg 且 DNS 未能解析（ENOTFOUND / ERR_NAME_NOT_RESOLVED，可能需换镜像域名或挂代理），正文未能核实。简介按 Mangakakalot 一贯定位填写——知名英文漫画聚合阅读站，免登录在线看。可用性以实际访问为准。"
     }
   ]
 }
