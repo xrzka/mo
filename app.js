@@ -109,6 +109,7 @@
         { id: "manga", label: "漫画" },
         { id: "anime", label: "动画" },
         { id: "game", label: "游戏" },
+        { id: "music", label: "音乐" },
         { id: "app", label: "软件" },
         { id: "code", label: "开源项目" },
         { id: "site", label: "社区/网站" },

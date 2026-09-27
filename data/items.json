@@ -15869,6 +15869,21 @@
       "need_login": false,
       "update_info": "网盘分享",
       "note": "百度网盘分享，提取码：e6cf。"
+    },
+    {
+      "id": "manual-pickup-music-1",
+      "name": "感官过载",
+      "section": "pickup",
+      "subsection": "music",
+      "description": "随手记录，仅名称。",
+      "url": "",
+      "tags": [
+        "音乐"
+      ],
+      "kind": "音乐",
+      "need_login": false,
+      "update_info": "随手记录",
+      "note": "只记录名字，暂无链接。"
     }
   ]
 }
