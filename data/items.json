@@ -15851,6 +15851,24 @@
       "need_login": false,
       "update_info": "每日更新",
       "note": "收录时该 .gg 域名跳转到 ww3.mangakakalot.gg 且 DNS 未能解析（ENOTFOUND / ERR_NAME_NOT_RESOLVED，可能需换镜像域名或挂代理），正文未能核实。简介按 Mangakakalot 一贯定位填写——知名英文漫画聚合阅读站，免登录在线看。可用性以实际访问为准。"
+    },
+    {
+      "id": "manual-novel-jp-1",
+      "name": "成功回避死亡结局的美少女游戏女主们，似乎读了我的【日记本】并知道了我的秘密",
+      "section": "novel",
+      "subsection": "jp",
+      "description": "日系轻小说，美少女游戏（Galgame）题材：成功回避死亡结局的女主们，似乎读了主角的【日记本】并知道了他的秘密。",
+      "url": "https://pan.baidu.com/s/1VNMablxIedGyXO6EH3Xwww?pwd=e6cf",
+      "tags": [
+        "日轻",
+        "轻小说",
+        "美少女游戏",
+        "百度网盘"
+      ],
+      "kind": "轻小说 / 网盘分享",
+      "need_login": false,
+      "update_info": "网盘分享",
+      "note": "百度网盘分享，提取码：e6cf。"
     }
   ]
 }
