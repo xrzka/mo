@@ -15941,6 +15941,26 @@
       "need_login": false,
       "update_info": "v1.0.0",
       "note": "同为 novalpie/never-seek 生态（Topics 含 novelpie/grok/turnstile-solver）。MIT 开源，Python 占 94%。默认对接地址 http://服务器IP:3002/v1，主选模型 grok-4.20-reasoning、兜底 grok-3，自带质检看板 /audit。README 基线：1051 chunk 实测 HTTP 200 成功率 98.29%、首过率 96.9%。需自备 VPS（Ubuntu/Debian 等）+ Docker 部署，涉及 xAI 账号协议注册与反代，使用请自行评估合规与账号风险。收录时 star 2。"
+    },
+    {
+      "id": "manual-novel-site-syosetu18",
+      "name": "小説家になろう 18禁（novel18.syosetu.com）",
+      "section": "novel",
+      "subsection": "site",
+      "adult": true,
+      "description": "日本「小説家になろう」网络小说平台的 18 禁成人向站点，收录 ノクターンノベルズ（男性向 R18）、ムーンライトノベルズ（女性向 R18）、ミッドナイトノベルズ 等成人向网络小说，海量作品免费在线连载阅读。",
+      "url": "https://novel18.syosetu.com/",
+      "tags": [
+        "日文原文",
+        "网络小说",
+        "R18",
+        "なろう系",
+        "成人向"
+      ],
+      "kind": "日文成人向网络小说平台",
+      "need_login": false,
+      "update_info": "随时更新",
+      "note": "国内直连超时（web_fetch 与浏览器都 ERR_CONNECTION_TIMED_OUT），正文未能核实，简介按站点一贯定位填写。它是 ncode.syosetu.com 的成人向姊妹站，进入需年龄确认（18+），通常需挂代理访问。日文原文，免费在线看。成人向已标 adult。"
     }
   ]
 }
