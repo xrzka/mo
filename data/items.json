@@ -15922,6 +15922,25 @@
       "need_login": false,
       "update_info": "持续迭代",
       "note": "它是本站已收录的小说站「novalpie（novalpie.cc）」的原生安卓 App。收录时最新 Beta 7（v2.0.0-native-beta7，2026-09-19），APK 约 23.31MB，Android 8.0+，Releases 页有 5 个版本。README 声明遵循源站协议、不提供盗版书源抓取、不绕过付费/权限。首次登录可能触发 Cloudflare 人机验证。Kotlin 占 96%，1259 项单测全过。收录时 star 18。"
+    },
+    {
+      "id": "manual-pickup-grok-translator-suite",
+      "name": "Grok Translator Suite（长篇小说批量机翻套件）",
+      "section": "pickup",
+      "subsection": "code",
+      "description": "专为长篇网络小说（韩翻中/日翻中）高强度批量机翻打造的全栈 Grok 基础设施套件。三大模块：ProGrok（纯协议极速注册 + 本地 Camoufox 免打码破 Turnstile）、Grok2API（OpenAI 兼容反代网关 + 多账号池负载均衡/保活）、Translation Validator（独创三级质检中间件 + OPAQUE_LITERAL 乱码赦免分类器 + 空行原位修复 + 主备模型自动降级）。VPS 一键 deploy.sh 部署，对接小说派 NovelPie / Cherry Studio 等客户端。",
+      "url": "https://github.com/never-seek/grok-translator-suite",
+      "tags": [
+        "GitHub",
+        "开源",
+        "小说机翻",
+        "Grok反代",
+        "免打码"
+      ],
+      "kind": "GitHub 开源项目",
+      "need_login": false,
+      "update_info": "v1.0.0",
+      "note": "同为 novalpie/never-seek 生态（Topics 含 novelpie/grok/turnstile-solver）。MIT 开源，Python 占 94%。默认对接地址 http://服务器IP:3002/v1，主选模型 grok-4.20-reasoning、兜底 grok-3，自带质检看板 /audit。README 基线：1051 chunk 实测 HTTP 200 成功率 98.29%、首过率 96.9%。需自备 VPS（Ubuntu/Debian 等）+ Docker 部署，涉及 xAI 账号协议注册与反代，使用请自行评估合规与账号风险。收录时 star 2。"
     }
   ]
 }
