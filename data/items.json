@@ -15903,6 +15903,25 @@
       "need_login": false,
       "update_info": "连载中",
       "note": "收录时（kakuyomu 官网 200）：连载中，全 71 话、约 294,305 字，2026/9/28 更新，每日 07:01 更。★32、应援评论 23、关注 83，参加「このライトノベルがすごい！WEB 大賞」。作品标注「暴力描写有り」。カクヨム 免费在线阅读，读全文/关注需登录 KADOKAWA 账号。与「随手-音乐」上一条无关，这是纯网页连载原文（日文），非网盘。"
+    },
+    {
+      "id": "manual-pickup-novalpie-app",
+      "name": "NovalPie 2.0（novalpie.cc 原生安卓客户端）",
+      "section": "pickup",
+      "subsection": "code",
+      "description": "为小说站 novalpie.cc 打造的高性能原生 Android 客户端（Kotlin + Jetpack Compose）。告别 WebView 套壳：原生沉浸式阅读器（多种翻页+无限滚动、90/120/144Hz 高刷、按行分页、后台 TTS 听书、段落级断点续读）、多线程流式 EPUB 打包下载（指数退避重试、失败二选一、压缩可调、EPUB2/3 双标准）、双轨文本替换净化、书架检索、论坛社区、个人装扮与移动端创作工作台。",
+      "url": "https://github.com/never-seek/novalpie",
+      "tags": [
+        "GitHub",
+        "开源",
+        "安卓客户端",
+        "小说阅读",
+        "EPUB下载"
+      ],
+      "kind": "GitHub 开源项目",
+      "need_login": false,
+      "update_info": "持续迭代",
+      "note": "它是本站已收录的小说站「novalpie（novalpie.cc）」的原生安卓 App。收录时最新 Beta 7（v2.0.0-native-beta7，2026-09-19），APK 约 23.31MB，Android 8.0+，Releases 页有 5 个版本。README 声明遵循源站协议、不提供盗版书源抓取、不绕过付费/权限。首次登录可能触发 Cloudflare 人机验证。Kotlin 占 96%，1259 项单测全过。收录时 star 18。"
     }
   ]
 }
