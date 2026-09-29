@@ -15980,6 +15980,25 @@
       "need_login": false,
       "update_info": "长期有效",
       "note": "官网直连正常（HTTP 200）。纯网页工具，直接提取抖音原始媒体地址，不录屏不二次压缩，支持视频与图文笔记（逐张下高清原图）。Ctrl+Enter 快速解析。解析失败多因链接不完整、作品被删/私密，或短时请求过多触发平台限流。站内声明仅提供技术解析、版权归原作者与抖音，勿未授权转载/商用。"
+    },
+    {
+      "id": "manual-manga-site-asurascans",
+      "name": "Asura Scans",
+      "section": "manga",
+      "subsection": "site",
+      "description": "知名英文汉化组（scanlation）在线阅读站，主打 manhwa / manga / manhua，以动作、奇幻、升级流韩漫见长，更新快、免登录直接看。站内还有小说（Novels）、电子书（Ebooks）、作品排行、书架收藏、排行榜与公会等功能。",
+      "url": "https://asurascans.com/",
+      "tags": [
+        "在线阅读",
+        "英译",
+        "manhwa/manga/manhua",
+        "免登录",
+        "更新快"
+      ],
+      "kind": "漫画在线阅读网站",
+      "need_login": false,
+      "update_info": "更新快",
+      "note": "官网直连正常（HTTP 200）。英文汉化站，以韩漫（升级流/奇幻/动作）为主，免登录在线看，收藏/书架需登录。域名历史上多次变动（曾用 asura.gg / asuracomic.net 等），如打不开可搜最新官方域名。"
     }
   ]
 }
