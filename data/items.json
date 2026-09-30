@@ -15999,6 +15999,63 @@
       "need_login": false,
       "update_info": "更新快",
       "note": "官网直连正常（HTTP 200）。英文汉化站，以韩漫（升级流/奇幻/动作）为主，免登录在线看，收藏/书架需登录。域名历史上多次变动（曾用 asura.gg / asuracomic.net 等），如打不开可搜最新官方域名。"
+    },
+    {
+      "id": "manual-novel-jp-2",
+      "name": "恋夺教室 男女比例崩坏世界中勾心斗角",
+      "section": "novel",
+      "subsection": "jp",
+      "description": "日系轻小说。设定在男女比例严重失衡（崩坏）的世界，围绕「恋夺」（争夺恋爱对象）展开的校园群像与勾心斗角。",
+      "url": "https://pan.baidu.com/s/1zkGdj-bia7PvqObszSIY0g?pwd=2sud",
+      "tags": [
+        "日轻",
+        "轻小说",
+        "恋爱",
+        "校园",
+        "百度网盘"
+      ],
+      "kind": "轻小说 / 网盘分享",
+      "need_login": false,
+      "update_info": "网盘分享",
+      "note": "百度网盘分享，提取码：2sud。简介按书名定位填写，未逐项核实。"
+    },
+    {
+      "id": "manual-novel-jp-3",
+      "name": "被抛入无人生还的「奈落」的大叔，误打误撞解读了暗号，结果成了未知遗物的使用者！",
+      "section": "novel",
+      "subsection": "jp",
+      "description": "日系轻小说，大叔主角 + 异世界/地下城题材：被抛入无人生还的「奈落」的大叔，误打误撞解读了暗号，意外成为未知遗物（遗失文物）的使用者，靠此在绝境中翻盘。",
+      "url": "https://pan.baidu.com/s/1n5x7AwxQXHddW12OGbqJhw?pwd=m2s4",
+      "tags": [
+        "日轻",
+        "轻小说",
+        "异世界",
+        "大叔主角",
+        "百度网盘"
+      ],
+      "kind": "轻小说 / 网盘分享",
+      "need_login": false,
+      "update_info": "网盘分享",
+      "note": "百度网盘分享，提取码：m2s4。简介按书名定位填写，未逐项核实。"
+    },
+    {
+      "id": "manual-novel-jp-4",
+      "name": "灰与幻想的格林姆迦尔",
+      "section": "novel",
+      "subsection": "jp",
+      "description": "十文字青著名日系轻小说（原题「灰と幻想のグリムガル」）。一群失去记忆的少年少女醒来后身处剑与魔法的异世界格林姆迦尔，只能组队做义勇兵、靠打怪讨生活。写实、细腻、残酷的异世界求生群像，重团队协作与角色成长，与轻松爽文的异世界作品风格迥异。曾改编为动画。",
+      "url": "https://pan.baidu.com/s/1BGKnd8tRq2BBJAlh-Ghz9w?pwd=3vyc",
+      "tags": [
+        "日轻",
+        "轻小说",
+        "异世界",
+        "写实向",
+        "百度网盘"
+      ],
+      "kind": "轻小说 / 网盘分享",
+      "need_login": false,
+      "update_info": "网盘分享",
+      "note": "百度网盘分享，提取码：3vyc。作者十文字青，原题「灰と幻想のグリムガル」，有动画化，属写实/慢热向异世界作品。"
     }
   ]
 }
