@@ -16056,6 +16056,24 @@
       "need_login": false,
       "update_info": "网盘分享",
       "note": "百度网盘分享，提取码：3vyc。作者十文字青，原题「灰と幻想のグリムガル」，有动画化，属写实/慢热向异世界作品。"
+    },
+    {
+      "id": "manual-pickup-novel-2",
+      "name": "The Regressed Mercenary's Machinations",
+      "section": "pickup",
+      "subsection": "novel",
+      "description": "英文网页轻小说，标题为「The Regressed Mercenary's Machinations」——回归的佣兵的阴谋算计的意思，典型「回归 + 狡诘 MC 操纵人际局势」的异世界/穿越题材。",
+      "url": "https://faqwiki.us/novel/the-regressed-mercenarys-machinations/",
+      "tags": [
+        "随手-小说",
+        "英文",
+        "回归",
+        "异世界"
+      ],
+      "kind": "英文网页轻小说",
+      "need_login": false,
+      "update_info": "未核实",
+      "note": "faqwiki.us 直链未能打开（web_fetch + browser 均超时/解析失败），正文未核实。标题判断：回归异世界题材英译轻小说。简介与 kind 按书名定位填写，如实标记为「未核实」。作者、章节、内容等以后访问到再补充。"
     }
   ]
 }
