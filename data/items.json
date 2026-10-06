@@ -16074,6 +16074,25 @@
       "need_login": false,
       "update_info": "未核实",
       "note": "faqwiki.us 直链未能打开（web_fetch + browser 均超时/解析失败），正文未核实。标题判断：回归异世界题材英译轻小说。简介与 kind 按书名定位填写，如实标记为「未核实」。作者、章节、内容等以后访问到再补充。"
+    },
+    {
+      "id": "manual-pickup-llm-stats",
+      "name": "LLM Stats（AI 模型排行榜/对比）",
+      "section": "pickup",
+      "subsection": "site",
+      "description": "LLM Stats（llm-stats.com）AI 模型基准与排行站：LLM Leaderboard 收录 300+（自称 400 canonical）模型，按 LLM Stats Score（智能 + 速度 + 价格综合）排名，持续聚合公开基准（GPQA / AIME 2025 / SWE-Bench Verified / Arena）与各供应商 API 的实时吞吐、首字延迟、每 token 定价。另有按任务分榜（编程/写作/数学/研究/长上下文/工具调用/推理/生图/视频）、模型对比、价格对比、基准页、新闻与 Data API/MCP。",
+      "url": "https://llm-stats.com/leaderboards/llm-leaderboard",
+      "tags": [
+        "AI排行榜",
+        "模型对比",
+        "基准测试",
+        "LLM",
+        "价格对比"
+      ],
+      "kind": "AI 模型排行榜/对比站",
+      "need_login": false,
+      "update_info": "持续更新",
+      "note": "官网直连正常（HTTP 200）。LLM Leaderboard 首页各分项榜首：推理 Claude Opus 5.5、编程 Claude Opus 5、吞吐 Gemini 3.5 Flash、最便宜前沿 Gemma 4 E4B、最大上下文 Grok-4.1 Fast（2M）、最佳开源 Kimi K3。榜单按 coding-arena 优先、再 GPQA Diamond 排序。数据来自供应商公开价目 + LLM Stats 代理计费样本，多个供应商托管同一模型时默认显示最便宜价。适合挑模型/比价/看基准时参考。"
     }
   ]
 }
