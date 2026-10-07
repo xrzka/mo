@@ -15988,6 +15988,20 @@
       "subsection": "site",
       "description": "知名英文汉化组（scanlation）在线阅读站，主打 manhwa / manga / manhua，以动作、奇幻、升级流韩漫见长，更新快、免登录直接看。站内还有小说（Novels）、电子书（Ebooks）、作品排行、书架收藏、排行榜与公会等功能。",
       "url": "https://asurascans.com/",
+      "links": [
+        {
+          "name": "首页",
+          "url": "https://asurascans.com/",
+          "password": "",
+          "label": "主页"
+        },
+        {
+          "name": "漫画列表",
+          "url": "https://asurascans.com/comics",
+          "password": "",
+          "label": "全部作品"
+        }
+      ],
       "tags": [
         "在线阅读",
         "英译",
@@ -15998,7 +16012,7 @@
       "kind": "漫画在线阅读网站",
       "need_login": false,
       "update_info": "更新快",
-      "note": "官网直连正常（HTTP 200）。英文汉化站，以韩漫（升级流/奇幻/动作）为主，免登录在线看，收藏/书架需登录。域名历史上多次变动（曾用 asura.gg / asuracomic.net 等），如打不开可搜最新官方域名。"
+      "note": "官网直连正常（HTTP 200）。英文汉化站，以韩漫（升级流/奇幻/动作）为主，免登录在线看，收藏/书架需登录。域名历史上多次变动（曾用 asura.gg / asuracomic.net 等），如打不开可搜最新官方域名。卡片另挂「漫画列表」按钮直达 /comics（全部作品浏览页），与首页是同一站，故合并为一张卡不另开条目。"
     },
     {
       "id": "manual-novel-jp-2",
