@@ -16145,6 +16145,26 @@
       "need_login": false,
       "update_info": "长期有效",
       "note": "浏览器实测可访问（首页、关于页均正常；web_fetch 直连失败，改用真实浏览器抓到）。首页三个入口：查评论 / 热度榜 / 关于我们。查询入口支持：B 站 UID、用户主页链接、分享短链或用户名。定位为「自查自己过往评论」，数据源自公开渠道，不保证实时性与完整性，已删除/下线的评论可能未同步。联系方式：Email seibunmoe@proton.me（另有 TG 群）。页脚 © 2026 seibun.moe。"
+    },
+    {
+      "id": "manual-pickup-veda-studio",
+      "name": "Veda Studio（文本→有声视频 · 稀疏注意力 Demo）",
+      "section": "pickup",
+      "subsection": "site",
+      "description": "Veda Studio ——「Veda 稀疏注意力 × MiniMax-H3」的研究预览 Demo，一句话生成「有声视频」。原理：视频扩散模型的计算主要花在注意力上，但真正起作用的只是一小部分；Veda 从完整模型蒸馏出轻量预测器，只计算最重要的约 10% 注意力、跳过其余部分，画质与完整注意力相当。它不是 LoRA，MiniMax-H3 的权重与风格完全不变。单张 RTX 4090 实测：4.75× 注意力加速、1.77× 端到端加速。页面写提示词即可出片：时长 5s / 10s / 15s（耗 1 / 2 / 3 点额度），画幅 16:9 / 9:16 / 4:3 / 1:1，另有高级选项；流程为 脚本 → 排队 → 理解 → 生成 → 冲印。论文《Veda: Scalable Video Diffusion via Distilled Sparse Attention》(ICML 2026, arXiv 2605.30325)，并放出项目主页 / Hugging Face 权重 / ComfyUI 插件 / 代码。",
+      "url": "https://veda.hanxiao.run/",
+      "tags": [
+        "AI视频",
+        "文生视频",
+        "有声视频",
+        "稀疏注意力",
+        "研究Demo",
+        "MiniMax-H3"
+      ],
+      "kind": "AI 文生视频在线 Demo",
+      "need_login": false,
+      "update_info": "研究预览",
+      "note": "浏览器实测可访问（web_fetch 直连只拿到标题，改用真实浏览器抓到完整首页）。匿名进入即显示剩余 10/10 点额度，当时「1 个排队中 · 等待约 4 分钟」；是否需登录、额度是否每日刷新未验证。生成耗时（单张 RTX 4090）：5s 约 3 分钟、10s 约 5 分钟、15s 约 8 分钟，排队时间另计。产出含 AI 生成的音频。站方声明：所见所听全部为 AI 生成，可能出错、怪异或前后不一致，勿当作真实影像，勿用于欺骗、骚扰或冒充他人。论文 arXiv 2605.30325（ICML 2026）。"
     }
   ]
 }
