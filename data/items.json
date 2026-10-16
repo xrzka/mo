@@ -16165,6 +16165,26 @@
       "need_login": false,
       "update_info": "研究预览",
       "note": "浏览器实测可访问（web_fetch 直连只拿到标题，改用真实浏览器抓到完整首页）。匿名进入即显示剩余 10/10 点额度，当时「1 个排队中 · 等待约 4 分钟」；是否需登录、额度是否每日刷新未验证。生成耗时（单张 RTX 4090）：5s 约 3 分钟、10s 约 5 分钟、15s 约 8 分钟，排队时间另计。产出含 AI 生成的音频。站方声明：所见所听全部为 AI 生成，可能出错、怪异或前后不一致，勿当作真实影像，勿用于欺骗、骚扰或冒充他人。论文 arXiv 2605.30325（ICML 2026）。"
+    },
+    {
+      "id": "manual-pickup-unisapps",
+      "name": "解压专家 DZip（解压/压缩 + 文件管理 · 宇甜网络）",
+      "section": "pickup",
+      "subsection": "app",
+      "description": "南京宇甜网络科技有限公司（unisapps.com）官网，主推「解压专家 DZip」——iOS / 安卓 / Mac / Windows 全平台的文件解压压缩与文件管理 App。解压/压缩支持 Zip、7z、RAR、ZIPX、Lzh、TAR、GZIP、BZIP、TGZ、TBZ、ISO、CAB、JAR、DEB、RPM、CBS 等格式，支持分卷压缩/分卷解压与加密压缩包；文件管理支持批量保存图片视频、批量解压，以及 Google Drive / Dropbox / OneDrive 网盘管理；传输支持二维码、SMB、FTP、WEBDAV。另内置全能视频播放器（几十种格式、倍速/字幕/截屏/截视频与 GIF）、音乐播放器和文本阅读器。同公司另一款产品「隐私专家 SPV」是 iOS/安卓的隐私保险箱（隐藏照片视频与联系人，真假密码保护）。",
+      "url": "https://unisapps.com/",
+      "tags": [
+        "解压工具",
+        "压缩",
+        "文件管理",
+        "全平台",
+        "视频播放器",
+        "隐私保险箱"
+      ],
+      "kind": "工具软件官网（解压/文件管理）",
+      "need_login": false,
+      "update_info": "长期有效",
+      "note": "直连可访问（HTTP 200）。解压专家 DZip 各平台入口：Windows 走 Microsoft Store（9p8l13p9gqc8）或站内 64 位安装包；iOS App Store（解压专家 zip/rar/7z，id1400133654）；安卓应用宝（包名 com.fileunzip.zxwknight）；Mac App Store（id1626263929）。隐私专家 SPV 有 App Store（id1536307293）、安卓应用宝（com.zxwknight.privacyvault）与网页版 spv.unisapps.com。公司信息：南京宇甜网络科技有限公司，地址南京市江宁区麒麟街道悦民街 128 号东方红郡花园 20 幢 1023 室；商务 ussupport@unisapps.com，官方 QQ 群 246891409，微信 iOS_Super_dk，苏ICP备2020065435号-1。（页脚「Collect from 网站模板」为建站模板残留，与产品无关。）"
     }
   ]
 }
