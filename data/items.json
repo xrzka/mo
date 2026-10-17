@@ -2751,9 +2751,21 @@
       "kind": "Galgame 资源",
       "need_login": false,
       "update_info": "网盘分享",
-      "note": "",
+      "note": "新增 UC 网盘源（正篇 + 番外凸 + 番外 Rerecall）。",
       "adult": true,
-      "password": "uz6w"
+      "password": "uz6w",
+      "links": [
+        {
+          "name": "迅雷网盘",
+          "url": "https://pan.xunlei.com/s/VOnBhC9osSy7geJTGLf4WU7aA1?pwd=uz6w",
+          "password": "uz6w"
+        },
+        {
+          "name": "UC 网盘",
+          "url": "https://drive.uc.cn/s/dec3704c33db4?public=1",
+          "password": ""
+        }
+      ]
     },
     {
       "id": "gal-81476838d0",
@@ -3614,7 +3626,7 @@
       "kind": "Galgame 资源",
       "need_login": false,
       "update_info": "网盘分享",
-      "note": "压缩包解压码：0721（不是网盘提取码）。",
+      "note": "压缩包解压码：0721（不是网盘提取码）。 新增 UC 网盘源（双端）。",
       "adult": true,
       "password": "6twm",
       "links": [
@@ -3626,6 +3638,11 @@
         {
           "name": "夸克网盘",
           "url": "https://pan.quark.cn/s/038dc1b700e8#/list/share",
+          "password": ""
+        },
+        {
+          "name": "UC 网盘",
+          "url": "https://drive.uc.cn/s/c5f56723d58a4?public=1",
           "password": ""
         }
       ]
@@ -3954,9 +3971,21 @@
       "kind": "Galgame 资源",
       "need_login": false,
       "update_info": "网盘分享",
-      "note": "压缩包解压码：0721（不是网盘提取码）。",
+      "note": "压缩包解压码：0721（不是网盘提取码）。 新增 UC 网盘源（双端）。",
       "adult": true,
-      "password": "54si"
+      "password": "54si",
+      "links": [
+        {
+          "name": "迅雷网盘",
+          "url": "https://pan.xunlei.com/s/VOnBsZLWPofEkJM4F8T4Y2WAA1?pwd=54si",
+          "password": "54si"
+        },
+        {
+          "name": "UC 网盘",
+          "url": "https://drive.uc.cn/s/e2f852dd38114?public=1",
+          "password": ""
+        }
+      ]
     },
     {
       "id": "gal-2094d327ab",
@@ -5235,9 +5264,21 @@
       "kind": "Galgame 资源",
       "need_login": false,
       "update_info": "网盘分享",
-      "note": "压缩包解压码：0721（不是网盘提取码）。",
+      "note": "压缩包解压码：0721（不是网盘提取码）。 新增百度网盘源（提取码 ea3y）。",
       "adult": true,
-      "password": "bvr2"
+      "password": "bvr2",
+      "links": [
+        {
+          "name": "迅雷网盘",
+          "url": "https://pan.xunlei.com/s/VOnCcjokEouRppbfoRRxdqb8A1?pwd=bvr2",
+          "password": "bvr2"
+        },
+        {
+          "name": "百度网盘",
+          "url": "https://pan.baidu.com/s/1sAMorek4aDPkWVBPfidgTQ",
+          "password": "ea3y"
+        }
+      ]
     },
     {
       "id": "gal-4651b180b7",
@@ -8015,9 +8056,21 @@
       "kind": "Galgame 资源",
       "need_login": false,
       "update_info": "网盘分享",
-      "note": "压缩包解压码：0721（不是网盘提取码）。",
+      "note": "压缩包解压码：0721（不是网盘提取码）。 新增 UC 网盘源（双端：FHD + SANA）。",
       "adult": true,
-      "password": "k2sz"
+      "password": "k2sz",
+      "links": [
+        {
+          "name": "迅雷网盘",
+          "url": "https://pan.xunlei.com/s/VOnCgHAk855zSRIx96Vt3HvNA1?pwd=k2sz",
+          "password": "k2sz"
+        },
+        {
+          "name": "UC 网盘",
+          "url": "https://drive.uc.cn/s/b17dc6b0bef34?public=1",
+          "password": ""
+        }
+      ]
     },
     {
       "id": "gal-595784432f",
@@ -8035,9 +8088,21 @@
       "kind": "Galgame 资源",
       "need_login": false,
       "update_info": "网盘分享",
-      "note": "压缩包解压码：0721（不是网盘提取码）。",
+      "note": "压缩包解压码：0721（不是网盘提取码）。 新增 UC 网盘源（双端：FHD + SANA）。",
       "adult": true,
-      "password": "k2sz"
+      "password": "k2sz",
+      "links": [
+        {
+          "name": "迅雷网盘",
+          "url": "https://pan.xunlei.com/s/VOnCgHAk855zSRIx96Vt3HvNA1?pwd=k2sz",
+          "password": "k2sz"
+        },
+        {
+          "name": "UC 网盘",
+          "url": "https://drive.uc.cn/s/b17dc6b0bef34?public=1",
+          "password": ""
+        }
+      ]
     },
     {
       "id": "gal-0f0eaff2ee",
@@ -8478,9 +8543,26 @@
       "kind": "Galgame 资源",
       "need_login": false,
       "update_info": "网盘分享",
-      "note": "压缩包解压码：0721（不是网盘提取码）。",
+      "note": "压缩包解压码：0721（不是网盘提取码）。 新增 UC / 百度网盘源。解压密码 qfafa.com；资源伪装成 mp4 并多层压缩，需把 .mp4 改成 .zip（别改 .rar/.7z），用 WinRAR ≥ 7.01 解压 2~3 次，多文件的中间要合并一次做分卷解压。另：本卡原有的迅雷链接与《幸福噩梦》相同，疑似误填，请以新加的 UC/百度 为准。",
       "adult": true,
-      "password": "63gx"
+      "password": "63gx",
+      "links": [
+        {
+          "name": "迅雷网盘",
+          "url": "https://pan.xunlei.com/s/VOnCgaal71_6-rOdZaDCZSKaA1?pwd=63gx",
+          "password": "63gx"
+        },
+        {
+          "name": "UC 网盘",
+          "url": "https://drive.uc.cn/s/8ce9ee8ba2584?public=1",
+          "password": ""
+        },
+        {
+          "name": "百度网盘",
+          "url": "https://pan.baidu.com/s/1Qww2abW8vWqZ2LAwSEswkw?pwd=un9f",
+          "password": "un9f"
+        }
+      ]
     },
     {
       "id": "gal-612be83a16",
@@ -8533,9 +8615,21 @@
       "kind": "Galgame 资源",
       "need_login": false,
       "update_info": "网盘分享",
-      "note": "压缩包解压码：0721（不是网盘提取码）。",
+      "note": "压缩包解压码：0721（不是网盘提取码）。 新增 UC 网盘源（正篇 + 番外凸 + 番外 Rerecall）。",
       "adult": true,
-      "password": "ynk2"
+      "password": "ynk2",
+      "links": [
+        {
+          "name": "迅雷网盘",
+          "url": "https://pan.xunlei.com/s/VOnCgkMkZV-w7eoHmU6txQiHA1?pwd=ynk2",
+          "password": "ynk2"
+        },
+        {
+          "name": "UC 网盘",
+          "url": "https://drive.uc.cn/s/dec3704c33db4?public=1",
+          "password": ""
+        }
+      ]
     },
     {
       "id": "gal-e49380d7e2",
@@ -8686,9 +8780,21 @@
       "kind": "Galgame 资源",
       "need_login": false,
       "update_info": "网盘分享",
-      "note": "压缩包解压码：0721（不是网盘提取码）。",
+      "note": "压缩包解压码：0721（不是网盘提取码）。 新增 UC 网盘源（双端）。",
       "adult": true,
-      "password": "ncmm"
+      "password": "ncmm",
+      "links": [
+        {
+          "name": "迅雷网盘",
+          "url": "https://pan.xunlei.com/s/VOnCh--CcUerBybPs-4b5TqfA1?pwd=ncmm",
+          "password": "ncmm"
+        },
+        {
+          "name": "UC 网盘",
+          "url": "https://drive.uc.cn/s/274b7cdc0cc94?public=1",
+          "password": ""
+        }
+      ]
     },
     {
       "id": "gal-b3f88ecf1c",
@@ -16206,6 +16312,82 @@
       "need_login": false,
       "update_info": "长期有效",
       "note": "App Store 直连可访问（HTTP 200）。免费下载 + App 内购买；专为 iPad 设计，页面标注「未针对 macOS 验证」。评分 4.9（181 个评分）。App Store 数字 id：6796972501。支持 KrKr / ONS / Ren'Py 三类引擎，导入支持文件夹分享、ZIP/RAR/7z/LZ4 压缩包与局域网（同一 Wi-Fi）电脑上传。注意：App 本身不含任何视觉小说内容，只做本地运行器/管理器，内容需自行导入。"
+    },
+    {
+      "id": "manual-game-x069",
+      "name": "幸福家里蹲的养成方法 / 幸福宅女的养成方法（幸せなニートの育て方）Ver2.06 官方中文步兵版 + 存档",
+      "section": "game",
+      "subsection": "gal",
+      "description": "Galgame 资源，PC + 安卓双端，Ver2.06 官方中文步兵版，附存档。",
+      "url": "https://drive.uc.cn/s/327e77ffa8974?public=1",
+      "links": [
+        {
+          "name": "UC 网盘",
+          "url": "https://drive.uc.cn/s/327e77ffa8974?public=1",
+          "password": ""
+        }
+      ],
+      "tags": [
+        "PC",
+        "安卓",
+        "官方中文",
+        "Galgame",
+        "含存档"
+      ],
+      "kind": "Galgame 资源",
+      "need_login": false,
+      "update_info": "网盘分享",
+      "adult": true,
+      "note": "PC + 安卓双端资源，Ver2.06 官方中文步兵版，含存档。原分享未单独标注解压密码；站内此类资源常见「mp4 伪装包 + 分卷压缩」，可配合本站「一键解压工具」（内置常见解压码）处理。"
+    },
+    {
+      "id": "manual-game-x071",
+      "name": "BLACK SOULS / BLACKSOULS 官方中文步兵版",
+      "section": "game",
+      "subsection": "gal",
+      "description": "Galgame 资源，PC 平台，官方中文步兵版。解压密码 WTM。",
+      "url": "https://drive.uc.cn/s/3f5fa2f6ed9d4?public=1",
+      "links": [
+        {
+          "name": "UC 网盘",
+          "url": "https://drive.uc.cn/s/3f5fa2f6ed9d4?public=1",
+          "password": ""
+        }
+      ],
+      "tags": [
+        "PC",
+        "官方中文",
+        "Galgame"
+      ],
+      "kind": "Galgame 资源",
+      "need_login": false,
+      "update_info": "网盘分享",
+      "adult": true,
+      "note": "解压密码 WTM。原作为 BLACK SOULS（黑暗之魂同人风格的 RPG/Galgame 系列）。下载后若为 mp4 伪装文件，把后缀改成 zip 再用 WinRAR 解压。"
+    },
+    {
+      "id": "manual-game-x074",
+      "name": "魔法少女的魔女审判",
+      "section": "game",
+      "subsection": "gal",
+      "description": "Galgame 资源，PC 平台。",
+      "url": "https://drive.uc.cn/s/c534ca4d860c4?public=1",
+      "links": [
+        {
+          "name": "UC 网盘",
+          "url": "https://drive.uc.cn/s/c534ca4d860c4?public=1",
+          "password": ""
+        }
+      ],
+      "tags": [
+        "PC",
+        "Galgame"
+      ],
+      "kind": "Galgame 资源",
+      "need_login": false,
+      "update_info": "网盘分享",
+      "adult": true,
+      "note": "原分享未标注解压密码；站内此类资源常见「mp4 伪装包 + 分卷压缩」，可配合本站「一键解压工具」（内置常见解压码）处理。"
     }
   ]
 }

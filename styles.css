@@ -2584,3 +2584,8 @@ body.no-scroll { overflow: hidden; }
 
 
 
+
+/* 全局「一键解压工具」：链接区里固定挂的一行，与网盘源用虚线区分 */
+.link-row-tool .visit-link {
+  border-style: dashed;
+}

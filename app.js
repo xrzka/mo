@@ -1232,7 +1232,42 @@
         }
         linkBox.appendChild(row);
       });
-    } else {
+    }
+
+    // 全局「一键解压工具」：所有卡片（含以后新增的）都在链接区自动挂一个入口。
+    // 刻意不塞进 item.links —— 那会污染「提取码」显示与「求补档」判断。
+    const unzipTool = (window.MO_CONFIG && window.MO_CONFIG.unzipTool) || null;
+    if (unzipTool && /^https?:\/\//i.test(unzipTool.url || "")) {
+      const row = document.createElement("div");
+      row.className = "link-row link-row-tool";
+
+      const ta = document.createElement("a");
+      ta.className = "visit-link";
+      ta.href = unzipTool.url;
+      ta.target = "_blank";
+      ta.rel = "noreferrer noopener";
+      ta.textContent = (unzipTool.name || "一键解压工具") + " ↗";
+      if (unzipTool.note) ta.title = unzipTool.note;
+      row.appendChild(ta);
+
+      if (unzipTool.code) {
+        const tcode = document.createElement("code");
+        tcode.className = "pw-code";
+        tcode.textContent = unzipTool.code;
+        row.appendChild(tcode);
+
+        const tcp = document.createElement("button");
+        tcp.type = "button";
+        tcp.className = "pw-copy";
+        tcp.textContent = "复制";
+        tcp.addEventListener("click", (e) => {
+          e.stopPropagation();
+          copyText(unzipTool.code, tcp);
+        });
+        row.appendChild(tcp);
+      }
+      linkBox.appendChild(row);
+    } else if (!item.links.length) {
       linkBox.remove();
     }
 

@@ -17,4 +17,16 @@ window.MO_CONFIG = {
     "https://mo-stats.pages.dev",
     "https://mo-stats.werneruszcb71.workers.dev",
   ],
+  /**
+   * 全局「一键解压工具」：所有卡片（包括以后新增的）都会在链接区自动挂一个入口，
+   * 不用逐条改数据。站内大量资源是「mp4 伪装 + 分卷压缩」，各家解压码还不一样，
+   * 这个工具内置了常见资源的解压码，可一键解压。
+   * 改成 null 即可全站隐藏。
+   */
+  unzipTool: {
+    name: "一键解压工具",
+    url: "https://pan.baidu.com/s/1zCve2sxr7PW800QdVBmmPw?pwd=ddms",
+    code: "ddms",
+    note: "已内置各种资源的解压码和各文件解压，可用于一键解压",
+  },
 };
