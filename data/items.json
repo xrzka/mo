@@ -16388,6 +16388,27 @@
       "update_info": "网盘分享",
       "adult": true,
       "note": "原分享未标注解压密码；站内此类资源常见「mp4 伪装包 + 分卷压缩」，可配合本站「一键解压工具」（内置常见解压码）处理。"
+    },
+    {
+      "id": "manual-pickup-syoku",
+      "name": "SYOKU《触祭の都》（ショクサイ ノ ミヤコ）官网",
+      "section": "pickup",
+      "subsection": "site",
+      "description": "SYOKU（HOBIBOX 旗下 18 禁美少女游戏品牌）的作品官网 ——《触祭の都（ショクサイ ノ ミヤコ）》。含作品介绍、壁纸日历、DL 贩售站、联动链接等；顶页是这部作品的门面页。站点为 2011~2012 年的老式静态站（页面自述需 IE10 / Chrome），更新信息停在 2012.04.16。同品牌另有 Lucha Libre，母站 www.syoku-game.com 为 SYOKU 品牌总入口。",
+      "url": "https://www.syoku-game.com/01syokusai/index.html",
+      "tags": [
+        "18禁",
+        "美少女ゲーム",
+        "エロゲ",
+        "官网",
+        "SYOKU",
+        "日本老站"
+      ],
+      "kind": "日本 18 禁游戏品牌作品官网",
+      "need_login": false,
+      "update_info": "停止更新（最后 2012.04）",
+      "adult": true,
+      "note": "直连被重置（TLS RST），实测需走代理（本机 7890）才能打开，走代理 HTTP 200；国内一般需代理访问。母站 www.syoku-game.com 打开先有 18 岁确认页，声明未满 18 岁不可浏览。本页更新信息：12.04.16 链接修正·追加；11.11.30 公开 12 月壁纸日历；11.10.28 / 11.09.30 分别公开 11 / 10 月壁纸日历；11.09.14 DL 贩售站更新；11.05.31 小说版《触祭の都》发售。站点声明「リンクフリー」，但请链到 top 页。版权标注 Copylight © 2015 HOBIBOX / SYOKU。老站，部分内容（壁纸/DL 站）可能已失效。"
     }
   ]
 }
