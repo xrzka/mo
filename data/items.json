@@ -16409,6 +16409,26 @@
       "update_info": "停止更新（最后 2012.04）",
       "adult": true,
       "note": "直连被重置（TLS RST），实测需走代理（本机 7890）才能打开，走代理 HTTP 200；国内一般需代理访问。母站 www.syoku-game.com 打开先有 18 岁确认页，声明未满 18 岁不可浏览。本页更新信息：12.04.16 链接修正·追加；11.11.30 公开 12 月壁纸日历；11.10.28 / 11.09.30 分别公开 11 / 10 月壁纸日历；11.09.14 DL 贩售站更新；11.05.31 小说版《触祭の都》发售。站点声明「リンクフリー」，但请链到 top 页。版权标注 Copylight © 2015 HOBIBOX / SYOKU。老站，部分内容（壁纸/DL 站）可能已失效。"
+    },
+    {
+      "id": "manual-novel-site-lemaned",
+      "name": "Lemaned 个人小说站（作品库 · EPUB 在线阅读）",
+      "section": "novel",
+      "subsection": "site",
+      "description": "个人自建的中文网络小说 / EPUB 在线阅读站（作者 Lemaned）。/works 是作品库：收录 40+ 部作品，题材集中在韩轻风——校园奇幻、学院流、反派流、重生升级、性转等，全部标注「已完结」。支持按书名/关键词搜索、分页浏览与跳页；点进作品有章节列表和内置阅读器（可调字号）。站点本身也是个人主页：带 BGM、导航入口、特长、社交链接（Telegram 频道、Ko-fi 赞助），另有上传 EPUB / 解析章节 / 限流封禁的后台。",
+      "url": "https://lemaned.com/works",
+      "tags": [
+        "在线小说",
+        "个人站",
+        "EPUB",
+        "韩轻风",
+        "已完结",
+        "在线阅读器"
+      ],
+      "kind": "个人自建小说 / EPUB 在线阅读站",
+      "need_login": false,
+      "update_info": "持续更新（页内最近 2026-10）",
+      "note": "直连被 Cloudflare 拦（403 / IP 被 block），实测走本机代理 7890 可正常访问（HTTP 200）；国内一般需代理。站点是 Vue SPA，正文靠接口渲染。实测接口 /api/books 返回 46 条作品记录（含少量同名重复），篇幅较大的如「学院的武器复制者」658 章、「异世界错觉猎人 完-全书」594 章、「我成了英雄漫画里的市长」467 章、「SSS级重生猎人」400 章、「一觉醒来，变成了女人」384 章；全部「已完结」，页内最近更新到 2026-10-16。章节走 /api/books/{slug}/chapters/{chapter}，EPUB 源文件存放在 storage.lemaned.com，前台不直接暴露源文件。站点社交：Telegram t.me/Lemaned1314、Ko-fi ko-fi.com/lemaned。"
     }
   ]
 }
