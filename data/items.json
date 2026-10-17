@@ -16185,6 +16185,27 @@
       "need_login": false,
       "update_info": "长期有效",
       "note": "直连可访问（HTTP 200）。解压专家 DZip 各平台入口：Windows 走 Microsoft Store（9p8l13p9gqc8）或站内 64 位安装包；iOS App Store（解压专家 zip/rar/7z，id1400133654）；安卓应用宝（包名 com.fileunzip.zxwknight）；Mac App Store（id1626263929）。隐私专家 SPV 有 App Store（id1536307293）、安卓应用宝（com.zxwknight.privacyvault）与网页版 spv.unisapps.com。公司信息：南京宇甜网络科技有限公司，地址南京市江宁区麒麟街道悦民街 128 号东方红郡花园 20 幢 1023 室；商务 ussupport@unisapps.com，官方 QQ 群 246891409，微信 iOS_Super_dk，苏ICP备2020065435号-1。（页脚「Collect from 网站模板」为建站模板残留，与产品无关。）"
+    },
+    {
+      "id": "manual-pickup-kakamiao",
+      "name": "咔咔喵（iOS/iPad 视觉小说运行器 · KrKr/ONS/Ren'Py）",
+      "section": "pickup",
+      "subsection": "app",
+      "description": "咔咔喵——iPhone / iPad 上的视觉小说（Galgame）管理与播放 App，官方口号「KrKr ONS Ren'Py 一个 App 全搞定」。支持 KrKr（吉里吉里）、ONS（ONScripter）、Ren'Py 等多种引擎；可自定义作品封面、整理专属游戏库；导入方式多样：从其他 App 分享文件夹、直接导入 ZIP / RAR / 7z / LZ4 压缩包，同一 Wi-Fi 下还能从电脑上传作品。打开作品即续上次进度，阅读中可随时呼出菜单返回游戏库，支持更换封面与应用图标。声明：仅提供本地运行与管理功能，不提供/预置/分发任何视觉小说内容，需自行导入来源合法的文件。",
+      "url": "https://apps.apple.com/cn/app/%E5%92%94%E5%92%94%E5%96%B5-%E8%A7%86%E8%A7%89%E5%B0%8F%E8%AF%B4%E5%B7%A5%E5%85%B7/id6796972501",
+      "tags": [
+        "视觉小说",
+        "Galgame",
+        "KrKr",
+        "ONS",
+        "Ren'Py",
+        "iOS/iPad",
+        "本地播放器"
+      ],
+      "kind": "iOS/iPadOS 视觉小说管理与播放 App",
+      "need_login": false,
+      "update_info": "长期有效",
+      "note": "App Store 直连可访问（HTTP 200）。免费下载 + App 内购买；专为 iPad 设计，页面标注「未针对 macOS 验证」。评分 4.9（181 个评分）。App Store 数字 id：6796972501。支持 KrKr / ONS / Ren'Py 三类引擎，导入支持文件夹分享、ZIP/RAR/7z/LZ4 压缩包与局域网（同一 Wi-Fi）电脑上传。注意：App 本身不含任何视觉小说内容，只做本地运行器/管理器，内容需自行导入。"
     }
   ]
 }
