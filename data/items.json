@@ -16566,6 +16566,26 @@
       "need_login": false,
       "update_info": "网盘分享",
       "note": "提取码 tn73（链接里已带 pwd=tn73）。分享页只回「请输入提取码」，要在网盘网页端 / 客户端里输入提取码后取件。两款都是第三方「软件库」类 App，安装包由他人打包上传，来源与安全性请自行判断，装前建议核对包名与签名，部分机型需临时允许「安装未知应用」。鹿谷社区的官方下载站另有单独条目，在「随手安利 · 软件」里。"
+    },
+    {
+      "id": "manual-pickup-fanqiang",
+      "name": "bannedbook/fanqiang（翻墙 / 科学上网 资源与教程库）",
+      "section": "pickup",
+      "subsection": "code",
+      "description": "从 2015 年更新到现在的老牌「翻墙 - 科学上网」GitHub 项目库（55k+ star）：一键翻墙包（Chrome / Edge / 火狐 / TorBrowser，带 Mac、Linux 版）、安卓翻墙软件与 APP 教程、免费 ss / v2ray 账号 wiki、自建 V2ray / Shadowsocks 服务器简明教程、iPhone / Mac 翻墙，还有大陆注册 ChatGPT、v2rayN 链式代理等文档；另附 FQNews 安卓 APP 源码（Kotlin）与打包好的 APK Release。",
+      "url": "https://github.com/bannedbook/fanqiang",
+      "tags": [
+        "翻墙",
+        "科学上网",
+        "Shadowsocks",
+        "V2ray",
+        "一键翻墙包",
+        "开源项目"
+      ],
+      "kind": "GitHub 开源项目（教程 / 工具库）",
+      "need_login": false,
+      "update_info": "持续更新",
+      "note": "抓取时 55.4k star / 8.7k fork，2015-01 建库，最后提交 2026-09-13，默认分支 master，未附开源许可证；仓库体积约 750MB（含各客户端一键包与安卓源码）。顶层目录：ChromeGo / ChromeGoMac / EdgeGo / FirefoxFqLinux / tor-browser-portable（各浏览器一键翻墙包）、android / ios / macos / linux / windows / router（分平台教程与工具）、apk、v2ss（自建 V2ray、Shadowsocks 简明教程）、fqnews 与 fqnews2（FQNews 安卓 APP，Kotlin）、docs、game、deprecated。最新 Release 是 FQNews-v1.3.8（2024-08），资产 fqnews2.apk 约 46MB 与 libcore.aar。README 索引：翻墙新闻 FQNews 安卓 APP、安卓翻墙软件、安卓翻墙 APP 教程、Chrome / Edge / 火狐 / TorBrowser 一键翻墙包（含 Mac、Linux 版）、自建 V2ray 与 Shadowsocks 简明教程、免费 ss 账号、v2ray 免费账号（都在 wiki）、苹果电脑 Mac 翻墙、iPhone 翻墙，以及「中国大陆注册 ChatGPT 教程」和「如何使用 v2rayN 配置链式代理」。一键包是「便携浏览器 + 现成配置」的打包形式，包里节点长期可用性会变，自建更稳。"
     }
   ]
 }
