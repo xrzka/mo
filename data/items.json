@@ -16586,6 +16586,25 @@
       "need_login": false,
       "update_info": "持续更新",
       "note": "抓取时 55.4k star / 8.7k fork，2015-01 建库，最后提交 2026-09-13，默认分支 master，未附开源许可证；仓库体积约 750MB（含各客户端一键包与安卓源码）。顶层目录：ChromeGo / ChromeGoMac / EdgeGo / FirefoxFqLinux / tor-browser-portable（各浏览器一键翻墙包）、android / ios / macos / linux / windows / router（分平台教程与工具）、apk、v2ss（自建 V2ray、Shadowsocks 简明教程）、fqnews 与 fqnews2（FQNews 安卓 APP，Kotlin）、docs、game、deprecated。最新 Release 是 FQNews-v1.3.8（2024-08），资产 fqnews2.apk 约 46MB 与 libcore.aar。README 索引：翻墙新闻 FQNews 安卓 APP、安卓翻墙软件、安卓翻墙 APP 教程、Chrome / Edge / 火狐 / TorBrowser 一键翻墙包（含 Mac、Linux 版）、自建 V2ray 与 Shadowsocks 简明教程、免费 ss 账号、v2ray 免费账号（都在 wiki）、苹果电脑 Mac 翻墙、iPhone 翻墙，以及「中国大陆注册 ChatGPT 教程」和「如何使用 v2rayN 配置链式代理」。一键包是「便携浏览器 + 现成配置」的打包形式，包里节点长期可用性会变，自建更稳。"
+    },
+    {
+      "id": "manual-pickup-muse-ai",
+      "name": "Muse（muse.ai · Meta 个人 AI 智能体）",
+      "section": "pickup",
+      "subsection": "site",
+      "description": "Meta 出的个人 AI 智能体「Muse」（muse.ai，页脚标注 © Meta 2026，站点标题 Muse — Your Personal AI Agent）。官方描述：给 Muse 一个目标或一件日常杂事，剩下的它替你办 —— 从财务、健康到购物，以及你在意的人。中文首页的标语是「Muse，智能 AI 助你完成各项事务」，轮播的能力点：为你整理邮件、预订、为你购买、为你省钱、管理日历、制定健身计划。打开就是登录页，得先注册账号才进得去。",
+      "url": "https://muse.ai/",
+      "tags": [
+        "AI 智能体",
+        "Meta",
+        "Muse",
+        "个人助理",
+        "需要代理"
+      ],
+      "kind": "AI 智能体 / 个人助理（Meta）",
+      "need_login": true,
+      "update_info": "持续更新",
+      "note": "实测：国内直连超时（走本机 7890 代理可开，HTTP 200，页面已本地化中文）。必须先登录 —— 首页只有「登录或创建账户」，用手机号或邮箱，提示「你可能会通过你的手机号收到我们的短信通知」；除 /、/business、/privacy、/terms、/support 之外，其它路径（/pricing、/video、/about、/login、/search…）一律跳回首页。条款与政策：Muse 服务补充条款最后更新 2026-09-08，Muse 隐私政策生效 2026-09-17，主体是 Meta Platforms, Inc.，并受 Meta 服务条款与 Meta AI 服务条款约束。隐私政策写明 Muse 跑在一个叫「虚拟机（VM）」的云环境里，每个用户的 VM 彼此独立、别的用户的智能体访问不到你 VM 里的信息，也支持用独立账户。另有 /business：Muse for Small Business「小型企业专用 Muse：AI 助力公司发展」，主打「AI 客服 Muse 全天候为你服务」。robots.txt 明确禁止未经书面许可的自动化抓取，别拿脚本去爬这个站。"
     }
   ]
 }
