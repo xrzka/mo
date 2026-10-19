@@ -123,6 +123,9 @@ CREATE TABLE IF NOT EXISTS overrides (
   subsection  TEXT,
   placements  TEXT,
   deleted     INTEGER,
+  -- 一键隐藏：1 = 前台完全看不到（列表/搜索/统计都不算），NULL 或 0 = 正常。
+  -- 老库补列：ALTER TABLE overrides ADD COLUMN hidden INTEGER;
+  hidden      INTEGER,
   updated  TEXT NOT NULL,
   by_who   TEXT NOT NULL DEFAULT ''
 );

@@ -433,6 +433,76 @@ const create = (env, title, note = "", opts) =>
   check("updated 会刷新", t2 > t1, `${t1} -> ${t2}`);
 }
 
+/* ---------- 8b. 一键隐藏（hidden） ---------- */
+{
+  console.log("\n--- 一键隐藏（hidden） ---");
+  const env = newEnv();
+  const { data } = await login(env, PASSWORD);
+  const token = data.token;
+  const ovOf = async (id) => (await call(env, "/api/overrides")).data.overrides[id];
+
+  let r = await save(env, token, "manual-novel-hide", { hidden: true });
+  check("写 hidden 成功", r.status === 200, JSON.stringify(r.data));
+  let got = await ovOf("manual-novel-hide");
+  check("hidden 读回布尔 true（不是 D1 的 1）", got && got.hidden === true, JSON.stringify(got));
+
+  // 隐藏与改名一起写时互不覆盖
+  await save(env, token, "manual-novel-hide", { name: "隐藏中的标题" });
+  got = await ovOf("manual-novel-hide");
+  check("增量更新不影响 hidden", got.hidden === true && got.name === "隐藏中的标题",
+        JSON.stringify(got));
+
+  // 非法类型必须挡掉：前端靠 === true 判断，放进字符串就等于没隐藏
+  r = await save(env, token, "manual-novel-hide", { hidden: "yes" });
+  check("hidden 非布尔被 400", r.status === 400, JSON.stringify(r.data));
+  check("报错点名 hidden", String(r.data.error).includes("hidden"), String(r.data.error));
+
+  // hidden:null = 取消隐藏（撤销这一项覆盖），别的覆盖要留着
+  await save(env, token, "manual-novel-hide", { hidden: null });
+  got = await ovOf("manual-novel-hide");
+  check("null 取消隐藏", got && !("hidden" in got), JSON.stringify(got));
+  check("取消隐藏不动其他字段", got.name === "隐藏中的标题", JSON.stringify(got));
+
+  // 访客侧就是靠公开覆盖层里的 hidden 过滤的，必须读得到
+  await save(env, token, "manual-novel-hide", { hidden: true });
+  const pub = await call(env, "/api/overrides");
+  check("公开读也带 hidden 标记", pub.data.overrides["manual-novel-hide"].hidden === true,
+        JSON.stringify(pub.data.overrides["manual-novel-hide"]));
+
+  // 隐藏与软删除可以并存：删除列表与隐藏列表各认各的
+  await save(env, token, "manual-novel-gone", { deleted: true, hidden: true });
+  got = await ovOf("manual-novel-gone");
+  check("deleted 与 hidden 互不干扰", got.deleted === true && got.hidden === true,
+        JSON.stringify(got));
+}
+
+/* ---------- 8c. 后台新增卡片的一键隐藏 ---------- */
+{
+  console.log("\n--- 新增卡片的一键隐藏 ---");
+  const env = newEnv();
+  const { data } = await login(env, PASSWORD);
+  const token = data.token;
+
+  // 「新增后先隐藏」的真实路径：先建卡拿到 id，再写一条 hidden 覆盖
+  const created = await call(env, "/api/admin/item", {
+    method: "POST", token,
+    body: { name: "先隐藏的新卡", section: "novel", url: "https://example.com/new" },
+  });
+  check("新增成功", created.status === 200, JSON.stringify(created.data));
+  const id = created.data.id;
+
+  const saved = await save(env, token, id, { hidden: true });
+  check("给新增卡写 hidden 成功", saved.status === 200, JSON.stringify(saved.data));
+  const pub = await call(env, "/api/overrides");
+  check("新增卡的 hidden 出现在公开覆盖层", pub.data.overrides[id].hidden === true,
+        JSON.stringify(pub.data.overrides[id]));
+
+  // 取消隐藏后条目还在：隐藏是覆盖，不是删除
+  await save(env, token, id, { hidden: null });
+  const items = (await call(env, "/api/items")).data;
+  check("取消隐藏后条目仍存在", items.items.some((x) => x.id === id), String(items.count));
+}
+
 /* ---------- 9. 覆盖层公开读 ---------- */
 {
   console.log("\n--- 覆盖层公开读 ---");

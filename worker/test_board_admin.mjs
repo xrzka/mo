@@ -155,6 +155,52 @@ check("移出废站成功", result.status === 200, JSON.stringify(result.data));
 result = await call("/api/board/overrides");
 check("移出废站后标记被清除", !("dead" in result.data.overrides.agentrouter) && !("dead_note" in result.data.overrides.agentrouter));
 
+/* ---------- 一键隐藏（hidden） ---------- */
+result = await call("/api/board/admin/override", {
+  method: "POST", token,
+  body: { item_id: "agentrouter", fields: { hidden: true } },
+});
+check("一键隐藏可保存", result.status === 200, JSON.stringify(result.data));
+result = await call("/api/board/overrides");
+check("隐藏标记公开读回", result.data.overrides.agentrouter.hidden === true);
+check("隐藏不影响已有覆盖", result.data.overrides.agentrouter.resource_name === "新标题",
+      JSON.stringify(result.data.overrides.agentrouter));
+
+result = await call("/api/board/admin/override", {
+  method: "POST", token,
+  body: { item_id: "agentrouter", fields: { hidden: "yes" } },
+});
+check("隐藏标记拒绝字符串", result.status === 400, JSON.stringify(result.data));
+
+// 取消隐藏 = 清掉这一项覆盖
+result = await call("/api/board/admin/override", {
+  method: "POST", token,
+  body: { item_id: "agentrouter", fields: {}, clear_fields: ["hidden"] },
+});
+check("取消隐藏成功", result.status === 200, JSON.stringify(result.data));
+result = await call("/api/board/overrides");
+check("取消后隐藏标记消失", !("hidden" in result.data.overrides.agentrouter));
+
+// 后台新增的卡片同样能一键隐藏（写覆盖，不删 custom 行）
+const hiddenNew = await call("/api/board/admin/item", {
+  method: "POST", token,
+  body: { resource_name: "先隐藏的新卡", rank_position: 21, direct_connect: true },
+});
+const hiddenNewId = hiddenNew.data.id;
+result = await call("/api/board/admin/override", {
+  method: "POST", token,
+  body: { item_id: hiddenNewId, fields: { hidden: true } },
+});
+check("新增卡片可一键隐藏", result.status === 200, JSON.stringify(result.data));
+result = await call("/api/board/items");
+check("隐藏的新增卡片仍在数据里（没被删）",
+      result.data.items.some((x) => x.resource_id === hiddenNewId),
+      JSON.stringify(result.data.items.map((x) => x.resource_id)));
+result = await call("/api/board/overrides");
+check("新增卡的隐藏标记公开读回", result.data.overrides[hiddenNewId].hidden === true);
+// 收尾：清掉测试卡，别影响后面的删除与清空断言
+await call("/api/board/admin/item/delete", { method: "POST", token, body: { id: hiddenNewId } });
+
 result = await call("/api/board/admin/item/delete", {
   method: "POST", token, body: { id: "agentrouter" },
 });
@@ -170,7 +216,8 @@ result = await call("/api/board/admin/override", {
   method: "POST", token,
   body: {
     item_id: "agentrouter", fields: {},
-    clear_fields: ["resource_name", "register_bonus", "checkin_bonus", "direct_connect", "models"],
+    clear_fields: ["resource_name", "register_bonus", "checkin_bonus", "direct_connect",
+                   "models", "hidden"],
   },
 });
 check("撤销覆盖成功", result.status === 200 && result.data.cleared === true, JSON.stringify(result.data));

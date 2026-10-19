@@ -81,6 +81,10 @@ const QA_WORD_LIMIT = 2000;
 /**
  * 可以被覆盖的字段。
  *
+ * hidden 是「一键隐藏」：1 = 前台完全看不到（列表、搜索、统计都不算它），
+ * 但数据一行不动，后台的「已隐藏卡片」里点一下就能恢复。
+ * 后台新增的条目（custom-*）也走这条覆盖，不用给 custom_items 加列。
+ *
  * **故意不含 id** —— 点击数（clicks.item）与失效反馈（requests.item_id）都以
  * id 为键，改了等于把这条已有的统计和反馈全丢掉。
  *
@@ -90,7 +94,7 @@ const QA_WORD_LIMIT = 2000;
  */
 const OVERRIDE_FIELDS = [
   "name", "description", "url", "password", "note",
-  "section", "subsection", "placements", "deleted",
+  "section", "subsection", "placements", "deleted", "hidden",
 ];
 
 /** 各字段长度上限（按字符数，中文算 1）。 */
@@ -104,6 +108,7 @@ const OVERRIDE_MAX = {
   subsection: 32,
   placements: 300,
   deleted: 1,
+  hidden: 1,
 };
 
 /**
@@ -2717,7 +2722,8 @@ async function listOverrides(env) {
     OVERRIDE_FIELDS.forEach((f) => {
       // null 表示这个字段没被覆盖，别塞进去 —— 否则前端会把原值盖成 null
       if (r[f] !== null && r[f] !== undefined) {
-        o[f] = f === "deleted" ? r[f] === 1 : r[f];
+        // deleted / hidden 在 D1 里是 INTEGER，其余字段是 TEXT
+        o[f] = f === "deleted" || f === "hidden" ? r[f] === 1 : r[f];
       }
     });
     o.updated = r.updated;
@@ -2766,10 +2772,10 @@ async function saveOverride(env, body) {
       next[f] = null;                  // 显式撤销这一项
       continue;
     }
-    // deleted 在 D1 中是 INTEGER；其他覆盖字段都是 TEXT。
-    if (f === "deleted") {
+    // deleted / hidden 在 D1 中是 INTEGER；其他覆盖字段都是 TEXT。
+    if (f === "deleted" || f === "hidden") {
       if (v !== true && v !== false && v !== 1 && v !== 0) {
-        return { status: 400, body: { error: "deleted 必须是布尔值或 null" } };
+        return { status: 400, body: { error: `${f} 必须是布尔值或 null` } };
       }
       next[f] = v === true || v === 1 ? 1 : 0;
       continue;
