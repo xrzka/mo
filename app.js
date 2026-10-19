@@ -525,8 +525,10 @@
   // 本机已反馈过失效的条目 id。init() 里赋值，用于让按钮在刷新后仍是完成态。
   let reportedSet = new Set();
 
-  // 后台编辑的覆盖层：{ itemId: {name?, description?, url?, ..., deleted?, updated} }
+  // 后台编辑的覆盖层：{ itemId: {name?, description?, url?, ..., deleted?, hidden?, updated} }
   // deleted=true 是静态 items.json 卡片的软删除标记；访客侧加载后直接过滤。
+  // hidden=true 是「一键隐藏」：访客看不到（列表/搜索/统计都不算），数据一行没删，
+  // 后台的「已隐藏卡片」里点一下就能恢复。后台新增的条目也走这条覆盖。
   let overrides = {};
 
   // 管理员登录态。token 只放内存，不落 localStorage ——
@@ -841,6 +843,9 @@
       note: pick("note", raw.note || ""),
       password,
       adult: raw.adult === true,
+      // 一键隐藏（覆盖层）：访客侧在 rebuildItems 里就被过滤掉，
+      // 管理员登录后仍能看到它，才能一键恢复。
+      hidden: !!(ov && ov.hidden === true),
       // 后台是否改过这条，卡片上给个小标记，方便自己核对
       edited: !!(ov && Object.keys(ov).some((k) => k !== "updated")),
       links,
@@ -895,11 +900,14 @@
           return d !== 0 ? d : a.name.localeCompare(b.name, "zh-CN");
         }
       : null;
-    return list.slice().sort((a, b) => {
+    const sorted = list.slice().sort((a, b) => {
       const la = likeCountOf(a.id), lb = likeCountOf(b.id);
       if (lb !== la) return lb - la;      // 点赞的排前面
       return base ? base(a, b) : 0;        // 同层维持原顺序 / 点击排序
     });
+    // 已隐藏的卡片只有管理员看得到，统一沉到最末尾，方便一眼找到并取消隐藏。
+    if (!sorted.some((it) => it.hidden)) return sorted;
+    return sorted.filter((it) => !it.hidden).concat(sorted.filter((it) => it.hidden));
   };
 
   const totalPages = (total) => Math.max(1, Math.ceil(total / state.pageSize));
@@ -1112,6 +1120,13 @@
     // CS 文字记录这类多行 note：pre-wrap 保住换行，普通单行 note 不受影响。
     field("note").classList.toggle("cs-note-text", item.note.includes("\n"));
 
+    // 已隐藏：只有管理员看得到这张卡（访客在 rebuildItems 里就过滤掉了）
+    if (item.hidden && adminToken) {
+      node.classList.add("is-hidden");
+      const hp = field("hiddenPill");
+      if (hp) hp.hidden = false;
+    }
+
     // 后台改过的条目给个标记 —— 只对已登录的自己显示，访客看不到，
     // 免得让人以为站里的内容被人动过手脚。
     if (item.edited && adminToken) {
@@ -1322,6 +1337,50 @@
           btn.textContent = "编辑这条";
         }
       });
+      // 一键隐藏 / 取消隐藏：标题行的快捷按钮与详情里的按钮共用这一段。
+      // 不弹窗、不删数据；隐藏后访客立刻看不到，可在后台「已隐藏卡片」里恢复。
+      const toggleHidden = async (btn) => {
+        btn.disabled = true;
+        // 隐藏 = 写 hidden:true；恢复 = hidden:null（撤销这条覆盖，回到原值）
+        const r = await adminFetch("/api/admin/override", item.hidden
+          ? { item_id: item.id, fields: { hidden: null } }
+          : { item_id: item.id, fields: { hidden: true } });
+        btn.disabled = false;
+        if (!r.ok) {
+          msg.textContent = r.error;
+          msg.className = "card-admin-msg bad";
+          return;
+        }
+        adminFlash = {
+          id: item.id,
+          text: item.hidden ? "已取消隐藏，访客可见" : "已隐藏，访客看不到（数据没删）",
+          kind: "ok",
+        };
+        await refreshOverrides();
+        adminFlash = null;
+        renderHiddenAdmin();
+      };
+      const hideBtn = field("hideBtn");
+      if (hideBtn) {
+        hideBtn.hidden = false;
+        hideBtn.textContent = item.hidden ? "取消隐藏（恢复展示）" : "🙈 一键隐藏";
+        hideBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          toggleHidden(hideBtn);
+        });
+      }
+      // 标题行上的快捷按钮：不用展开卡片就能隐藏/恢复，管理员以外看不到
+      const hideQuick = field("hideQuickBtn");
+      if (hideQuick) {
+        hideQuick.hidden = false;
+        hideQuick.textContent = item.hidden ? "👁" : "🙈";
+        hideQuick.title = item.hidden ? "取消隐藏（恢复展示）" : "一键隐藏（访客看不到）";
+        hideQuick.addEventListener("click", (e) => {
+          e.stopPropagation();
+          toggleHidden(hideQuick);
+        });
+      }
+
       // 保存后这张卡会被整块换掉。adminFlash 让新卡片自动回到「编辑器展开 +
       // 显示上一步结果」的状态 —— 否则点了保存表单就收起、提示也没了，
       // 看着像什么都没发生。
@@ -1722,10 +1781,13 @@
   /** items.json 的原始条目 + 后台新增的，合起来才是完整数据源。 */
   const allRaw = () => state.rawItems.concat(state.customItems);
 
-  /** D1 覆盖层里的 deleted=true 会隐藏静态卡片；后台新增卡仍走真正删除。 */
+  /** D1 覆盖层里的 deleted=true 会隐藏静态卡片；后台新增卡仍走真正删除。
+   *  hidden=true 只对访客隐藏 —— 管理员登录后保留在列表里（带「已隐藏」标记），
+   *  否则登录进去也找不到那张卡，没法取消隐藏。 */
   const rebuildItems = () => {
     state.items = allRaw()
       .filter((r) => !(overrides[r && r.id] && overrides[r.id].deleted === true))
+      .filter((r) => adminToken || !(overrides[r && r.id] && overrides[r.id].hidden === true))
       .map((r, i) => normalize(r, i, overrides[r && r.id]));
   };
 
@@ -1825,6 +1887,18 @@
       }
     }
 
+    // 一键隐藏的卡片：登录后列出，点一下即可恢复展示
+    const hiddenWrap = $("[data-admin-hidden]");
+    if (hiddenWrap) {
+      hiddenWrap.hidden = !logged;
+      if (!logged) {
+        const list = $("[data-admin-hidden-list]");
+        if (list) list.hidden = true;
+      } else {
+        renderHiddenAdmin();
+      }
+    }
+
     // 翻译工作区同理。退出时收起并清空 —— 里面可能留着上次的文件与队列，
     // 下次登录看到半截状态会以为出了问题。
     const txWrap = $("[data-tx]");
@@ -1872,6 +1946,7 @@
       if (!r.ok) return say(r.error, "bad");
       adminToken = r.data.token;
       say("登录成功，展开卡片即可编辑", "ok");
+      rebuildItems();   // 登录后已隐藏的卡片也要回到列表里，才能点「取消隐藏」
       renderAdmin();
       render(); // 重渲染让卡片长出编辑按钮
       // 帮找那块的运维按钮也只在登录后显示，一并刷新
@@ -1885,6 +1960,7 @@
         await adminFetch("/api/admin/logout", {});
         adminToken = "";
         say("已退出", "ok");
+        rebuildItems();   // 退出后已隐藏的卡片要重新对访客隐藏
         renderAdmin();
         render();
         if (state.wantedLoaded) renderWanted();
@@ -1896,6 +1972,7 @@
     window.addEventListener("hashchange", renderAdmin);
     bindAdminNew();
     bindDeletedAdmin();
+    bindHiddenAdmin();
     bindTx();
   }
 
@@ -2645,6 +2722,9 @@
     { key: "kind", label: "资源类型（如 网盘资源）", type: "text" },
     { key: "note", label: "备注", type: "textarea" },
     { key: "adult", label: "成人向（未成年模式下隐藏）", type: "checkbox" },
+    // 勾上就「先建卡、再立刻写一条 hidden 覆盖」—— createCustomItem 不收 hidden，
+    // 隐藏是覆盖层的概念，不动 custom_items 表。
+    { key: "hidden", label: "新增后先隐藏（访客看不到，可在「已隐藏卡片」里恢复）", type: "checkbox" },
   ];
 
   function buildAdminNewForm(box, msg) {
@@ -2698,6 +2778,7 @@
       const body = {};
       ADMIN_NEW_FIELDS.forEach((f) => {
         if (f.type === "placements") return;   // 分区单独读，见下
+        if (f.key === "hidden") return;        // 不是新建接口的字段，建完再写覆盖，见下
         body[f.key] = f.type === "checkbox" ? inputs[f.key].checked : inputs[f.key].value;
       });
       if (!String(body.name).trim()) return say("资源名不能为空", "bad");
@@ -2711,8 +2792,23 @@
       submit.disabled = false;
       if (!r.ok) return say(r.error, "bad");
 
+      // 「新增后先隐藏」：条目先建出来拿到 id，再补一条 hidden 覆盖。
+      let justHidden = false;
+      if (inputs.hidden && inputs.hidden.checked && r.data && r.data.id) {
+        const o = await adminFetch("/api/admin/override", {
+          item_id: r.data.id, fields: { hidden: true },
+        });
+        justHidden = !!o.ok;
+      }
+
       const n = body.placements.split(",").length;
-      say(n > 1 ? `已添加，挂在 ${n} 个分区下` : "已添加，所有访客立即可见", "ok");
+      const added = n > 1 ? `已添加，挂在 ${n} 个分区下` : "已添加";
+      say(
+        justHidden
+          ? `${added}，已隐藏（访客看不到），可在「已隐藏卡片」里一键恢复`
+          : `${added}，所有访客立即可见`,
+        "ok"
+      );
       // 清空文本字段好接着加下一条，但保留分区选择 —— 连着加同类资源时省事
       ADMIN_NEW_FIELDS.forEach((f) => {
         if (f.type === "placements") return;
@@ -2805,6 +2901,76 @@
     });
   }
 
+  /** 已隐藏卡片：数据一行没删（静态与后台新增都算），只是访客看不到。
+   *  点「取消隐藏」= 把 hidden 覆盖置 null，条目立刻回到前台。 */
+  function renderHiddenAdmin() {
+    const wrap = $("[data-admin-hidden]");
+    const toggle = $("[data-admin-hidden-toggle]");
+    const list = $("[data-admin-hidden-list]");
+    const msg = $("[data-admin-hidden-msg]");
+    if (!wrap || !toggle || !list || !msg) return;
+
+    // 直接看 normalize 后的结果：覆盖层的 hidden、后台新增卡片自带的 hidden，
+    // 两种来源都体现在 item.hidden 上，一个都不会漏。
+    const hidden = state.items
+      .filter((it) => it.hidden)
+      .map((it) => ({ id: it.id, name: it.name || it.id }));
+    toggle.textContent = `已隐藏卡片（${hidden.length}）`;
+    list.textContent = "";
+
+    if (!hidden.length) {
+      const empty = document.createElement("p");
+      empty.className = "admin-deleted-empty";
+      empty.textContent = "暂无已隐藏的卡片";
+      list.appendChild(empty);
+      return;
+    }
+
+    hidden.forEach((item) => {
+      const row = document.createElement("div");
+      row.className = "admin-deleted-row";
+      const label = document.createElement("span");
+      label.textContent = `${item.name}（${item.id}）`;
+      row.appendChild(label);
+
+      const restore = document.createElement("button");
+      restore.type = "button";
+      restore.className = "admin-restore";
+      restore.textContent = "取消隐藏";
+      restore.addEventListener("click", async () => {
+        restore.disabled = true;
+        msg.textContent = "恢复中…";
+        msg.className = "admin-new-msg";
+        const r = await adminFetch("/api/admin/override", {
+          item_id: item.id,
+          fields: { hidden: null },
+        });
+        restore.disabled = false;
+        if (!r.ok) {
+          msg.textContent = r.error;
+          msg.className = "admin-new-msg bad";
+          return;
+        }
+        msg.textContent = `已恢复「${item.name}」`;
+        msg.className = "admin-new-msg ok";
+        await refreshOverrides();
+        renderHiddenAdmin();
+      });
+      row.appendChild(restore);
+      list.appendChild(row);
+    });
+  }
+
+  function bindHiddenAdmin() {
+    const toggle = $("[data-admin-hidden-toggle]");
+    const list = $("[data-admin-hidden-list]");
+    if (!toggle || !list) return;
+    toggle.addEventListener("click", () => {
+      list.hidden = !list.hidden;
+      renderHiddenAdmin();
+    });
+  }
+
   function initAdmin() {
     bindAdmin();
     renderAdmin();
@@ -2820,6 +2986,7 @@
     { key: "password", label: "提取码", type: "text" },
     { key: "note", label: "备注", type: "textarea" },
     { key: "placements", label: "所属位置（分区 + 小分区，可加多个）", type: "placements" },
+    { key: "hidden", label: "隐藏（访客看不到，可在后台取消）", type: "checkbox" },
   ];
 
   /** 一条资源最多挂几个位置。与后端 PLACEMENT_MAX 保持一致。 */
@@ -3027,6 +3194,13 @@
         // 当前归属直接取 normalize 后的 sections —— 它已经把覆盖层、
         // items.json 的 also_in 都算进去了，比在这里重新解析一遍可靠。
         picker = buildPlacementPicker(row, item.sections || []);
+      } else if (f.type === "checkbox") {
+        row.classList.add("admin-field-inline");
+        const el = document.createElement("input");
+        el.type = "checkbox";
+        el.checked = !!item[f.key];
+        row.appendChild(el);
+        inputs[f.key] = el;
       } else {
         const el = document.createElement(f.type === "textarea" ? "textarea" : "input");
         if (f.type === "textarea") el.rows = 3;
@@ -3072,6 +3246,11 @@
       const fields = {};
       ADMIN_EDIT_FIELDS.forEach((f) => {
         if (f.type === "placements") return;   // 分区单独处理，见下
+        if (f.type === "checkbox") {
+          const on = inputs[f.key].checked;
+          if (on !== !!item[f.key]) fields[f.key] = on;
+          return;
+        }
         const v = inputs[f.key].value;
         if (v !== (item[f.key] || "")) fields[f.key] = v;
       });
@@ -5821,7 +6000,7 @@
       if (hl) hl.textContent = state.healthyMode ? "健康模式：开" : "健康模式：关";
     }
 
-    const hidden = state.items.filter((it) => it.adult).length;
+    const hidden = state.items.filter((it) => !it.hidden && it.adult).length;
     const hint = $("[data-mode-hint]");
     if (hint) {
       if (state.adultMode) {

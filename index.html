@@ -9,13 +9,13 @@
       content="墨小说漫画 · 小说、漫画、动画、游戏、AI 资源导航，分区整理，点击直达。"
     />
     <title>墨小说漫画 · 资源导航</title>
-    <script src="config.js?v=20260926a"></script>
-    <link rel="stylesheet" href="styles.css?v=20260926a" />
+    <script src="config.js?v=20261019a"></script>
+    <link rel="stylesheet" href="styles.css?v=20261019a" />
     <!-- EPUB 本质是 zip。固定版本并随站点托管，不依赖第三方 CDN 运行。 -->
     <script src="vendor/jszip.min.js?v=3.10.1" defer></script>
     <!-- 动画区自建播放器：hls.js 播 m3u8（Safari 走原生，其余走 MSE） -->
     <script src="vendor/hls.min.js?v=1.5.13" defer></script>
-    <script src="app.js?v=20260926a" defer></script>
+    <script src="app.js?v=20261019a" defer></script>
   </head>
   <body>
     <a class="skip-link" href="#feed">跳到资源列表</a>
@@ -157,6 +157,15 @@
           </button>
           <span class="admin-new-msg" data-admin-deleted-msg aria-live="polite"></span>
           <div class="admin-deleted-list" data-admin-deleted-list hidden></div>
+        </div>
+
+        <!-- 一键隐藏的卡片：数据没删，只是访客看不到，点一下即可恢复 -->
+        <div class="admin-deleted" data-admin-hidden hidden>
+          <button type="button" class="admin-new-toggle admin-hide-toggle" data-admin-hidden-toggle>
+            已隐藏卡片（0）
+          </button>
+          <span class="admin-new-msg" data-admin-hidden-msg aria-live="polite"></span>
+          <div class="admin-deleted-list" data-admin-hidden-list hidden></div>
         </div>
 
         <!--
@@ -476,6 +485,9 @@
               <h3 class="card-title" data-field="name"></h3>
               <span class="section-pill" data-field="section"></span>
               <span class="hits-pill" data-field="hits" hidden></span>
+              <span class="section-pill hidden-mark" data-field="hiddenPill" hidden>🙈 已隐藏</span>
+              <button type="button" class="hide-quick" data-field="hideQuickBtn" hidden
+                title="一键隐藏（访客看不到）">🙈</button>
               <button type="button" class="fav-btn" data-field="favBtn" aria-pressed="false" title="收藏">
                 <span aria-hidden="true">☆</span>
               </button>
@@ -512,6 +524,9 @@
           <!-- 后台编辑：只有管理员登录后才显示，见 app.js 的 buildAdminEditor -->
           <div class="card-admin" data-field="adminWrap" hidden>
             <button type="button" class="card-admin-btn" data-field="adminBtn">编辑这条</button>
+            <button type="button" class="card-admin-btn card-admin-hide" data-field="hideBtn" hidden>
+              🙈 一键隐藏
+            </button>
             <span class="card-admin-msg" data-field="adminMsg" aria-live="polite"></span>
             <div class="card-admin-form" data-field="adminForm" hidden></div>
           </div>

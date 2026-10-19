@@ -1157,6 +1157,35 @@ h1 {
 .admin-restore { padding: 4px 11px; border: 1px solid var(--accent); border-radius: 7px; background: transparent; color: var(--accent); font: inherit; font-size: 12px; cursor: pointer; }
 .admin-restore:disabled { opacity: 0.6; cursor: default; }
 
+/* ---------- 一键隐藏 ---------- */
+/* 隐藏卡只有管理员看得到：紫色系，与成人向/健康模式的配色区分开 */
+.hidden-mark {
+  background: color-mix(in srgb, #7c3aed 16%, transparent);
+  color: #6d28d9;
+  white-space: nowrap;
+}
+[data-theme="dark"] .hidden-mark { color: #c4b5fd; }
+.feed-card.is-hidden { border-left: 3px solid #7c3aed; opacity: 0.72; }
+.feed-card.is-hidden:hover { border-color: #7c3aed; }
+.card-admin-hide { border-color: #7c3aed; color: #7c3aed; }
+.card-admin-hide:disabled { opacity: 0.6; cursor: default; }
+.admin-hide-toggle { border-color: #7c3aed; color: #7c3aed; }
+/* 标题行上的快捷隐藏按钮：只有管理员登录后才出现，一点即隐藏/恢复 */
+.hide-quick {
+  padding: 2px 8px;
+  border: 1px solid #7c3aed;
+  border-radius: 999px;
+  background: transparent;
+  color: #7c3aed;
+  font: inherit;
+  font-size: 11px;
+  line-height: 1.5;
+  cursor: pointer;
+}
+.hide-quick[hidden] { display: none; }
+.hide-quick:hover { background: color-mix(in srgb, #7c3aed 12%, transparent); }
+.hide-quick:disabled { opacity: 0.6; cursor: default; }
+
 /* 勾选框那行不该把 label 撑成两行 */
 .admin-field-inline {
   display: flex;
