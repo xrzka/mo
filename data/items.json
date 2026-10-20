@@ -16730,6 +16730,98 @@
       "need_login": false,
       "update_info": "每日更新",
       "note": "入口：主站 www.manhuagui.com、手机版 m.manhuagui.com、繁體版 tw.manhuagui.com；老镜像 www.mhgui.com 已废（直连与代理都返回 HTTP 错误）。连通性实测（同一台机器）：脚本 urllib 直连 www / m. / tw. 各 4/4 全通；但 headless Chrome 直连 3/3 超时（tw. 还是 ERR_CONNECTION_REFUSED），挂本机 7890 代理后浏览器访问 www 正常 200 —— 属于国内时通时不通的类型，浏览器打不开就重试或挂代理。路由：最新更新 /update/（标题「最新更新漫画_7天内更新的漫画 - 看漫画」）、排行榜 /rank/、连载 /list/lianzai/、完结 /list/wanjie/、漫画大全 /list/、登录 /user/login、注册 /user/register（登录与注册页直连也能打开）。内容规模：导航为 首页 / 最新更新 / 排行榜 / 连载漫画 / 完结漫画 / 漫画大全 / 漫画家 / 漫画随心看；首页当时提示「最近有 755 部漫画更新」；按类型 40+ 种（热血、冒险、魔幻、神鬼、搞笑、萌系、爱情、科幻、魔法、格斗、武侠、机战、战争、竞技、体育、校园、生活、励志、历史、伪娘、宅男、腐女、耽美、百合、后宫、治愈、美食、推理、悬疑、恐怖、四格、职场、侦探、社会、音乐），按地区（日本 / 港台 / 其它 / 欧美 / 内地 / 韩国）、按年份（2021 年及更早、00 年代、90 年代、80 年代、更早）筛。更新确实勤：/update/ 页实测当天（2026-10-20 16:29）就有新条目、/list/ 是当天 16:51；但首页混着「页面更新于 2023-08-15」的旧缓存字样和 2020 新番、鬼灭之刃 207 回这类旧模块，看实时更新以 /update/ 为准。阅读免费、不用登录；观看记录与收藏要账号。漫画图片托管在独立 CDN eu1.hamreus.com（阅读器域名 hamreus.com），跨站直接取图会被 CORS 拦（在章节页里 fetch 图片地址直接 Failed to fetch），想批量下载得另想办法。"
+    },
+    {
+      "id": "manual-manga-site-comicwalker",
+      "name": "カドコミ（コミックウォーカー / comic-walker.com）",
+      "section": "manga",
+      "subsection": "site",
+      "description": "角川（KADOKAWA）的官方免费漫画站「カドコミ」（原 ComicWalker），全站日语，Web 与官方 App 都能读。Web 端免登录就能直接看，登录只影响关注作品、更新提醒和阅读进度同步；有「無料話増量」页（期间限定多话免费，例如某作品限时 21 话免费）、日榜 / 实时榜 / 新连载 / 原创 / 分类型排行，作品页还会标出「次回更新予定日」。站点带 ABJ マーク，属于取得版权方授权的正版配信平台。",
+      "url": "https://comic-walker.com/",
+      "links": [
+        {
+          "name": "首页",
+          "url": "https://comic-walker.com/",
+          "password": "",
+          "label": "カドコミ"
+        },
+        {
+          "name": "排行榜",
+          "url": "https://comic-walker.com/ranking",
+          "password": "",
+          "label": "日榜/实时/新连载"
+        },
+        {
+          "name": "免费话增量",
+          "url": "https://comic-walker.com/free",
+          "password": "",
+          "label": "期间限定多话免费"
+        },
+        {
+          "name": "搜索作品",
+          "url": "https://comic-walker.com/search",
+          "password": "",
+          "label": "找作品"
+        }
+      ],
+      "tags": [
+        "在线阅读",
+        "日语",
+        "正版（角川）",
+        "免登录",
+        "有官方App",
+        "每日更新"
+      ],
+      "kind": "漫画在线阅读网站（KADOKAWA 正版）",
+      "need_login": false,
+      "update_info": "每日更新",
+      "note": "直连可开（HTTP 200，不用代理）。站点全称「カドコミ（コミックウォーカー）」，标题「カドコミ (コミックウォーカー)｜KADOKAWAの無料漫画が読める！」，描述「Webでもアプリでも読めるKADOKAWAのオリジナル無料漫画連載が勢揃い！異世界コミックやFLOS COMICなどの、人気漫画レーベルが集結！」，页脚 © KADOKAWA CORPORATION，并带 ABJマーク（该标记用于说明这是取得著作权方授权的正規版配信服务）。全站只有日文：没有语言切换器，/zh、/ja 都是 404，/en 会跳回日文首页 —— 想看中文得另找汉化版。Web 端不用登录就能读：实测从排行榜进作品页直接就是阅读器（タテ読み / ヨコ読み / 拡大 / 全画面，页码如 61 页），登录只影响关注作品、更新提醒、阅读进度同步这些。路由：/ranking、/free（無料話増量）、/search、/detail/KC_xxxx_S?episodeType=comics、/topics/news/…、/topics/fair/…；排行榜支持 ?rankingGenre=new_serials|original|all|fantasy|romance|romcom|isekai|comedy|action|horror|sf|yuri|bl。内容：日榜 / 实时榜 / 新连载 / カドコミオリジナル，分类含 総合、ファンタジー、恋愛、ラブコメ、異世界・転生、ギャグ・コメディ、バトル・アクション、ホラー・ミステリー・サスペンス、ロボット・SF、百合、BL、グルメ、日常系；新着作品按天排（实测当天 10/20 以及 10/19、10/18 都有更新）；/free 页有期间限定多话免费（例：メガロザリア 今だけ 21話無料、Battle Scar 今だけ 2話無料）；作品页显示「次回更新予定日」（实测次日 2026/10/21）。官方 App 是「カドコミ KADOKAWAの漫画アプリ」，开发者 BOOKWALKER Co. Ltd.（角川集团），版本 1.6.9、2026-10-20 更新；官方说明：每日更新、初回無料 / 毎日無料、1900+ 作品配信，并且 App 里能读到 Web 已下架的话数。"
+    },
+    {
+      "id": "manual-manga-site-dogemanga",
+      "name": "漫畫狗 DogeManga（dogemanga.com）",
+      "section": "manga",
+      "subsection": "site",
+      "description": "免费在线漫画站「漫畫狗」（DogeManga）：首页是热门排行，另有最新连载、订阅更新（追更清单存本地）、閱讀記錄；繁体界面为主，右上可切中文 / English。收录一拳超人原作版、海賊王、華麗的挑戰、租借女友、入间同学入魔了、关于我转生后成为史莱姆的那件事等热门日漫的中文版，作品页会标连载状态与最近更新时间并列出最近几话直达链接。没有账号体系，免登录直接看。",
+      "url": "https://dogemanga.com/",
+      "links": [
+        {
+          "name": "热门排行",
+          "url": "https://dogemanga.com/",
+          "password": "",
+          "label": "首页"
+        },
+        {
+          "name": "最新连载",
+          "url": "https://dogemanga.com/?s=1",
+          "password": "",
+          "label": "追更"
+        },
+        {
+          "name": "订阅更新",
+          "url": "https://dogemanga.com/subscription",
+          "password": "",
+          "label": "本地存储"
+        },
+        {
+          "name": "閱讀記錄",
+          "url": "https://dogemanga.com/history",
+          "password": "",
+          "label": "本地存储"
+        }
+      ],
+      "tags": [
+        "在线阅读",
+        "繁體",
+        "中文日漫",
+        "免登录",
+        "有追更清单",
+        "广告较多"
+      ],
+      "kind": "漫画在线阅读网站",
+      "need_login": false,
+      "update_info": "更新勤（最新连载有当天更新）",
+      "note": "直连可开（HTTP 200，不用代理）。站名「漫畫狗」（DogeManga），标题「熱門排行 - 漫畫狗」，描述「漫畫狗 - 免費分享與閱讀網路漫畫」；界面上方可切 中文（?l=zh）/ English（?l=en）。没有账号体系：导航里找不到任何登录 / 注册入口；「訂閱更新」（/subscription）和「閱讀記錄」（/history）都是纯浏览器本地存储 —— 在禁用存储的环境里页面会提示「您的瀏覽器不支援儲存訂閱清單 / 儲存閱讀紀錄」，所以免登录即可使用。导航映射：漫畫狗、熱門排行都指向 /，最新連載 /?s=1，訂閱更新 /subscription，閱讀記錄 /history，DMCA /dmca；另外导航里挂了一条「Meet and fuck」，指向 s.zlinkc.com 的推广跳转链（成人站广告），点之前留意一下。内容以中文汉化的热门日漫为主：一拳超人原作版、海賊王、華麗的挑戰、租借女友、入间同学入魔了、关于我转生后成为史莱姆的那件事、当铺千金的珠宝盒等；作品条目会给出連載狀態、最近更新（例：今天 / 上週 / 7 月 16 日 / 2024 年 11 月）和最近几话的直达链接，实测 /?s=1 首页就有标注「最近更新：今天」的作品。详情页走 /m/<id>、章节走 /p/<id>，搜索是 /?q=作者名（如 /?q=仲村佳樹）。站点有 DMCA 页，属第三方聚合站，页面广告较多。"
     }
   ]
 }
