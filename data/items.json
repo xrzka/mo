@@ -16644,6 +16644,46 @@
       "need_login": false,
       "update_info": "iOS 端 v40.7.0（2026-10-20 更新）",
       "note": "官网 spark.douyin.com 是极简落地页：正文只有「iOS下载 / Android下载」两个入口，其余是页脚 —— 随变官方邮箱 feedback@douyin.com、算法推荐专项举报 sfjubao@bytedance.com、网络内容从业人员违法违规行为举报 feedback@douyin.com；备案资质：京ICP备16016397号-70A、京公网安备 110000020020046号，另有用户协议 / 隐私政策 / 营业执照 / 网络文化经营许可证 / 广播电视节目制作经营许可证入口（这些不是普通 a 标签，点了才跳）。站点是前端渲染的单页，HTML 本体只有约 6.7KB，JS 走 lf3-effectcdn-tos.byteeffecttos.com 的 CDN；除首页外 /about、/login 都是 404 Not Found。App Store 上的官方信息：名称「随变 - 抖音旗下原创角色互动社区」，开发者 Beijing Douyin Technology Co., Ltd.，版本 v40.7.0，2026-01-06 上架、2026-10-20 最近更新（id6755762883）。官方描述要点：面向年轻人的角色创作与互动社区，汇聚原创剧情与二创内容、可以聊设定磕剧情扩列；高精度多风格生成能力从零塑造原创人设、给现实照片换多元画风；为角色写剧本、演绎剧情、做手书级角色动画；作品可获得真实互动与关注；智能匹配偏好推荐角色与剧情。国内直连可开（HTTP 200，不用代理）。网页端只负责下载，真正的创作要在 App 里登录后用。"
+    },
+    {
+      "id": "manual-manga-site-komiic",
+      "name": "Komiic 漫畫（繁体在线漫画 · 7000+ 部）",
+      "section": "manga",
+      "subsection": "site",
+      "description": "繁体中文（zh-TW）在线漫画平台，官方描述「Komiic — 線上漫畫平台，收錄超過 7000 部漫畫，每日更新」，支持手机 / 平板 / 电脑，带 PWA 可直接装到桌面。导航有首页、最近更新、热门、推荐动态、最近阅读、所有漫画、作者列表、手机 APP、赞助、意见反馈等。要注意：全站必须先注册登录，未登录访问任何页面（含漫画详情页）都会跳到 /login?redirect=…；免登录的只有 RSS 更新源。",
+      "url": "https://komiic.cc/",
+      "links": [
+        {
+          "name": "主站（国内直连）",
+          "url": "https://komiic.cc/",
+          "password": "",
+          "label": "komiic.cc"
+        },
+        {
+          "name": "官方主域名（需代理）",
+          "url": "https://komiic.com/",
+          "password": "",
+          "label": "komiic.com"
+        },
+        {
+          "name": "最新更新 RSS（免登录）",
+          "url": "https://komiic.cc/rss/latest",
+          "password": "",
+          "label": "追更用"
+        }
+      ],
+      "tags": [
+        "在线阅读",
+        "繁体中文",
+        "日漫",
+        "需登录",
+        "7000+部",
+        "PWA"
+      ],
+      "kind": "漫画在线阅读网站",
+      "need_login": true,
+      "update_info": "每日更新",
+      "note": "两个域名是同一个站：komiic.cc 与 komiic.com 返回的 HTML 外壳一致（同一份 assets/index-*.js），页面 canonical 指向 https://komiic.com，统计脚本 data-domains 写的是 komiic.com,h.komiic.com,komiic.cc —— 所以 .cc 是官方镜像（另有一个 h.komiic.com），合并成一张卡不另开条目。连通性实测（各 3 次）：komiic.cc 直连 3/3 正常；komiic.com 直连 3/3 全部 ERR_CONNECTION_RESET（连接被重置），走代理后 3/3 正常 —— 国内想直连用 .cc，.com 要挂代理。站点是 Vite 写的 SPA + PWA（有 manifest.webmanifest、apple-touch-icon-180x180.png），界面繁体（zh-TW）。路由：/login、/register、/sendResetPassword、/updates、/hot、/feed、/recent、/comics/category/、/authors、/mobile、/about、/donate、/feedback。所有页面未登录都会跳 /login?redirect=...，连 /mobile、/authors 和漫画详情页都一样，所以想看得先注册（Email + 密码，忘记密码可自助重置）。唯一免登录入口是 RSS：https://komiic.cc/rss/latest 与 https://komiic.com/rss/latest 都返回约 14KB，标题「Komiic 最新更新」、语言 zh-TW、50 条条目，条目形如「膽大黨 (超自然武裝噹噠噹) 更新了 249」（链接指向 komiic.com/comic/466）、「月光下的異世界之旅 更新了 120」，最近更新时间 2026-10-20 08:21 UTC，能看出更新确实勤，追更可以直接订这个源。内容是第三方聚合的日漫 / 韩漫（RSS 里就能看到膽大黨、月光下的異世界之旅这类作品），站点页面还引了 Google Fonts 和 jsDelivr 的 MDI 字体，国内首屏加载可能偏慢；是否有付费章节或阅读限制站点未公开说明（不登录看不到），自行评估。"
     }
   ]
 }
