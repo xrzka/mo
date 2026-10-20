@@ -16092,7 +16092,7 @@
       "name": "Asura Scans",
       "section": "manga",
       "subsection": "site",
-      "description": "知名英文汉化组（scanlation）在线阅读站，主打 manhwa / manga / manhua，以动作、奇幻、升级流韩漫见长，更新快、免登录直接看。站内还有小说（Novels）、电子书（Ebooks）、作品排行、书架收藏、排行榜与公会等功能。",
+      "description": "知名英文汉化组（scanlation）在线阅读站，主打 manhwa / manga / manhua，以动作、奇幻、升级流韩漫见长，更新快、免登录直接看。作品库 /comics 默认一页约 60 部、每部带评分，可用 ?page=N 翻页；站内另有小说（Novels）、资源（Resources）、搜索（Ctrl+K）、书签收藏，以及排行与公会等。站点还挂了 Asura+ MYTHIC 会员（$9.99/月），主要解锁小说全章与徽章 / 评论背景 / 资料自定义等权益，看漫画本身不需要它。",
       "url": "https://asurascans.com/",
       "links": [
         {
@@ -16118,7 +16118,7 @@
       "kind": "漫画在线阅读网站",
       "need_login": false,
       "update_info": "更新快",
-      "note": "官网直连正常（HTTP 200）。英文汉化站，以韩漫（升级流/奇幻/动作）为主，免登录在线看，收藏/书架需登录。域名历史上多次变动（曾用 asura.gg / asuracomic.net 等），如打不开可搜最新官方域名。卡片另挂「漫画列表」按钮直达 /comics（全部作品浏览页），与首页是同一站，故合并为一张卡不另开条目。"
+      "note": "官网直连正常（HTTP 200；实测 /comics 与 /comics?page=2 都正常返回，没有 Cloudflare 人机拦截）。英文汉化站，以韩漫（升级流 / 奇幻 / 动作）为主，免登录在线看，书签收藏、评论、公会需登录。旧域名现状：asuracomic.net 会 301 跳到 asurascans.com；asura.gg 只剩约 3.8KB 的空壳页，别再用。页面标题「Asura Scans - Read Manga, Manhwa & Manhua Online」，描述「Read manga and manhwa online for free」；导航：Home / Novels / Browse / Resources / Search (Ctrl K) / Bookmarks / Sign Up；页内右侧是 Asura+ MYTHIC 订阅卡，$9.99/月，权益写的是小说全章解锁、MYTHIC 徽章、评论背景色、资料自定义，以及 「Full Release, Friends & Messages, Guilds and More」。卡片另挂「漫画列表」按钮直达 /comics（全部作品浏览页），与首页是同一站，故合并为一张卡不另开条目。"
     },
     {
       "id": "manual-novel-jp-2",
