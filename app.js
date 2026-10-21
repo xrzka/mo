@@ -818,9 +818,16 @@
       : url
         ? [{ name: "打开", url, password }]
         : [];
-    const links = rawLinks.map((l, i) =>
-      i === 0 ? { ...l, url: url || l.url, password: password || l.password } : l
-    );
+    // 只有后台真的改过 url / 提取码时，才让第一条源跟着主 url 走。
+    // 旧写法无条件覆盖第一条，会把「第一条源本来就是另一个地址」的卡片
+    // （典型：入口域名 vs 主站、官方域名带不带 www）指到错的链接上。
+    const links = rawLinks.map((l, i) => {
+      if (i !== 0) return l;
+      const next = { ...l };
+      if (ov && ov.url) next.url = url || l.url;
+      if (ov && ov.password !== undefined) next.password = password;
+      return next;
+    });
 
     return {
       id: raw.id || "item-" + index,
