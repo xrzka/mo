@@ -2888,6 +2888,67 @@ async function listCustomItems(env) {
  * 不让前端指定 id：撞上 items.json 里已有的 id 会把那条顶掉，
  * 而且 id 是点击数与失效反馈的键，被覆盖等于两条资源的数据混在一起。
  */
+/* ---------- 站点级配置：入站公告 ---------- */
+
+/** 公告里允许管理员自行修改的字段。只收这几个、长度都封顶 ——
+ *  公告是全网访客都能看到的位置，不能变成任意 HTML/脚本的投放点。 */
+const NOTICE_FIELDS = {
+  totalUrl: 600,     // 总合集链接
+  totalPwd: 40,      // 总合集提取码
+  totalText: 200,    // 总合集补充说明
+  unzipUrl: 600,     // 一键解压工具下载/网盘链接
+  unzipText: 200,    // 解压工具补充说明
+  extraText: 600,    // 公告补充一句话
+};
+
+/** 校验并裁剪公告字段。给 null 表示清空；字段没出现表示不动。非法就返回 null。 */
+function normalizeNotice(body) {
+  const out = {};
+  for (const [k, max] of Object.entries(NOTICE_FIELDS)) {
+    if (!(k in body)) continue;
+    const v = body[k];
+    if (v === null) {
+      out[k] = "";
+      continue;
+    }
+    if (typeof v !== "string") return null;
+    const s = v.trim();
+    if (s.length > max) return null;
+    if ((k === "totalUrl" || k === "unzipUrl") && s && !/^https?:\/\//i.test(s)) return null;
+    out[k] = s;
+  }
+  return out;
+}
+
+/** 读站点配置。表可能还没建（老库没跑迁移），吞掉异常返回 null，别让整站 500。 */
+async function getSiteConfig(env, key) {
+  try {
+    const row = await env.DB
+      .prepare("SELECT value, updated FROM site_config WHERE key = ?")
+      .bind(key)
+      .first();
+    return row || null;
+  } catch {
+    return null;
+  }
+}
+
+async function saveSiteConfig(env, key, value) {
+  const now = new Date().toISOString();
+  try {
+    await env.DB
+      .prepare(
+        "INSERT INTO site_config (key, value, updated) VALUES (?, ?, ?) " +
+          "ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated = excluded.updated"
+      )
+      .bind(key, value, now)
+      .run();
+    return { status: 200, body: { ok: true, updated: now } };
+  } catch (e) {
+    return { status: 500, body: { error: "保存失败：" + ((e && e.message) || "未知错误") } };
+  }
+}
+
 async function createCustomItem(env, body) {
   const name = sanitizeText(body.name, CUSTOM_MAX.name);
   if (!name) return { status: 400, body: { error: "资源名不能为空" } };
@@ -3238,6 +3299,40 @@ export default {
       // 里面只有站长自己写的展示文本，没有隐私。
       if (url.pathname === "/api/overrides" && request.method === "GET") {
         return json(await listOverrides(env), request);
+      }
+
+      // 入站公告：公开读、管理员写。没配置（或表还没建）时返回 null，
+      // 前端就用手写死在 index.html 里的默认文案，页面不会因此空掉。
+      if (url.pathname === "/api/notice" && request.method === "GET") {
+        const row = await getSiteConfig(env, "notice");
+        let notice = null;
+        if (row && row.value) {
+          try {
+            notice = JSON.parse(row.value);
+          } catch {
+            notice = null;
+          }
+        }
+        return json({ notice, updated: row ? row.updated : null }, request);
+      }
+
+      if (url.pathname === "/api/admin/notice" && request.method === "POST") {
+        const token = await adminAuth(env, request);
+        if (!token) return json({ error: "未登录或登录已过期" }, request, 401);
+        const body = await request.json().catch(() => null);
+        if (!body || typeof body !== "object") {
+          return json({ error: "bad request body" }, request, 400);
+        }
+        const notice = normalizeNotice(body);
+        if (!notice) {
+          return json(
+            { error: "公告字段不合法：链接要以 http 开头，文案别超过字数上限" },
+            request,
+            400
+          );
+        }
+        const r = await saveSiteConfig(env, "notice", JSON.stringify(notice));
+        return json(r.body, request, r.status);
       }
 
       if (url.pathname === "/api/admin/login" && request.method === "POST") {

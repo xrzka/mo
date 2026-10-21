@@ -97,6 +97,42 @@
             <button type="button" class="inline-link" data-goto-qa>答疑 / 提问</button>
             提问。
           </p>
+          <!-- 总合集：链接与提取码可由后台「编辑入站公告」改，没配置时就用这里的默认值 -->
+          <p class="notice-board-total">
+            <span class="notice-total-badge" aria-hidden="true">📦</span>
+            <strong>总合集</strong>（一次拿全）：
+            <a
+              class="notice-total-link"
+              data-notice-total-link
+              href="https://pan.baidu.com/s/1tETEPhn096H4RKxcpmKA0w?pwd=gu9g"
+              target="_blank"
+              rel="noopener noreferrer"
+              >百度网盘</a
+            >
+            <span class="notice-total-pwd" data-notice-total-pwd-wrap
+              >· 提取码 <code data-notice-total-pwd>gu9g</code></span
+            >
+            <span class="notice-total-note" data-notice-total-text></span>
+          </p>
+          <p class="notice-board-sub notice-board-unzip">
+            不会解压？<strong>每张卡片的链接区都挂着一个「一键解压工具」入口</strong>（内置了常见资源的解压码，
+            分卷压缩、mp4 伪装包都能一键解压），也可以直接点
+            <a
+              class="notice-unzip-link"
+              data-notice-unzip-link
+              href=""
+              target="_blank"
+              rel="noopener noreferrer"
+              hidden
+              >一键解压工具</a
+            >
+            <span class="notice-total-note" data-notice-unzip-pwd></span>
+            拿。想要离线解压软件的，去
+            <button type="button" class="inline-link" data-goto-tool>工具区 · WinRAR（电脑）/ RAR（手机）</button>
+            下载。解压码一般写在卡片备注里。
+            <span class="notice-total-note" data-notice-unzip-text></span>
+          </p>
+          <p class="notice-board-extra" data-notice-extra hidden></p>
         </div>
       </section>
 
@@ -148,6 +184,15 @@
           </button>
           <span class="admin-new-msg" data-admin-new-msg aria-live="polite"></span>
           <div class="admin-new-form" data-admin-new-form hidden></div>
+        </div>
+
+        <!-- 入站公告：登录后可改总合集链接/提取码、一键解压工具链接与补充文案 -->
+        <div class="admin-new" data-admin-notice hidden>
+          <button type="button" class="admin-new-toggle" data-admin-notice-toggle>
+            📌 编辑入站公告
+          </button>
+          <span class="admin-new-msg" data-admin-notice-msg aria-live="polite"></span>
+          <div class="admin-new-form" data-admin-notice-form hidden></div>
         </div>
 
         <!-- 静态卡片采用软删除，登录后可在这里恢复，避免误删后只能改数据库。 -->

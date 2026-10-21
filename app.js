@@ -1804,6 +1804,125 @@
     refreshScrollDock();
   }
 
+  /* ---------- 入站公告（可由后台自行修改） ---------- */
+
+  /** 公告的默认值取自 index.html 里写死的那份；管理员改过就用 D1 里的覆盖。 */
+  let siteNotice = null;
+
+  /** 拉公告配置。拿不到就当没有 —— 页面继续用 index.html 里的默认文案。 */
+  async function loadNotice() {
+    const api = apiBase();
+    if (!api) return null;
+    try {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 8000);
+      let res;
+      try {
+        res = await fetch(`${api}/api/notice`, { cache: "no-store", signal: ctrl.signal });
+      } finally {
+        clearTimeout(timer);
+      }
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      const data = await res.json();
+      return data && data.notice && typeof data.notice === "object" ? data.notice : null;
+    } catch {
+      return null;
+    }
+  }
+
+  /** 公告里那个「一键解压工具」入口直接复用全站配置 config.js 的 MO_CONFIG.unzipTool ——
+   *  它就是每张卡片链接区挂的那个工具，省得在两处各写一遍链接和提取码。
+   *  管理员在后台填了 unzipUrl 就以后台为准（见 applyNotice）。 */
+  function applyUnzipToolLink() {
+    const link = $("[data-notice-unzip-link]");
+    const pwd = $("[data-notice-unzip-pwd]");
+    const tool = (window.MO_CONFIG && window.MO_CONFIG.unzipTool) || null;
+    if (!link || !tool || !tool.url) return;
+    if (siteNotice && siteNotice.unzipUrl) return;   // 后台配过就不覆盖
+    link.href = tool.url;
+    link.textContent = tool.name || "一键解压工具";
+    link.hidden = false;
+    if (pwd) {
+      pwd.textContent = tool.code ? `（提取码 ${tool.code}）` : "";
+      pwd.hidden = !tool.code;
+    }
+  }
+
+  /** 把公告配置落到 DOM 上。空字段一律跳过：管理员只填了提取码时，
+   *  链接不该被清成空串。 */
+  function applyNotice() {
+    const n = siteNotice;
+    applyUnzipToolLink();
+    if (!n) return;
+
+    const link = $("[data-notice-total-link]");
+    if (link && typeof n.totalUrl === "string" && n.totalUrl) {
+      link.href = n.totalUrl;
+      // 网盘域名换成可读的名字，不是一个干巴巴的 URL
+      let label = "网盘链接";
+      try {
+        const host = new URL(n.totalUrl).hostname.replace(/^www\./, "");
+        if (/baidu\.com$/.test(host)) label = "百度网盘";
+        else if (/aliyundrive|alipan/.test(host)) label = "阿里云盘";
+        else if (/quark/.test(host)) label = "夸克网盘";
+        else if (/xunlei/.test(host)) label = "迅雷网盘";
+        else if (/uc\.cn$/.test(host)) label = "UC 网盘";
+        else label = host;
+      } catch {
+        /* 保留默认文案 */
+      }
+      link.textContent = label;
+    }
+
+    const pwd = $("[data-notice-total-pwd]");
+    const pwdWrap = $("[data-notice-total-pwd-wrap]");
+    if (typeof n.totalPwd === "string") {
+      if (pwd) pwd.textContent = n.totalPwd;
+      // 管理员把提取码清空时连「提取码 xxx」这一截一起收起
+      if (pwdWrap) pwdWrap.hidden = !n.totalPwd;
+    }
+
+    const totalText = $("[data-notice-total-text]");
+    if (totalText) {
+      totalText.textContent = n.totalText ? " " + n.totalText : "";
+      totalText.hidden = !n.totalText;
+    }
+
+    const unzipLink = $("[data-notice-unzip-link]");
+    if (unzipLink && typeof n.unzipUrl === "string" && n.unzipUrl) {
+      unzipLink.href = n.unzipUrl;
+      unzipLink.hidden = false;
+    }
+
+    const unzipText = $("[data-notice-unzip-text]");
+    if (unzipText) {
+      unzipText.textContent = n.unzipText ? " " + n.unzipText : "";
+      unzipText.hidden = !n.unzipText;
+    }
+
+    const extra = $("[data-notice-extra]");
+    if (extra) {
+      extra.textContent = n.extraText || "";
+      extra.hidden = !n.extraText;
+    }
+  }
+
+  /** 公告里的「工具区」跳转：直接带去 WinRAR / RAR 那两张解压工具卡。 */
+  function bindNoticeToolJump() {
+    const btn = $("[data-goto-tool]");
+    if (!btn) return;
+    btn.addEventListener("click", () => {
+      state.section = "tool";
+      state.sub = "all";
+      state.page = 1;
+      state.query = "";
+      const q = $('[data-filter="q"]');
+      if (q) q.value = "";
+      render();
+      $("#feed").scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }
+
   /* ---------- 后台登录与卡片内编辑 ---------- */
 
   /** 带 token 发请求。401 说明会话没了，就地清掉登录态并重渲染。 */
@@ -1874,6 +1993,9 @@
         if (toggle) toggle.textContent = "+ 新增一条资源";
       }
     }
+
+    // 入站公告编辑器：登录后才出现，退出时收起
+    renderAdminNotice();
 
     // 静态卡片软删除后可在后台恢复。退出时整个恢复区隐藏。
     const deletedWrap = $("[data-admin-deleted]");
@@ -1971,6 +2093,7 @@
     // 支持直接改 hash 进出后台，不用刷新
     window.addEventListener("hashchange", renderAdmin);
     bindAdminNew();
+    bindAdminNotice();
     bindDeletedAdmin();
     bindHiddenAdmin();
     bindTx();
@@ -2817,6 +2940,102 @@
       });
       // 新增条目要重新拉 /api/items，withItems 才会带上它
       await refreshOverrides({ withItems: true });
+    });
+  }
+
+  /* ---------- 入站公告编辑器 ---------- */
+
+  /** 公告可改的字段。纯文本/链接，后端还会再校验一次（http 开头 + 长度上限）。 */
+  const NOTICE_EDIT_FIELDS = [
+    { key: "totalUrl", label: "总合集链接", placeholder: "https://pan.baidu.com/s/xxxx?pwd=yyyy" },
+    { key: "totalPwd", label: "总合集提取码", placeholder: "gu9g" },
+    { key: "totalText", label: "总合集补充说明（可留空）", placeholder: "例如：一次拿全，含最新更新" },
+    { key: "unzipUrl", label: "一键解压工具链接（可留空）", placeholder: "https://…（不填就只用下面的「工具区」跳转）" },
+    { key: "unzipText", label: "解压工具补充说明（可留空）", placeholder: "例如：电脑用 WinRAR，手机用 RAR" },
+    { key: "extraText", label: "公告补充一句话（可留空）", placeholder: "例如：资源仅供学习交流，请于 24 小时内删除" },
+  ];
+
+  function buildNoticeForm(box) {
+    box.textContent = "";
+    const inputs = {};
+
+    NOTICE_EDIT_FIELDS.forEach((f) => {
+      const row = document.createElement("label");
+      row.className = "admin-field";
+      const name = document.createElement("span");
+      name.textContent = f.label;
+      row.appendChild(name);
+      const el = document.createElement("input");
+      el.type = "text";
+      el.placeholder = f.placeholder || "";
+      el.autocomplete = "off";
+      el.value = (siteNotice && siteNotice[f.key]) || "";
+      row.appendChild(el);
+      inputs[f.key] = el;
+      box.appendChild(row);
+    });
+
+    const actions = document.createElement("div");
+    actions.className = "admin-actions";
+    const submit = document.createElement("button");
+    submit.type = "button";
+    submit.className = "admin-submit";
+    submit.textContent = "保存公告";
+    actions.appendChild(submit);
+    box.appendChild(actions);
+
+    submit.addEventListener("click", async () => {
+      const msg = $("[data-admin-notice-msg]");
+      const say = (t, kind = "") => {
+        if (!msg) return;
+        msg.textContent = t;
+        msg.className = "admin-new-msg" + (kind ? " " + kind : "");
+      };
+      const payload = {};
+      NOTICE_EDIT_FIELDS.forEach((f) => {
+        payload[f.key] = (inputs[f.key].value || "").trim();
+      });
+      submit.disabled = true;
+      say("保存中…");
+      const r = await adminFetch("/api/admin/notice", payload);
+      submit.disabled = false;
+      if (!r.ok) return say(r.error || "保存失败", "bad");
+      // 存完立刻回读一次：确认写进去了，顺便把页面上的公告更新成最新值
+      siteNotice = await loadNotice();
+      applyNotice();
+      say("已保存，访客刷新即可看到", "ok");
+    });
+  }
+
+  /** 公告编辑块只在登录后出现，退出时收起并清空。 */
+  function renderAdminNotice() {
+    const wrap = $("[data-admin-notice]");
+    const box = $("[data-admin-notice-form]");
+    const toggle = $("[data-admin-notice-toggle]");
+    const msg = $("[data-admin-notice-msg]");
+    if (!wrap) return;
+    const logged = !!adminToken;
+    wrap.hidden = !logged;
+    if (!logged) {
+      if (box) { box.hidden = true; box.textContent = ""; }
+      if (toggle) toggle.textContent = "📌 编辑入站公告";
+      if (msg) msg.textContent = "";
+    }
+  }
+
+  function bindAdminNotice() {
+    const toggle = $("[data-admin-notice-toggle]");
+    const box = $("[data-admin-notice-form]");
+    const msg = $("[data-admin-notice-msg]");
+    if (!toggle || !box) return;
+    toggle.addEventListener("click", () => {
+      const open = !box.hidden;
+      box.hidden = open;
+      toggle.textContent = open ? "📌 编辑入站公告" : "收起";
+      if (!open) {
+        if (msg) msg.textContent = "";
+        buildNoticeForm(box);
+      }
     });
   }
 
@@ -6254,6 +6473,7 @@
     bindWatch();
     bindMode();
     bindNoticeJump();
+    bindNoticeToolJump();
     bindStatsPanel();
     bindWantedPanel();
     bindWantedForm();
@@ -6269,10 +6489,11 @@
       // 顶多显示原值，比整页加载失败好。
       // 覆盖层、后台新增条目与 items.json 并行拉。后两者失败不影响主流程 ——
       // 顶多少几条 / 显示原值，比整页加载失败好。
-      const [res, ovMap, customs] = await Promise.all([
+      const [res, ovMap, customs, notice] = await Promise.all([
         fetch(DATA_URL, { cache: "no-cache" }),
         loadOverrides(),
         loadCustomItems(),
+        loadNotice(),
       ]);
       if (!res.ok) throw new Error("HTTP " + res.status);
       const payload = await res.json();
@@ -6280,6 +6501,9 @@
       overrides = ovMap;
       state.rawItems = raw;
       state.customItems = customs;
+      // 公告配置后到也不影响主流程：没有配置就用 index.html 里的默认文案
+      siteNotice = notice;
+      applyNotice();
       rebuildItems();
       state.generatedAt = payload.generated_at || null;
       $("[data-footer-updated]").textContent = fmtDate(state.generatedAt);

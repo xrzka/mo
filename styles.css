@@ -535,6 +535,45 @@ h1 {
 .notice-board p { margin: 0; font-size: 13.5px; line-height: 1.75; }
 .notice-board-sub { margin-top: 3px !important; color: var(--text-muted); font-size: 12.5px !important; }
 
+/* 总合集：公告里最该被一眼看到的一行，单独做成浅色块 */
+.notice-board-total {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+  margin-top: 8px !important;
+  padding: 8px 10px;
+  background: var(--bg-elevated, rgba(255, 255, 255, 0.04));
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  font-size: 13px !important;
+}
+.notice-total-badge { font-size: 15px; }
+.notice-total-link {
+  color: var(--accent);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.notice-total-link:hover { filter: brightness(1.15); }
+.notice-board-total code {
+  padding: 1px 6px;
+  background: var(--bg, #111);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 12.5px;
+  user-select: all;   /* 提取码点一下就能整段选中复制 */
+}
+.notice-total-note { color: var(--text-muted); font-size: 12.5px; }
+.notice-unzip-link { margin-left: 4px; color: var(--accent); font-weight: 600; }
+.notice-board-extra {
+  margin-top: 6px !important;
+  padding-top: 6px;
+  border-top: 1px dashed var(--border);
+  color: var(--text-muted);
+  font-size: 12.5px !important;
+}
+
 .inline-link {
   padding: 0;
   border: 0;
