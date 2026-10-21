@@ -218,6 +218,13 @@ curl --proxy http://127.0.0.1:7890 https://mo-stats.werneruszcb71.workers.dev/ap
 | POST | `/api/admin/request` | `{"id":7,"status":"found","reply":"..."}` 改一条反馈的状态与回复 |
 | POST | `/api/admin/request/delete` | `{"id":7}` 删一条反馈（连带清它的投票去重键） |
 | POST | `/api/admin/requests/purge` | `{"kind":"broken","statuses":["found","closed"]}` 批量清理 |
+| GET | `/api/notice` | 入站公告配置（总合集链接/提取码、一键解压工具链接、补充文案），公开读；没配置返回 `{"notice":null}`，前端就用 `index.html` 里的默认文案 |
+| POST | `/api/admin/notice` | `{"totalUrl":"https://...","totalPwd":"gu9g",...}`，需 token；字段白名单 + 长度上限 + 链接必须 `http(s)://` 开头 |
+
+公告存在 `site_config` 表（`schema_notice.sql`，键固定为 `notice`，值是一段 JSON）。
+为什么要走 D1 而不是改 `index.html`：公告是站长最常改的东西，静态站改一个字就得动
+代码、重发一次 Pages；放进库后登录后台点「📌 编辑入站公告」就能自己改，和覆盖层
+一样不碰仓库文件。
 
 写接口只接受 `ALLOWED_ORIGINS`（`index.js` 顶部）里的来源，默认只有
 `https://xrzka.github.io`。换域名要改这里，改完两个入口都要重新部署。
