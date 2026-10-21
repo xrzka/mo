@@ -16031,7 +16031,7 @@
           "label": "百度网盘"
         }
       ],
-      "password": "gb4c",
+      "password": "",
       "tags": [
         "GitHub",
         "开源",
@@ -16044,7 +16044,7 @@
       "kind": "GitHub 开源项目",
       "need_login": false,
       "update_info": "Beta7 R2（2026-10-17）",
-      "note": "下载方式两种：GitHub Releases 是作者原版（国内要魔法）；百度网盘那份是站长自己传的备份，不会魔法直接用网盘（提取码 gb4c）——网盘那份用不了的话，展开卡片点反馈按钮报给站长。它是本站已收录小说站「novalpie（novalpie.cc）」的原生安卓 App（韩轻开源包）。收录时（2026-10-20）Releases 页共 5 个版本（beta3–beta7），最新 v2.0.0-native-beta7（正式发布、非预发布），页内标题「NovalPie 原生 Android 2.0 Beta7 R2 · 图片压缩实修（10月17日）」，资产 NovalPie-native-2.0.0-beta7-r2-20261017.apk 约 3.25 MB（下载 131 次）+ SHA256SUMS 校验文件，Android 8.0+，可直接覆盖安装。仓库 star 34、Kotlin、最后 push 2026-10-16。README 声明遵循源站协议、不提供盗版书源抓取、不绕过付费/权限。首次登录可能触发 Cloudflare 人机验证。百度网盘分享页直连 200、需输提取码，属正常有效链接。这张卡同时挂在「精选 · 代码」和「小说 · 软件」两个分区（同一份数据，不是两条）。",
+      "note": "下载方式两种：GitHub Releases 是作者原版（国内要魔法）；百度网盘那份是站长自己传的备份，不会魔法直接用网盘（提取码 gb4c）——网盘那份用不了的话，展开卡片点反馈按钮报给站长。它是本站已收录小说站「novalpie（novalpie.cc）」的原生安卓 App（韩轻开源包）。收录时（2026-10-20）Releases 页共 5 个版本（beta3–beta7），最新 v2.0.0-native-beta7（正式发布、非预发布），页内标题「NovalPie 原生 Android 2.0 Beta7 R2 · 图片压缩实修（10月17日）」，资产 NovalPie-native-2.0.0-beta7-r2-20261017.apk 约 3.25 MB（下载 131 次）+ SHA256SUMS 校验文件，Android 8.0+，可直接覆盖安装。仓库 star 34、Kotlin、最后 push 2026-10-16。README 声明遵循源站协议、不提供盗版书源抓取、不绕过付费/权限。首次登录可能触发 Cloudflare 人机验证。百度网盘分享页直连 200、需输提取码，属正常有效链接。这张卡同时挂在「随手安利 · 开源项目」和「小说 · 软件」两个分区（同一份数据，不是两条）。",
       "also_in": [
         {
           "section": "novel",
