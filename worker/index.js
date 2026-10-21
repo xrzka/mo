@@ -131,6 +131,11 @@ const SECTION_SUBS = {
   forum: [],
   guide: [],
   collection: ["site", "app", "cloud", "doc", "guide"],
+  // 前端 app.js 的 SECTIONS 里还有这两个，后端原来漏了 —— 结果后台一编辑
+  // 「精选」或「CS」分区的卡片就报「未知分区」。两边的白名单必须一致
+  // （test_sections.mjs 就是盯这个的）。
+  pickup: ["site", "app", "code", "plugin", "novel", "manga", "anime", "music", "game"],
+  cs: [],
 };
 
 /** 一条资源最多挂几个「分区/小分区」位置。够用且防手滑 ——

@@ -14646,7 +14646,7 @@
       "note": "【事件套路】\n1. 钓鱼：B站游戏评论区/私信发「没时间玩，一个月日常300还是500」这类低价代练单。发广告的不止低级号，正常等级的号也在发——等级不是信用\n2. 转场：在B站聊两句就说「已经去闲鱼下单了」，然后发你一个假闲鱼APP或假闲鱼网页链接，让你扫码付款；真卖家不会绕开真闲鱼来站内私聊你\n3. 二次收割：假闲鱼里付款后「订单被冻结」，要你再交钱给假闲鱼客服解冻、交保证金，一步步榨干\n4. 假直播版：低级号开代练/上分直播，假装没人排队骗你先刷礼物才开工；你刷完就说前面还有人，想加急就继续刷礼物——打是不会打的，骗你一直刷才是真的\n\n【避坑建议】\n1. 游戏评论区一切「代练/日常全包」拉单默认当骗子处理：能举报就举报，能拉黑就拉黑，别回头\n2. 铁律：不扫陌生人给的码，不装别人发来的「闲鱼」，不开别人发的闲鱼链接。真要交易，自己从应用商店打开真闲鱼、在平台内下单付款\n3. 任何要「交钱解冻/激活/保证金/流水金」的都是诈骗——真平台没有这种收费项，真客服更不会追着你要钱\n4. 代练直播一律不刷礼物：「前面还有人、加急就刷」是固定话术，刷多少都是无底洞\n5. 有空想逗骗子玩可以，但守住底线：不扫码、不点链接、不透露任何真实身份和收款信息，纯浪费他时间就好\n6. 已被骗：留聊天/转账记录，B站与闲鱼两端都举报，110/国家反诈中心App 报案；假闲鱼域名可再报 12321（网络有害信息举报中心）推动封链接"
     },
     {
-      "id": "manual-novel-kr-1",
+      "id": "manual-novel-kr-fanpai",
       "name": "反派想要安静地生活",
       "section": "novel",
       "description": "韩轻小说，百度网盘打包分享",
@@ -16012,22 +16012,45 @@
     },
     {
       "id": "manual-pickup-novalpie-app",
-      "name": "NovalPie 2.0（novalpie.cc 原生安卓客户端）",
+      "name": "NovalPie 2.0 韩轻开源包（novalpie.cc 原生安卓客户端）",
       "section": "pickup",
       "subsection": "code",
-      "description": "为小说站 novalpie.cc 打造的高性能原生 Android 客户端（Kotlin + Jetpack Compose）。告别 WebView 套壳：原生沉浸式阅读器（多种翻页+无限滚动、90/120/144Hz 高刷、按行分页、后台 TTS 听书、段落级断点续读）、多线程流式 EPUB 打包下载（指数退避重试、失败二选一、压缩可调、EPUB2/3 双标准）、双轨文本替换净化、书架检索、论坛社区、个人装扮与移动端创作工作台。",
-      "url": "https://github.com/never-seek/novalpie",
+      "description": "为小说站 novalpie.cc 打造的高性能原生 Android 客户端（Kotlin + Jetpack Compose），看韩轻的主力开源阅读器。告别 WebView 套壳：原生沉浸式阅读器（多种翻页+无限滚动、90/120/144Hz 高刷、按行分页、后台 TTS 听书、段落级断点续读）、多线程流式 EPUB 打包下载（指数退避重试、失败二选一、压缩可调、EPUB2/3 双标准）、双轨文本替换净化、书架检索、论坛社区、个人装扮与移动端创作工作台。",
+      "url": "https://github.com/never-seek/novalpie/releases/tag/v2.0.0-native-beta7",
+      "links": [
+        {
+          "name": "GitHub 原版（会魔法用这个）",
+          "url": "https://github.com/never-seek/novalpie/releases/tag/v2.0.0-native-beta7",
+          "password": "",
+          "label": "GitHub Release"
+        },
+        {
+          "name": "百度网盘备份（不会魔法用这个，站长自制）",
+          "url": "https://pan.baidu.com/s/13KYBf2CjmY56joqn8KIyRw?pwd=gb4c",
+          "password": "gb4c",
+          "label": "百度网盘"
+        }
+      ],
+      "password": "gb4c",
       "tags": [
         "GitHub",
         "开源",
         "安卓客户端",
         "小说阅读",
-        "EPUB下载"
+        "EPUB下载",
+        "韩轻",
+        "APK"
       ],
       "kind": "GitHub 开源项目",
       "need_login": false,
-      "update_info": "持续迭代",
-      "note": "它是本站已收录的小说站「novalpie（novalpie.cc）」的原生安卓 App。收录时最新 Beta 7（v2.0.0-native-beta7，2026-09-19），APK 约 23.31MB，Android 8.0+，Releases 页有 5 个版本。README 声明遵循源站协议、不提供盗版书源抓取、不绕过付费/权限。首次登录可能触发 Cloudflare 人机验证。Kotlin 占 96%，1259 项单测全过。收录时 star 18。"
+      "update_info": "Beta7 R2（2026-10-17）",
+      "note": "下载方式两种：GitHub Releases 是作者原版（国内要魔法）；百度网盘那份是站长自己传的备份，不会魔法直接用网盘（提取码 gb4c）——网盘那份用不了的话，展开卡片点反馈按钮报给站长。它是本站已收录小说站「novalpie（novalpie.cc）」的原生安卓 App（韩轻开源包）。收录时（2026-10-20）Releases 页共 5 个版本（beta3–beta7），最新 v2.0.0-native-beta7（正式发布、非预发布），页内标题「NovalPie 原生 Android 2.0 Beta7 R2 · 图片压缩实修（10月17日）」，资产 NovalPie-native-2.0.0-beta7-r2-20261017.apk 约 3.25 MB（下载 131 次）+ SHA256SUMS 校验文件，Android 8.0+，可直接覆盖安装。仓库 star 34、Kotlin、最后 push 2026-10-16。README 声明遵循源站协议、不提供盗版书源抓取、不绕过付费/权限。首次登录可能触发 Cloudflare 人机验证。百度网盘分享页直连 200、需输提取码，属正常有效链接。这张卡同时挂在「精选 · 代码」和「小说 · 软件」两个分区（同一份数据，不是两条）。",
+      "also_in": [
+        {
+          "section": "novel",
+          "subsection": "app"
+        }
+      ]
     },
     {
       "id": "manual-pickup-grok-translator-suite",
