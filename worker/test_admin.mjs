@@ -195,7 +195,7 @@ const create = (env, title, note = "", opts) =>
   const token = data.token;
 
   // id 绝不能改：点击数（clicks.item）与失效反馈（requests.item_id）都以它为键
-  for (const [f, v] of [["id", "another-id"], ["adult", "true"], ["links", "x"]]) {
+  for (const [f, v] of [["id", "another-id"], ["clicks", "1"], ["links", "x"]]) {
     const r = await save(env, token, "manual-manga-1", { [f]: v });
     check(`改 ${f} 被 400`, r.status === 400, JSON.stringify(r.data));
   }
@@ -501,6 +501,52 @@ const create = (env, title, note = "", opts) =>
   await save(env, token, id, { hidden: null });
   const items = (await call(env, "/api/items")).data;
   check("取消隐藏后条目仍存在", items.items.some((x) => x.id === id), String(items.count));
+}
+
+/* ---------- 8d. 成人区开关（adult） ---------- */
+{
+  console.log("\n--- 成人区开关（adult） ---");
+  const env = newEnv();
+  const { data } = await login(env, PASSWORD);
+  const token = data.token;
+  const ovOf = async (id) => (await call(env, "/api/overrides")).data.overrides[id];
+
+  // 加进成人区
+  let r = await save(env, token, "manual-game-x080", { adult: true });
+  check("写 adult:true 成功", r.status === 200, JSON.stringify(r.data));
+  let got = await ovOf("manual-game-x080");
+  check("adult 读回布尔 true（不是 D1 的 1）", got && got.adult === true, JSON.stringify(got));
+
+  // 误分区修正：静态数据里 adult:true 的卡，管理员要能强制移出成人区
+  r = await save(env, token, "manual-game-x080", { adult: false });
+  check("写 adult:false 成功（移出成人区）", r.status === 200, JSON.stringify(r.data));
+  got = await ovOf("manual-game-x080");
+  check("adult 读回布尔 false（不是被当成没覆盖）", got && got.adult === false, JSON.stringify(got));
+
+  // 三态：null = 撤销覆盖，回到 items.json 的原值
+  await save(env, token, "manual-game-x080", { name: "改个名留着" });
+  await save(env, token, "manual-game-x080", { adult: null });
+  got = await ovOf("manual-game-x080");
+  check("adult:null 撤销覆盖（字段消失，回落原值）", got && !("adult" in got), JSON.stringify(got));
+  check("撤销 adult 不动其他覆盖", got.name === "改个名留着", JSON.stringify(got));
+
+  // 非法类型必须挡掉
+  r = await save(env, token, "manual-game-x080", { adult: "yes" });
+  check("adult 非布尔被 400", r.status === 400, JSON.stringify(r.data));
+  check("报错点名 adult", String(r.data.error).includes("adult"), String(r.data.error));
+
+  // adult 与 hidden 互不干扰
+  await save(env, token, "manual-game-x081", { hidden: true, adult: false });
+  got = await ovOf("manual-game-x081");
+  check("hidden 与 adult 可并存", got.hidden === true && got.adult === false, JSON.stringify(got));
+
+  // 前端靠公开覆盖层合并 adult，访客侧必须读得到
+  const pub = await call(env, "/api/overrides");
+  check("公开读带 adult 标记", pub.data.overrides["manual-game-x081"].adult === false,
+        JSON.stringify(pub.data.overrides["manual-game-x081"]));
+  check("公开读里没有 adult 的条目就不带这个键",
+        !("adult" in (pub.data.overrides["manual-novel-hide"] || {})),
+        JSON.stringify(pub.data.overrides["manual-novel-hide"]));
 }
 
 /* ---------- 9. 覆盖层公开读 ---------- */

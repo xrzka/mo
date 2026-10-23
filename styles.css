@@ -1225,6 +1225,16 @@ h1 {
 .hide-quick:hover { background: color-mix(in srgb, #7c3aed 12%, transparent); }
 .hide-quick:disabled { opacity: 0.6; cursor: default; }
 
+/* 成人区开关：快捷按钮与后台面板走橙红系，跟「一键隐藏」的紫色区分开。
+   .on = 当前就在成人区（实心显示），扫一眼就知道哪些卡在成人区。 */
+.adult-quick { border-color: #ef4444; color: #ef4444; }
+.adult-quick:hover { background: color-mix(in srgb, #ef4444 12%, transparent); }
+.adult-quick.on,
+.card-admin-adult.on { background: #ef4444; color: #fff; }
+.card-admin-adult { border-color: #ef4444; color: #ef4444; }
+.card-admin-adult:disabled { opacity: 0.6; cursor: default; }
+.admin-adult-toggle { border-color: #ef4444; color: #ef4444; }
+
 /* 勾选框那行不该把 label 撑成两行 */
 .admin-field-inline {
   display: flex;

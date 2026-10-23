@@ -85,6 +85,12 @@ const QA_WORD_LIMIT = 2000;
  * 但数据一行不动，后台的「已隐藏卡片」里点一下就能恢复。
  * 后台新增的条目（custom-*）也走这条覆盖，不用给 custom_items 加列。
  *
+ * adult 是「成人区」开关：1 = 只在成年模式下可见（未成年/健康模式过滤掉），
+ * 0 = 强制移出成人区（哪怕 items.json 里写的是 adult:true 也按 0 走），
+ * NULL = 不覆盖，用数据里的原值。三态是必须的 —— 站内 galgame 静态数据
+ * 基本都是 adult:true，管理员发现误标时要能用 0 把它拉出来。
+
+ *
  * **故意不含 id** —— 点击数（clicks.item）与失效反馈（requests.item_id）都以
  * id 为键，改了等于把这条已有的统计和反馈全丢掉。
  *
@@ -94,7 +100,7 @@ const QA_WORD_LIMIT = 2000;
  */
 const OVERRIDE_FIELDS = [
   "name", "description", "url", "password", "note",
-  "section", "subsection", "placements", "deleted", "hidden",
+  "section", "subsection", "placements", "deleted", "hidden", "adult",
 ];
 
 /** 各字段长度上限（按字符数，中文算 1）。 */
@@ -109,6 +115,7 @@ const OVERRIDE_MAX = {
   placements: 300,
   deleted: 1,
   hidden: 1,
+  adult: 1,
 };
 
 /**
@@ -2727,8 +2734,8 @@ async function listOverrides(env) {
     OVERRIDE_FIELDS.forEach((f) => {
       // null 表示这个字段没被覆盖，别塞进去 —— 否则前端会把原值盖成 null
       if (r[f] !== null && r[f] !== undefined) {
-        // deleted / hidden 在 D1 里是 INTEGER，其余字段是 TEXT
-        o[f] = f === "deleted" || f === "hidden" ? r[f] === 1 : r[f];
+        // deleted / hidden / adult 在 D1 里是 INTEGER，其余字段是 TEXT
+        o[f] = f === "deleted" || f === "hidden" || f === "adult" ? r[f] === 1 : r[f];
       }
     });
     o.updated = r.updated;
@@ -2777,8 +2784,8 @@ async function saveOverride(env, body) {
       next[f] = null;                  // 显式撤销这一项
       continue;
     }
-    // deleted / hidden 在 D1 中是 INTEGER；其他覆盖字段都是 TEXT。
-    if (f === "deleted" || f === "hidden") {
+    // deleted / hidden / adult 在 D1 中是 INTEGER；其他覆盖字段都是 TEXT。
+    if (f === "deleted" || f === "hidden" || f === "adult") {
       if (v !== true && v !== false && v !== 1 && v !== 0) {
         return { status: 400, body: { error: `${f} 必须是布尔值或 null` } };
       }

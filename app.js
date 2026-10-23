@@ -849,7 +849,10 @@
       updateInfo: raw.update_info || "未标注",
       note: pick("note", raw.note || ""),
       password,
-      adult: raw.adult === true,
+      // 成人区三态：覆盖层写了 true/false 就用它，没写才回落 items.json 的原值。
+      // false 必须能压住数据里的 adult:true —— 站内 galgame 静态数据基本全是
+      // adult:true，管理员发现误分区时要能一键拉出来。
+      adult: ov && "adult" in ov ? ov.adult === true : raw.adult === true,
       // 一键隐藏（覆盖层）：访客侧在 rebuildItems 里就被过滤掉，
       // 管理员登录后仍能看到它，才能一键恢复。
       hidden: !!(ov && ov.hidden === true),
@@ -1385,6 +1388,52 @@
         hideQuick.addEventListener("click", (e) => {
           e.stopPropagation();
           toggleHidden(hideQuick);
+        });
+      }
+
+      // 一键进 / 出成人区：不用展开编辑器就能改，专治「资源被误分区」。
+      // 进 = adult:true；移出 = adult:false（显式覆盖，数据里写的 adult:true 也压得住）。
+      const toggleAdult = async (btn) => {
+        btn.disabled = true;
+        const r = await adminFetch("/api/admin/override", {
+          item_id: item.id,
+          fields: { adult: item.adult ? false : true },
+        });
+        btn.disabled = false;
+        if (!r.ok) {
+          msg.textContent = r.error;
+          msg.className = "card-admin-msg bad";
+          return;
+        }
+        adminFlash = {
+          id: item.id,
+          text: item.adult ? "已移出成人区（未成年模式也能看到）" : "已加入成人区（未成年模式下隐藏）",
+          kind: "ok",
+        };
+        await refreshOverrides();
+        adminFlash = null;
+        renderAdultAdmin();
+      };
+      const adultBtn = field("adultBtn");
+      if (adultBtn) {
+        adultBtn.hidden = false;
+        adultBtn.textContent = item.adult ? "🔞 移出成人区" : "🔞 加入成人区";
+        adultBtn.classList.toggle("on", !!item.adult);
+        adultBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          toggleAdult(adultBtn);
+        });
+      }
+      const adultQuick = field("adultQuickBtn");
+      if (adultQuick) {
+        adultQuick.hidden = false;
+        adultQuick.classList.toggle("on", !!item.adult);
+        adultQuick.title = item.adult
+          ? "当前在成人区（未成年模式看不到）：点一下移出"
+          : "当前不在成人区：点一下加入成人区（未成年模式下隐藏）";
+        adultQuick.addEventListener("click", (e) => {
+          e.stopPropagation();
+          toggleAdult(adultQuick);
         });
       }
 
@@ -2025,6 +2074,18 @@
         if (list) list.hidden = true;
       } else {
         renderHiddenAdmin();
+      }
+    }
+
+    // 成人区手动调整：登录后列出改过 adult 归属的条目，可一键改回 / 恢复默认
+    const adultWrap = $("[data-admin-adult]");
+    if (adultWrap) {
+      adultWrap.hidden = !logged;
+      if (!logged) {
+        const list = $("[data-admin-adult-list]");
+        if (list) list.hidden = true;
+      } else {
+        renderAdultAdmin();
       }
     }
 
@@ -3197,8 +3258,97 @@
     });
   }
 
+  /** 成人区手动调整：列出「覆盖层动过 adult」的条目（进成人区 / 移出成人区），
+   *  每条都能一键改回去，也能一键恢复数据原值。
+   *
+   *  只列动过的，不列全部成人卡 —— 站内 galgame 有 600+ 张，
+   *  全列出来既卡又没法看；要批量找误分区的卡，开成年模式后在卡片上点 🔞 更快。 */
+  function renderAdultAdmin() {
+    const wrap = $("[data-admin-adult]");
+    const toggle = $("[data-admin-adult-toggle]");
+    const list = $("[data-admin-adult-list]");
+    const msg = $("[data-admin-adult-msg]");
+    if (!wrap || !toggle || !list || !msg) return;
+
+    const rows = Object.keys(overrides)
+      .filter((id) => overrides[id] && "adult" in overrides[id])
+      .map((id) => {
+        const it = state.items.find((x) => x.id === id);
+        return { id, name: (it && it.name) || id, adult: overrides[id].adult === true };
+      })
+      .sort((a, b) => a.name.localeCompare(b.name, "zh"));
+    toggle.textContent = `成人区手动调整（${rows.length}）`;
+    list.textContent = "";
+
+    if (!rows.length) {
+      const empty = document.createElement("p");
+      empty.className = "admin-deleted-empty";
+      empty.textContent = "没有改过成人区归属的卡片。想找误分区的卡：开成年模式，在卡片上点 🔞 即可一键移出。";
+      list.appendChild(empty);
+      return;
+    }
+
+    const write = async (item, fields, done) => {
+      msg.textContent = "保存中…";
+      msg.className = "admin-new-msg";
+      const r = await adminFetch("/api/admin/override", { item_id: item.id, fields });
+      if (!r.ok) {
+        msg.textContent = r.error;
+        msg.className = "admin-new-msg bad";
+        return;
+      }
+      msg.textContent = done;
+      msg.className = "admin-new-msg ok";
+      await refreshOverrides();
+      renderAdultAdmin();
+    };
+
+    rows.forEach((item) => {
+      const row = document.createElement("div");
+      row.className = "admin-deleted-row";
+      const label = document.createElement("span");
+      label.textContent = `${item.adult ? "🔞 在成人区" : "✅ 已移出成人区"} · ${item.name}（${item.id}）`;
+      row.appendChild(label);
+
+      const flip = document.createElement("button");
+      flip.type = "button";
+      flip.className = "admin-restore";
+      flip.textContent = item.adult ? "移出成人区" : "移回成人区";
+      flip.addEventListener("click", () => {
+        flip.disabled = true;
+        write(item, { adult: !item.adult },
+          item.adult ? `已把「${item.name}」移出成人区` : `已把「${item.name}」移回成人区`);
+      });
+      row.appendChild(flip);
+
+      const back = document.createElement("button");
+      back.type = "button";
+      back.className = "admin-restore";
+      back.textContent = "恢复默认";
+      back.title = "撤销 adult 覆盖，回到 items.json 里的原值";
+      back.addEventListener("click", () => {
+        back.disabled = true;
+        write(item, { adult: null }, `「${item.name}」已恢复数据原值`);
+      });
+      row.appendChild(back);
+
+      list.appendChild(row);
+    });
+  }
+
+  function bindAdultAdmin() {
+    const toggle = $("[data-admin-adult-toggle]");
+    const list = $("[data-admin-adult-list]");
+    if (!toggle || !list) return;
+    toggle.addEventListener("click", () => {
+      list.hidden = !list.hidden;
+      renderAdultAdmin();
+    });
+  }
+
   function initAdmin() {
     bindAdmin();
+    bindAdultAdmin();
     renderAdmin();
   }
 
@@ -3213,6 +3363,9 @@
     { key: "note", label: "备注", type: "textarea" },
     { key: "placements", label: "所属位置（分区 + 小分区，可加多个）", type: "placements" },
     { key: "hidden", label: "隐藏（访客看不到，可在后台取消）", type: "checkbox" },
+    // 取消勾选会显式写 adult:false（压住 items.json 里的 adult:true）；
+    // 想彻底回到数据原值，点「撤销全部改动」。
+    { key: "adult", label: "成人区（勾选 = 只在成年模式可见；取消勾选 = 移出成人区）", type: "checkbox" },
   ];
 
   /** 一条资源最多挂几个位置。与后端 PLACEMENT_MAX 保持一致。 */

@@ -9,13 +9,13 @@
       content="墨小说漫画 · 小说、漫画、动画、游戏、AI 资源导航，分区整理，点击直达。"
     />
     <title>墨小说漫画 · 资源导航</title>
-    <script src="config.js?v=20261021a"></script>
-    <link rel="stylesheet" href="styles.css?v=20261021a" />
+    <script src="config.js?v=20261023a"></script>
+    <link rel="stylesheet" href="styles.css?v=20261023a" />
     <!-- EPUB 本质是 zip。固定版本并随站点托管，不依赖第三方 CDN 运行。 -->
     <script src="vendor/jszip.min.js?v=3.10.1" defer></script>
     <!-- 动画区自建播放器：hls.js 播 m3u8（Safari 走原生，其余走 MSE） -->
     <script src="vendor/hls.min.js?v=1.5.13" defer></script>
-    <script src="app.js?v=20261021a" defer></script>
+    <script src="app.js?v=20261023a" defer></script>
   </head>
   <body>
     <a class="skip-link" href="#feed">跳到资源列表</a>
@@ -211,6 +211,15 @@
           </button>
           <span class="admin-new-msg" data-admin-hidden-msg aria-live="polite"></span>
           <div class="admin-deleted-list" data-admin-hidden-list hidden></div>
+        </div>
+
+        <!-- 成人区手动调整：列出覆盖层动过 adult 的卡片，可一键改回或恢复数据原值 -->
+        <div class="admin-deleted" data-admin-adult hidden>
+          <button type="button" class="admin-new-toggle admin-adult-toggle" data-admin-adult-toggle>
+            成人区手动调整（0）
+          </button>
+          <span class="admin-new-msg" data-admin-adult-msg aria-live="polite"></span>
+          <div class="admin-deleted-list" data-admin-adult-list hidden></div>
         </div>
 
         <!--
@@ -533,6 +542,8 @@
               <span class="section-pill hidden-mark" data-field="hiddenPill" hidden>🙈 已隐藏</span>
               <button type="button" class="hide-quick" data-field="hideQuickBtn" hidden
                 title="一键隐藏（访客看不到）">🙈</button>
+              <button type="button" class="hide-quick adult-quick" data-field="adultQuickBtn" hidden
+                title="加入 / 移出成人区">🔞</button>
               <button type="button" class="fav-btn" data-field="favBtn" aria-pressed="false" title="收藏">
                 <span aria-hidden="true">☆</span>
               </button>
@@ -571,6 +582,9 @@
             <button type="button" class="card-admin-btn" data-field="adminBtn">编辑这条</button>
             <button type="button" class="card-admin-btn card-admin-hide" data-field="hideBtn" hidden>
               🙈 一键隐藏
+            </button>
+            <button type="button" class="card-admin-btn card-admin-adult" data-field="adultBtn" hidden>
+              🔞 加入成人区
             </button>
             <span class="card-admin-msg" data-field="adminMsg" aria-live="polite"></span>
             <div class="card-admin-form" data-field="adminForm" hidden></div>

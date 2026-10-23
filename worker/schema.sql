@@ -126,6 +126,10 @@ CREATE TABLE IF NOT EXISTS overrides (
   -- 一键隐藏：1 = 前台完全看不到（列表/搜索/统计都不算），NULL 或 0 = 正常。
   -- 老库补列：ALTER TABLE overrides ADD COLUMN hidden INTEGER;
   hidden      INTEGER,
+  -- 成人区开关：1 = 进成人区（只在成年模式下可见），0 = 强制移出成人区，
+  -- NULL = 不覆盖、用 items.json 的原值。同样要补列：
+  -- ALTER TABLE overrides ADD COLUMN adult INTEGER;
+  adult       INTEGER,
   updated  TEXT NOT NULL,
   by_who   TEXT NOT NULL DEFAULT ''
 );
