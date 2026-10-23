@@ -17413,6 +17413,91 @@
       "update_info": "网盘分享",
       "note": "网盘编号 x090。收录时实测：UC 网盘分享页可打开、标注「永久有效」，分享里只有一个以编号命名的包（x090，页面显示修改时间 2026-10-22 12:54）。《星空列车与白的旅行》（常简称「星白」），PC + 安卓双端。站内另有一张同作品卡（迅雷线路），这条补的是 UC 网盘线路。站内此类包常见「mp4 伪装 + 分卷压缩」，可配合本站「一键解压工具」处理。",
       "adult": true
+    },
+    {
+      "id": "manual-game-x091",
+      "name": "【PC+安卓直装】和存在感薄弱妹妹一起的简单生活v1.29",
+      "section": "game",
+      "subsection": "gal",
+      "description": "Galgame 资源，PC + 安卓直装。《和存在感薄弱妹妹一起的简单生活》v1.29。",
+      "url": "https://pan.baidu.com/s/1CkZH4XMZoSGtck_G6gXnUg?pwd=qqmb",
+      "links": [
+        {
+          "name": "百度网盘",
+          "url": "https://pan.baidu.com/s/1CkZH4XMZoSGtck_G6gXnUg?pwd=qqmb",
+          "password": "qqmb"
+        }
+      ],
+      "tags": [
+        "PC",
+        "安卓",
+        "安卓直装",
+        "百度网盘",
+        "Galgame"
+      ],
+      "kind": "Galgame 资源",
+      "need_login": false,
+      "update_info": "网盘分享",
+      "note": "网盘编号 x091，提取码 qqmb。实测：百度网盘分享页可打开（HTTP 200）、标注「过期时间：永久有效」，分享里是一个以编号命名的包（x091，页面显示修改时间 2026-10-22 12:57，分享时间 12:58，分享者 缀*成章）。PC + 安卓直装，v1.29。相关：站内另有一张名字相近的卡《存在感薄弱的妹妹》（移动云盘线路），标题相近、疑似同一作品，供对照。建议先「保存到网盘」再下载；站内此类包常见「mp4 伪装 + 分卷压缩」，可配合本站「一键解压工具」处理。",
+      "adult": true,
+      "password": "qqmb"
+    },
+    {
+      "id": "manual-game-x092",
+      "name": "【PC+安卓直装】RPG 一次性交易大师 v4.0 + DLC",
+      "section": "game",
+      "subsection": "gal",
+      "description": "Galgame / RPG 资源，PC + 安卓直装。《一次性交易大师》v4.0 + DLC。",
+      "url": "https://pan.baidu.com/s/1dF3MP8QHDw9CP86z1QqN3A?pwd=e89y",
+      "links": [
+        {
+          "name": "百度网盘",
+          "url": "https://pan.baidu.com/s/1dF3MP8QHDw9CP86z1QqN3A?pwd=e89y",
+          "password": "e89y"
+        }
+      ],
+      "tags": [
+        "PC",
+        "安卓",
+        "安卓直装",
+        "RPG",
+        "百度网盘",
+        "Galgame"
+      ],
+      "kind": "Galgame 资源",
+      "need_login": false,
+      "update_info": "网盘分享",
+      "note": "网盘编号 x092，提取码 e89y。实测：百度网盘分享页可打开（HTTP 200）、标注「过期时间：永久有效」，分享里是一个以编号命名的包（x092，页面显示修改时间 2026-10-22 13:02，分享时间 13:03，分享者 缀*成章）。RPG 类作品《一次性交易大师》v4.0 本体 + DLC，PC + 安卓直装。建议先「保存到网盘」再下载；站内此类包常见「mp4 伪装 + 分卷压缩」，可配合本站「一键解压工具」处理。",
+      "adult": true,
+      "password": "e89y"
+    },
+    {
+      "id": "manual-game-x093",
+      "name": "【PC+安卓】RPG 欲望之尾 v1.01",
+      "section": "game",
+      "subsection": "gal",
+      "description": "Galgame / RPG 资源，PC + 安卓。《欲望之尾》v1.01。",
+      "url": "https://pan.baidu.com/s/1t0zQQzXP4fgwVnAIiG-M6Q?pwd=w5p7",
+      "links": [
+        {
+          "name": "百度网盘",
+          "url": "https://pan.baidu.com/s/1t0zQQzXP4fgwVnAIiG-M6Q?pwd=w5p7",
+          "password": "w5p7"
+        }
+      ],
+      "tags": [
+        "PC",
+        "安卓",
+        "RPG",
+        "百度网盘",
+        "Galgame"
+      ],
+      "kind": "Galgame 资源",
+      "need_login": false,
+      "update_info": "网盘分享",
+      "note": "网盘编号 x093，提取码 w5p7。实测：百度网盘分享页可打开（HTTP 200）、标注「过期时间：永久有效」，分享里是一个以编号命名的包（x093，页面显示修改时间 2026-10-22 13:06，分享时间 13:07，分享者 缀*成章）。RPG 类作品《欲望之尾》v1.01，PC + 安卓。建议先「保存到网盘」再下载；站内此类包常见「mp4 伪装 + 分卷压缩」，可配合本站「一键解压工具」处理。",
+      "adult": true,
+      "password": "w5p7"
     }
   ]
 }
