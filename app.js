@@ -82,6 +82,13 @@
       ],
     },
     { id: "tool", label: "工具", icon: "🔧" },
+    // 办公软件单独开一区（和「工具」分开：工具放的是各类小工具/在线服务，
+    // 这里放 Office、WPS 这类办公套件本体）。
+    { id: "office2", label: "办公区2", icon: "🏢",
+      subs: [
+        { id: "app", label: "软件" },
+      ],
+    },
     { id: "ai", label: "AI", icon: "✦",
       subs: [
         { id: "relay", label: "中转站" },

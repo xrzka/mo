@@ -134,6 +134,8 @@ const SECTION_SUBS = {
   music: ["site", "app", "download"],
   study: ["course", "video", "doc"],
   tool: [],
+  // 办公软件单独一区（app.js SECTIONS 里同名同小分区，test_sections.mjs 盯着）
+  office2: ["app"],
   ai: ["relay", "image", "video", "tool"],
   forum: [],
   guide: [],

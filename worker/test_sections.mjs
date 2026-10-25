@@ -56,13 +56,15 @@ function parseFrontend(src) {
   if (cur.trim()) chunks.push(cur);
 
   for (const c of chunks) {
-    const idm = c.match(/id:\s*"([a-z]+)"/);
+    // 分区 id 允许字母 + 数字（实测有过 office2 这种带序号的），所以是 [a-z0-9]+；
+    // 只写 [a-z]+ 的话带数字的分区会被跳过，然后 subs 里的 id 会被误当成顶层分区。
+    const idm = c.match(/id:\s*"([a-z0-9]+)"/);
     if (!idm) continue;
     const id = idm[1];
     if (id === "all") continue;
     const subsm = c.match(/subs:\s*\[([\s\S]*?)\]/);
     const subs = subsm
-      ? [...subsm[1].matchAll(/id:\s*"([a-z]+)"/g)].map((m) => m[1])
+      ? [...subsm[1].matchAll(/id:\s*"([a-z0-9]+)"/g)].map((m) => m[1])
       : [];
     out[id] = subs;
   }
