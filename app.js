@@ -4357,6 +4357,7 @@
     if (watch) watch.hidden = !watching;
     if (watching) renderWatch();
     else renderFeed();
+    renderAdultHint();
     renderStatsTabs();
     renderStats();
     $('[data-stat="total"]').textContent = String(allowedItems().length).padStart(2, "0");
@@ -6367,6 +6368,77 @@
     state.adultMode = state.ageVerified && !state.healthyMode;
   }
 
+  /* ---------- 「有结果，只是被年龄过滤挡住了」提示 ---------- */
+
+  /** 当前筛选（分区 / 小分区 / 搜索词 / 只看收藏）下，只是被成年过滤挡掉的条目数。
+   *  口径与 visibleItems 保持一致，这样「开启成年模式」之后能看到的数量对得上。 */
+  function hiddenAdultCount() {
+    if (state.adultMode) return 0;
+    return state.items.filter(
+      (it) =>
+        it.adult &&
+        inSection(it, state.section, state.sub) &&
+        matchesQuery(it, state.q) &&
+        (!state.favOnly || isFav(it.id))
+    ).length;
+  }
+
+  const clipQuery = (s, n = 16) => (s.length > n ? `${s.slice(0, n)}…` : s);
+
+  /**
+   * 结果计数下面那行提示。有人搜一个只有成人向的 galgame 时，未成年模式下是 0 结果，
+   * 只看到「这个分区还没有收录资源」会以为站里没有 —— 所以要明确告诉他有 N 个结果、
+   * 只是被年龄过滤挡住了，并给一个直接开启成年模式的按钮。
+   * 当前筛选一个都没挡到时退回原来的全站统计，避免这行时有时无。
+   */
+  function renderAdultHint() {
+    const hint = $("[data-mode-hint]");
+    if (!hint) return;
+    hint.textContent = "";
+    if (state.adultMode) return;
+
+    const n = hiddenAdultCount();
+    const q = state.q.trim();
+    const visible = visibleItems().length;
+
+    // 没搜索、列表里又有内容：只在计数下面留一句统计，不给「开启成年模式」按钮 ——
+    // 否则每个分区页都杵着一个行动号召，太吵，观感上也像在诱导点进去。
+    if (n > 0 && visible > 0 && !q) {
+      hint.textContent = `🔞 已隐藏 ${n} 个成人向资源`;
+      return;
+    }
+    if (!n) {
+      const all = state.items.filter((it) => it.adult).length;
+      hint.textContent = all ? `🔞 已隐藏 ${all} 个成人向资源` : "";
+      return;
+    }
+
+    // 走到这里 = 有搜索词（想找的东西可能正被过滤挡着），或当前筛选一条常规结果都没有：
+    // 明确告诉用户「有 N 个结果，只是被年龄过滤挡住了」，并给一个一键入口。
+    const scope = state.section === "all" ? "全站" : "本分区";
+    let text;
+    if (visible === 0 && q) text = `没找到常规结果，但搜索“${clipQuery(q)}”有 ${n} 个成人向结果`;
+    else if (q) text = `搜索“${clipQuery(q)}”另有 ${n} 个成人向结果被隐藏`;
+    else text = `${scope}没有常规结果，但另有 ${n} 个成人向资源`;
+
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "adult-hint-btn";
+    btn.dataset.field = "adultHintBtn";
+
+    if (state.ageVerified && state.healthyMode) {
+      text += "（健康模式开着）";
+      btn.textContent = "关闭健康模式查看";
+      btn.addEventListener("click", () => $("[data-healthy-toggle]")?.click());
+    } else {
+      text += "，需年满 18 岁";
+      btn.textContent = "开启成年模式查看";
+      btn.addEventListener("click", () => $("[data-mode-toggle]")?.click());
+    }
+
+    hint.append(`🔞 ${text} · `, btn);
+  }
+
   /** 更新模式按钮与健康模式按钮的文字与状态。 */
   function renderModeUI() {
     const btn = $("[data-mode-toggle]");
@@ -6386,16 +6458,10 @@
       if (hl) hl.textContent = state.healthyMode ? "健康模式：开" : "健康模式：关";
     }
 
-    const hidden = state.items.filter((it) => !it.hidden && it.adult).length;
     const hint = $("[data-mode-hint]");
     if (hint) {
-      if (state.adultMode) {
-        hint.textContent = "";
-      } else if (state.ageVerified && state.healthyMode) {
-        hint.textContent = hidden ? `健康模式已开启，已过滤 ${hidden} 个成人向资源` : "";
-      } else {
-        hint.textContent = hidden ? `已隐藏 ${hidden} 个成人向资源` : "";
-      }
+      // 这行提示跟当前分区/搜索词有关，交给 renderAdultHint 统一算，别再在这里写死
+      renderAdultHint();
     }
   }
 
