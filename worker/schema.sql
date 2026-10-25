@@ -248,3 +248,15 @@ CREATE TABLE IF NOT EXISTS blocked_words (
   created TEXT NOT NULL
 );
 
+-- ---------------------------------------------------------------
+-- 站点级配置：key/value 一行一个。现在两项都用它：
+--   notice      —— 入站公告（JSON 字符串），/api/notice 公开读
+--   adult_split —— 是否区分「成人向 / 未成年」，"1" 开 / "0" 关，行不存在 = 默认开
+-- 读的时候表可能还没建（老库没跑迁移），Worker 里吞掉异常回落默认值。
+-- ---------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS site_config (
+  key     TEXT PRIMARY KEY,
+  value   TEXT NOT NULL,
+  updated TEXT NOT NULL
+);
+

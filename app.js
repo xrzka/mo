@@ -509,9 +509,12 @@
     section: "all",
     sub: "all",
     q: "",
-    adultMode: false, // 成人向内容是否可见（= 已验证年龄 且 未开健康模式）
+    adultMode: false, // 成人向内容是否可见（= 站内开了分区 且 已验证年龄 且 未开健康模式）
     ageVerified: false, // 是否已通过出生年份判定为成年
     healthyMode: false, // 已成年时仍自动过滤成人向内容
+    // 站长可一键关掉的「成人 / 未成年分区」总开关（/api/settings 的 adult_split）。
+    // 关掉后不做这个区分：成人向对所有访客可见、年龄门也不拦。
+    adultSplit: true,
     page: 1,
     pageSize: DEFAULT_PAGE_SIZE,
     sort: "default", // default | hits-<period>
@@ -895,8 +898,10 @@
     return hit ? hit.sub : item.sub;
   };
 
-  /** 未成年模式下过滤掉成人向条目。所有计数与列表都必须经过这一层。 */
-  const allowedItems = () => state.items.filter((it) => state.adultMode || !it.adult);
+  /** 未成年模式下过滤掉成人向条目。所有计数与列表都必须经过这一层。
+   *  站长在后台一键关掉「成人 / 未成年分区」后（adultSplit=false）就不做这个过滤了。 */
+  const adultFilterOn = () => state.adultSplit && !state.adultMode;
+  const allowedItems = () => state.items.filter((it) => !adultFilterOn() || !it.adult);
 
   /** 按点击数排序时用的周期；非点击排序返回 null。 */
   const sortPeriod = () =>
@@ -1820,6 +1825,30 @@
     }
   }
 
+  /** 拉全站开关（/api/settings）。拿不到就回默认值 —— 默认就是「开分区」，
+   *  所以后端挂了也只是回到以前的行为，不会把成人向漏给所有人。 */
+  async function loadSettings() {
+    const dflt = { adult_split: true };
+    const api = apiBase();
+    if (!api) return dflt;
+    try {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 8000);
+      let res;
+      try {
+        res = await fetch(`${api}/api/settings`, { cache: "no-store", signal: ctrl.signal });
+      } finally {
+        clearTimeout(timer);
+      }
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      const data = await res.json();
+      const s = (data && data.settings) || {};
+      return { adult_split: typeof s.adult_split === "boolean" ? s.adult_split : true };
+    } catch {
+      return dflt;
+    }
+  }
+
   /** 拉后台新增的条目。和覆盖层一样：拿不到就当没有，别让整页加载失败。 */
   async function loadCustomItems() {
     const api = apiBase();
@@ -2095,6 +2124,9 @@
         renderAdultAdmin();
       }
     }
+
+    // 全站「成人 / 未成年分区」一键开关：只在登录后露出
+    renderAdultSplitUI();
 
     // 翻译工作区同理。退出时收起并清空 —— 里面可能留着上次的文件与队列，
     // 下次登录看到半截状态会以为出了问题。
@@ -3353,9 +3385,18 @@
     });
   }
 
+  /** 后台「成人 / 未成年分区」一键开关：整个站要不要做这个区分（写 D1 site_config）。 */
+  function bindAdultSplit() {
+    const btn = $("[data-admin-split-toggle]");
+    if (!btn) return;
+    btn.addEventListener("click", () => toggleAdultSplit());
+    renderAdultSplitUI();
+  }
+
   function initAdmin() {
     bindAdmin();
     bindAdultAdmin();
+    bindAdultSplit();
     renderAdmin();
   }
 
@@ -6363,9 +6404,9 @@
 
   /* ---------- 成年 / 未成年模式 ---------- */
 
-  /** 成人向内容是否可见：已验证年龄且未开启健康模式。 */
+  /** 成人向内容是否可见：站长没关掉分区、已验证年龄、且未开启健康模式。 */
   function applyAdultVisibility() {
-    state.adultMode = state.ageVerified && !state.healthyMode;
+    state.adultMode = state.adultSplit && state.ageVerified && !state.healthyMode;
   }
 
   /* ---------- 「有结果，只是被年龄过滤挡住了」提示 ---------- */
@@ -6373,7 +6414,8 @@
   /** 当前筛选（分区 / 小分区 / 搜索词 / 只看收藏）下，只是被成年过滤挡掉的条目数。
    *  口径与 visibleItems 保持一致，这样「开启成年模式」之后能看到的数量对得上。 */
   function hiddenAdultCount() {
-    if (state.adultMode) return 0;
+    // 分区被站长关掉、或已经在成年模式：没有被挡住的条目
+    if (!state.adultSplit || state.adultMode) return 0;
     return state.items.filter(
       (it) =>
         it.adult &&
@@ -6395,7 +6437,8 @@
     const hint = $("[data-mode-hint]");
     if (!hint) return;
     hint.textContent = "";
-    if (state.adultMode) return;
+    // 站长把分区关了 → 什么都没被隐藏，这行不该出现（下面那句全站统计会误报）
+    if (!state.adultSplit || state.adultMode) return;
 
     const n = hiddenAdultCount();
     const q = state.q.trim();
@@ -6443,6 +6486,9 @@
   function renderModeUI() {
     const btn = $("[data-mode-toggle]");
     if (!btn) return;
+    // 站长一键关掉「成人 / 未成年分区」之后，这套模式按钮就没意义了 —— 直接收起，
+    // 否则访客点了「成年模式」却发现什么都没变。
+    btn.hidden = !state.adultSplit;
     btn.setAttribute("aria-pressed", String(state.ageVerified));
     const modeLabel = $("[data-mode-label]");
     if (modeLabel) {
@@ -6452,16 +6498,59 @@
     // 健康模式按钮只在已验证成年后出现，可随时开关
     const healthyBtn = $("[data-healthy-toggle]");
     if (healthyBtn) {
-      healthyBtn.hidden = !state.ageVerified;
+      healthyBtn.hidden = !state.adultSplit || !state.ageVerified;
       healthyBtn.setAttribute("aria-pressed", String(state.healthyMode));
       const hl = $("[data-healthy-label]");
       if (hl) hl.textContent = state.healthyMode ? "健康模式：开" : "健康模式：关";
     }
 
+    renderAdultSplitUI();
+
     const hint = $("[data-mode-hint]");
     if (hint) {
       // 这行提示跟当前分区/搜索词有关，交给 renderAdultHint 统一算，别再在这里写死
       renderAdultHint();
+    }
+  }
+
+  /** 后台「成人 / 未成年分区」一键开关的文案与状态（只有管理员登录后可见）。 */
+  function renderAdultSplitUI() {
+    const box = $("[data-admin-split]");
+    if (!box) return;
+    box.hidden = !adminToken;
+    const btn = $("[data-admin-split-toggle]");
+    if (!btn) return;
+    btn.setAttribute("aria-pressed", String(state.adultSplit));
+    btn.classList.toggle("on", state.adultSplit);
+    btn.textContent = state.adultSplit ? "🔞 成人 / 未成年分区：开" : "🔓 成人 / 未成年分区：关";
+    btn.title = state.adultSplit
+      ? "当前：成人向只在成年模式可见。点一下关闭分区（成人向对所有访客可见）"
+      : "当前：不做成人 / 未成年区分，成人向公开可见。点一下恢复分区";
+  }
+
+  /** 一键切换「成人 / 未成年分区」：写全站设置（D1 site_config），不是单卡覆盖。 */
+  async function toggleAdultSplit() {
+    const next = !state.adultSplit;
+    const msg = $("[data-admin-split-msg]");
+    const say = (t) => { if (msg) { msg.textContent = t; msg.hidden = !t; } };
+    try {
+      const api = apiBase();
+      const res = await fetch(`${api}/api/admin/setting`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${adminToken}` },
+        body: JSON.stringify({ key: "adult_split", value: next }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+      state.adultSplit = next;
+      applyAdultVisibility();
+      state.page = 1;
+      renderModeUI();
+      render();
+      say(next ? "已开启：成人向条目只在成年模式下可见" : "已关闭：成人向条目对所有访客可见（年龄门同时停用）");
+      setTimeout(() => say(""), 4000);
+    } catch (e) {
+      say("切换失败：" + ((e && e.message) || "未知错误"));
     }
   }
 
@@ -6722,11 +6811,12 @@
       // 顶多显示原值，比整页加载失败好。
       // 覆盖层、后台新增条目与 items.json 并行拉。后两者失败不影响主流程 ——
       // 顶多少几条 / 显示原值，比整页加载失败好。
-      const [res, ovMap, customs, notice] = await Promise.all([
+      const [res, ovMap, customs, notice, settings] = await Promise.all([
         fetch(DATA_URL, { cache: "no-cache" }),
         loadOverrides(),
         loadCustomItems(),
         loadNotice(),
+        loadSettings(),
       ]);
       if (!res.ok) throw new Error("HTTP " + res.status);
       const payload = await res.json();
@@ -6734,6 +6824,9 @@
       overrides = ovMap;
       state.rawItems = raw;
       state.customItems = customs;
+      // 全站开关要在 rebuildItems / render 之前生效，否则首屏会先闪一下过滤态
+      state.adultSplit = settings.adult_split !== false;
+      applyAdultVisibility();
       // 公告配置后到也不影响主流程：没有配置就用 index.html 里的默认文案
       siteNotice = notice;
       applyNotice();

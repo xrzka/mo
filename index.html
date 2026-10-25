@@ -9,13 +9,13 @@
       content="墨小说漫画 · 小说、漫画、动画、游戏、AI 资源导航，分区整理，点击直达。"
     />
     <title>墨小说漫画 · 资源导航</title>
-    <script src="config.js?v=20261025b"></script>
-    <link rel="stylesheet" href="styles.css?v=20261025b" />
+    <script src="config.js?v=20261025c"></script>
+    <link rel="stylesheet" href="styles.css?v=20261025c" />
     <!-- EPUB 本质是 zip。固定版本并随站点托管，不依赖第三方 CDN 运行。 -->
     <script src="vendor/jszip.min.js?v=3.10.1" defer></script>
     <!-- 动画区自建播放器：hls.js 播 m3u8（Safari 走原生，其余走 MSE） -->
     <script src="vendor/hls.min.js?v=1.5.13" defer></script>
-    <script src="app.js?v=20261025b" defer></script>
+    <script src="app.js?v=20261025c" defer></script>
   </head>
   <body>
     <a class="skip-link" href="#feed">跳到资源列表</a>
@@ -220,6 +220,17 @@
           </button>
           <span class="admin-new-msg" data-admin-adult-msg aria-live="polite"></span>
           <div class="admin-deleted-list" data-admin-adult-list hidden></div>
+        </div>
+
+        <!-- 全站一键开关：整个站要不要区分成人 / 未成年（写 D1 的 site_config） -->
+        <div class="admin-deleted admin-split" data-admin-split hidden>
+          <button type="button" class="admin-new-toggle admin-split-toggle" data-admin-split-toggle
+                  aria-pressed="true">🔞 成人 / 未成年分区：开</button>
+          <span class="admin-new-msg" data-admin-split-msg aria-live="polite"></span>
+          <p class="admin-split-hint">
+            开着：成人向条目只在「成年模式」下可见，未成年模式过滤 + 年龄门。<br />
+            关掉：全站不做这个区分，成人向对所有访客可见、年龄门也停用（卡片上的 🔞 标记还在，方便你辨认）。
+          </p>
         </div>
 
         <!--

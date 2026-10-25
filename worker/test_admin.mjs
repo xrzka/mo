@@ -549,6 +549,60 @@ const create = (env, title, note = "", opts) =>
         JSON.stringify(pub.data.overrides["manual-novel-hide"]));
 }
 
+/* ---------- 8e. 全站开关 adult_split（一键开关「成人 / 未成年分区」） ---------- */
+{
+  console.log("\n--- 全站开关 adult_split ---");
+  const env = newEnv();
+
+  const pub0 = await call(env, "/api/settings");
+  check("公开读默认 true（表里没这行也是开）",
+    pub0.status === 200 && pub0.data.settings.adult_split === true, JSON.stringify(pub0.data));
+
+  // 未登录不许写：这是能一次影响全站的开关
+  let r = await call(env, "/api/admin/setting", { method: "POST", body: { key: "adult_split", value: false } });
+  check("未登录写被 401", r.status === 401, JSON.stringify(r.data));
+
+  const { data } = await login(env, PASSWORD);
+  const token = data.token;
+
+  r = await call(env, "/api/admin/setting", { method: "POST", token, body: { key: "adult_split", value: false } });
+  check("登录后一键关掉分区", r.status === 200 && r.data.value === false, JSON.stringify(r.data));
+  let pub = await call(env, "/api/settings");
+  check("公开读立刻变成 false（前端下次加载就不过滤）",
+    pub.data.settings.adult_split === false, JSON.stringify(pub.data.settings));
+  const row = env.DB._db.prepare("SELECT value FROM site_config WHERE key = ?").get("adult_split");
+  check('D1 里存 "0" 字符串（不是 false）', row && row.value === "0", JSON.stringify(row));
+
+  r = await call(env, "/api/admin/setting", { method: "POST", token, body: { key: "adult_split", value: true } });
+  check("再点一下开回来",
+    r.status === 200 && (await call(env, "/api/settings")).data.settings.adult_split === true, JSON.stringify(r.data));
+
+  // value:null = 恢复默认（把这行删掉，回到「没配置就是开」）
+  await call(env, "/api/admin/setting", { method: "POST", token, body: { key: "adult_split", value: null } });
+  pub = await call(env, "/api/settings");
+  check("value:null 删行并回落默认开", pub.data.settings.adult_split === true, JSON.stringify(pub.data));
+  check("行确实删了", !env.DB._db.prepare("SELECT 1 FROM site_config WHERE key = ?").get("adult_split"));
+
+  // 非法输入：白名单 + 只收布尔
+  r = await call(env, "/api/admin/setting", { method: "POST", token, body: { key: "drop_table", value: true } });
+  check("未知开关 400 且点名", r.status === 400 && String(r.data.error).includes("drop_table"), JSON.stringify(r.data));
+  r = await call(env, "/api/admin/setting", { method: "POST", token, body: { key: "adult_split", value: "off" } });
+  check("非布尔值 400", r.status === 400, JSON.stringify(r.data));
+  r = await call(env, "/api/admin/setting", { method: "POST", token, body: {} });
+  check("缺 key 400", r.status === 400, JSON.stringify(r.data));
+
+  // 全站开关是独立的一套数据，不能顺手改到单卡覆盖层
+  await call(env, "/api/admin/setting", { method: "POST", token, body: { key: "adult_split", value: false } });
+  check("开关与单卡覆盖层互不干扰", (await call(env, "/api/overrides")).data.count === 0, "");
+
+  // 老库没跑迁移（表不存在）时也不能 500：读回落默认
+  const bare = { DB: makeD1() };
+  bare.DB._db.exec("DROP TABLE site_config");
+  const barePub = await call(bare, "/api/settings");
+  check("表缺失时公开读仍 200 + 默认开（老库不会崩）",
+    barePub.status === 200 && barePub.data.settings.adult_split === true, JSON.stringify(barePub.data));
+}
+
 /* ---------- 9. 覆盖层公开读 ---------- */
 {
   console.log("\n--- 覆盖层公开读 ---");

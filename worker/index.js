@@ -2963,6 +2963,56 @@ async function saveSiteConfig(env, key, value) {
   }
 }
 
+/**
+ * 全站开关（站内 site_config 一行一个），目前只有一个：
+ *   adult_split —— 是否区分「成人向 / 未成年」。
+ *     开（默认，行不存在也是开）：成人向条目只在成年模式下可见，未成年模式过滤 + 年龄门。
+ *     关：不做这个区分，成人向内容对所有访客可见，年龄门也不再拦。
+ * 值在库里存 "1" / "0" 字符串，对外统一给 boolean。
+ */
+const SITE_FLAGS = { adult_split: { dflt: true } };
+
+function flagFromRow(row, dflt) {
+  if (!row || row.value === null || row.value === undefined) return dflt;
+  return String(row.value) !== "0" && String(row.value) !== "false";
+}
+
+/** 公开读：前端加载时要用它决定过不过滤，所以不含隐私、可公开。 */
+async function listSettings(env) {
+  const out = {};
+  const updated = {};
+  for (const key of Object.keys(SITE_FLAGS)) {
+    const row = await getSiteConfig(env, key);
+    out[key] = flagFromRow(row, SITE_FLAGS[key].dflt);
+    updated[key] = row ? row.updated : null;
+  }
+  return { settings: out, updated };
+}
+
+/** 管理端写：value 只收布尔；value = null 表示删掉这行、回落默认值。 */
+async function saveSetting(env, body) {
+  const key = String((body && body.key) || "").trim();
+  if (!(key in SITE_FLAGS)) {
+    return { status: 400, body: { error: `未知开关：${key || "(空)"}` } };
+  }
+  const value = body ? body.value : undefined;
+  if (value === null) {
+    try {
+      await env.DB.prepare("DELETE FROM site_config WHERE key = ?").bind(key).run();
+      return { status: 200, body: { ok: true, key, value: SITE_FLAGS[key].dflt, cleared: true } };
+    } catch (e) {
+      return { status: 500, body: { error: "清除失败：" + ((e && e.message) || "未知错误") } };
+    }
+  }
+  if (typeof value !== "boolean") {
+    return { status: 400, body: { error: `${key} 只接受 true / false（null = 恢复默认）` } };
+  }
+  const r = await saveSiteConfig(env, key, value ? "1" : "0");
+  return r.status === 200
+    ? { status: 200, body: { ok: true, key, value, updated: r.body.updated } }
+    : r;
+}
+
 async function createCustomItem(env, body) {
   const name = sanitizeText(body.name, CUSTOM_MAX.name);
   if (!name) return { status: 400, body: { error: "资源名不能为空" } };
@@ -3315,6 +3365,12 @@ export default {
         return json(await listOverrides(env), request);
       }
 
+      // 全站开关（当前只有「是否区分成人向 / 未成年」）。公开读：前端要据此决定过不过滤；
+      // 读不到（表还没建）就当默认值，站内在行为上跟以前一致。
+      if (url.pathname === "/api/settings" && request.method === "GET") {
+        return json(await listSettings(env), request);
+      }
+
       // 入站公告：公开读、管理员写。没配置（或表还没建）时返回 null，
       // 前端就用手写死在 index.html 里的默认文案，页面不会因此空掉。
       if (url.pathname === "/api/notice" && request.method === "GET") {
@@ -3400,6 +3456,18 @@ export default {
         if (!token) return json({ error: "未登录或登录已过期" }, request, 401);
         const body = await request.json().catch(() => ({}));
         const r = await deleteCustomItem(env, body.id);
+        return json(r.body, request, r.status);
+      }
+
+      // 全站开关：管理员一键写。目前只有 adult_split（是否区分成人向 / 未成年）。
+      if (url.pathname === "/api/admin/setting" && request.method === "POST") {
+        const token = await adminAuth(env, request);
+        if (!token) return json({ error: "未登录或登录已过期" }, request, 401);
+        const body = await request.json().catch(() => null);
+        if (!body || typeof body !== "object") {
+          return json({ error: "bad request body" }, request, 400);
+        }
+        const r = await saveSetting(env, body);
         return json(r.body, request, r.status);
       }
 
@@ -3494,4 +3562,7 @@ export const _internal = {
   parseAnimeEpisodes,
   parseAnimePlayer,
   animeEmbedUrl,
+  SITE_FLAGS,
+  listSettings,
+  saveSetting,
 };

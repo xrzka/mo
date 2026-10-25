@@ -669,6 +669,9 @@ h1 {
   white-space: nowrap;
 }
 .mode-toggle:hover { border-color: var(--accent); color: var(--accent); }
+/* hidden 属性得显式盖住 display:inline-flex —— 否则 hidden 了照样显示
+   （站长一键关掉「成人 / 未成年分区」后要把这个按钮收起来） */
+.mode-toggle[hidden] { display: none; }
 .mode-toggle[aria-pressed="true"] {
   background: var(--warn-soft, #fbe9e7);
   border-color: var(--warn, #b4453a);
@@ -1255,6 +1258,17 @@ h1 {
 .card-admin-adult { border-color: #ef4444; color: #ef4444; }
 .card-admin-adult:disabled { opacity: 0.6; cursor: default; }
 .admin-adult-toggle { border-color: #ef4444; color: #ef4444; }
+
+/* 全站「成人 / 未成年分区」一键开关（后台）：开着是红框（有分隔），关掉走中性色 */
+.admin-split-toggle { border-color: #ef4444; color: #ef4444; }
+.admin-split-toggle.on { background: #ef4444; color: #fff; }
+.admin-split-toggle:not(.on) { border-color: var(--border); color: var(--text-muted); }
+.admin-split-hint {
+  margin: 8px 2px 0;
+  color: var(--text-muted);
+  font-size: 12.5px;
+  line-height: 1.7;
+}
 
 /* 勾选框那行不该把 label 撑成两行 */
 .admin-field-inline {
