@@ -136,6 +136,8 @@ const SECTION_SUBS = {
   tool: [],
   // 办公软件单独一区（app.js SECTIONS 里同名同小分区，test_sections.mjs 盯着）
   office2: ["app"],
+  // 生活区：衣食住行（地图/打车/货运/外卖/电商）
+  life: ["cloth", "food", "house", "travel"],
   ai: ["relay", "image", "video", "tool"],
   forum: [],
   guide: [],

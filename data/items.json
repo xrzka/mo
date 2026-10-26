@@ -17843,6 +17843,215 @@
       "update_info": "网盘分享",
       "note": "实测（2026-10-25）：UC 网盘分享可打开、标「永久有效」，里面就一个包、名「x104」（分享者自己的编号，跟站内 id 无关），页面显示修改日期 2026-10-25 12:45，分享者 虚*。⚠ 成人向，未成年人别下。",
       "adult": true
+    },
+    {
+      "id": "manual-life-tencent-map",
+      "name": "腾讯地图",
+      "section": "life",
+      "subsection": "travel",
+      "description": "腾讯官方地图网页版：地点检索、公交地铁、驾车步行路线、卫星图与找房找店，查地图不用登录。",
+      "url": "https://map.qq.com/",
+      "tags": [
+        "生活",
+        "出行",
+        "地图",
+        "导航",
+        "免费"
+      ],
+      "kind": "地图 / 导航",
+      "need_login": false,
+      "update_info": "随时可用",
+      "note": "实测（2026-10-26）：https://map.qq.com/ 打开即是腾讯地图网页版（HTTP 200，标题「腾讯地图」），查地点、公交、路线都不用登录。街景与地形在网页版里写着「正在升级优化」，要用街景得装 App。"
+    },
+    {
+      "id": "manual-life-amap",
+      "name": "高德地图",
+      "section": "life",
+      "subsection": "travel",
+      "description": "高德地图网页版：搜索地点、驾车/公交/步行路线、实时路况、测距与 3D 图层，免登录可用。",
+      "url": "https://www.amap.com/",
+      "tags": [
+        "生活",
+        "出行",
+        "地图",
+        "导航",
+        "路况"
+      ],
+      "kind": "地图 / 导航",
+      "need_login": false,
+      "update_info": "随时可用",
+      "note": "实测（2026-10-26）：https://www.amap.com/ 会跳到 https://www.amap.com/ssr/search（HTTP 200，标题「高德地图 - 精准专业的手机地图」）。搜索、驾车、公交、路况、测距、图层都能直接用，不用登录；酒店/美食/商场这些入口也在同一页。"
+    },
+    {
+      "id": "manual-life-didi",
+      "name": "滴滴出行",
+      "section": "life",
+      "subsection": "travel",
+      "description": "滴滴官方站：快车、专车、顺风车、代驾、租车等出行服务，叫车走手机 App 或微信小程序。",
+      "url": "https://www.didiglobal.com/",
+      "tags": [
+        "生活",
+        "出行",
+        "打车",
+        "网约车",
+        "官网"
+      ],
+      "kind": "打车 / 出行",
+      "need_login": true,
+      "update_info": "随时可用",
+      "note": "实测（2026-10-26）：官网 https://www.didiglobal.com/ 可打开（HTTP 200，标题「首页-滴滴官网」）。⚠ 网页版叫车入口已下线（dpubside.didiglobal.com、ride.didiglobal.com 都不解析），实际叫车要用 App 或微信/支付宝里的小程序，这个链接当官方入口与资讯页用。"
+    },
+    {
+      "id": "manual-life-dida",
+      "name": "嘀嗒出行",
+      "section": "life",
+      "subsection": "travel",
+      "description": "嘀嗒出行：顺风车为主 + 出租车/聚合打车，主打「打车不贵，嘀嗒实惠」，跨城拼车常用。",
+      "url": "https://www.didapinche.com/",
+      "tags": [
+        "生活",
+        "出行",
+        "顺风车",
+        "拼车",
+        "打车"
+      ],
+      "kind": "打车 / 出行",
+      "need_login": true,
+      "update_info": "随时可用",
+      "note": "实测（2026-10-26）：https://www.didapinche.com/ 跳 https://www.didapinche.com/homepage/（HTTP 200，标题「嘀嗒出行」）。主营业务是顺风车与聚合打车，下单在 App / 小程序里；长途或通勤拼车比直接叫车便宜。"
+    },
+    {
+      "id": "manual-life-huolala",
+      "name": "货拉拉",
+      "section": "life",
+      "subsection": "travel",
+      "description": "货拉拉：拉货、搬家、跑腿、发长途物流，面包车到平板货车按里程和车型计费。",
+      "url": "https://www.huolala.cn/",
+      "tags": [
+        "生活",
+        "出行",
+        "货运",
+        "搬家",
+        "跑腿"
+      ],
+      "kind": "货运 / 搬家",
+      "need_login": true,
+      "update_info": "随时可用",
+      "note": "实测（2026-10-26）：https://www.huolala.cn/ 可打开（HTTP 200，标题「货拉拉-拉货_搬家_跑腿_发长途」）。价格页写着按里程车型计费、月活司机 140 万覆盖多城；官网下单入口是「微信扫码下单 / 下载 App」，搬家用它比打车平台划算。"
+    },
+    {
+      "id": "manual-life-meituan",
+      "name": "美团外卖",
+      "section": "life",
+      "subsection": "food",
+      "description": "美团外卖网页入口：点餐、甜点饮品、超市便利、买菜买药，登录后直接下单。",
+      "url": "https://waimai.meituan.com/",
+      "tags": [
+        "生活",
+        "外卖",
+        "点餐",
+        "本地生活",
+        "官网"
+      ],
+      "kind": "外卖 / 本地生活",
+      "need_login": true,
+      "update_info": "随时可用",
+      "note": "实测（2026-10-26）：外卖入口用 https://waimai.meituan.com/（HTTP 200，标题「美团外卖，送啥都快」，页面里就有「我要点外卖」）。⚠ 直接给 www.meituan.com 打开的是公司官网、点不了外卖，所以这张卡给的是外卖站。"
+    },
+    {
+      "id": "manual-life-eleme",
+      "name": "饿了么（淘宝闪购）",
+      "section": "life",
+      "subsection": "food",
+      "description": "饿了么入口现在并进了淘宝闪购：点外卖、买菜买药、商超便利，登录后下单。",
+      "url": "https://www.ele.me/",
+      "tags": [
+        "生活",
+        "外卖",
+        "点餐",
+        "淘宝闪购",
+        "本地生活"
+      ],
+      "kind": "外卖 / 本地生活",
+      "need_login": true,
+      "update_info": "随时可用",
+      "note": "实测（2026-10-26）：https://www.ele.me/ 现在会跳到 https://taobaoshangou.ele.me/，标题变成「淘宝闪购 - 点外卖 更优惠」（HTTP 200）——饿了么品牌已并入淘宝闪购，链接还能用，只是入口会继续往淘宝系走。"
+    },
+    {
+      "id": "manual-life-pdd",
+      "name": "拼多多（网页版）",
+      "section": "life",
+      "subsection": "cloth",
+      "description": "拼多多网页版：百亿补贴、拼团、日用百货、买菜，手机号或微信登录后下单。",
+      "url": "https://mobile.yangkeduo.com/",
+      "tags": [
+        "生活",
+        "电商",
+        "购物",
+        "拼团",
+        "性价比"
+      ],
+      "kind": "电商平台",
+      "need_login": true,
+      "update_info": "随时可用",
+      "note": "实测（2026-10-26）：网页版地址是 https://mobile.yangkeduo.com/（HTTP 200，标题「拼多多」）。⚠ www.pinduoduo.com 是商家/公司站，真要买东西从网页版进；搜商品或下单会跳登录页。"
+    },
+    {
+      "id": "manual-life-jd",
+      "name": "京东",
+      "section": "life",
+      "subsection": "cloth",
+      "description": "京东商城：自营正品、次日达、家电数码服饰日用百货，登录后下单。",
+      "url": "https://www.jd.com/",
+      "tags": [
+        "生活",
+        "电商",
+        "购物",
+        "自营",
+        "物流快"
+      ],
+      "kind": "电商平台",
+      "need_login": true,
+      "update_info": "随时可用",
+      "note": "实测（2026-10-26）：https://www.jd.com/ 可打开（HTTP 200，标题「京东(JD.COM)-正品低价、品质保障、配送及时、轻松购物！」）。无头浏览器里会弹「内容太火爆了，请稍后再试」的风控提示，正常浏览器不受影响；手机版 https://m.jd.com/ 更轻。"
+    },
+    {
+      "id": "manual-life-taobao",
+      "name": "淘宝",
+      "section": "life",
+      "subsection": "cloth",
+      "description": "淘宝网：宝贝/天猫/店铺搜索、购物车与收藏夹，未登录能逛，下单要登录。买衣服鞋包主要靠它。",
+      "url": "https://www.taobao.com/",
+      "tags": [
+        "生活",
+        "电商",
+        "购物",
+        "天猫",
+        "服饰"
+      ],
+      "kind": "电商平台",
+      "need_login": true,
+      "update_info": "随时可用",
+      "note": "实测（2026-10-26）：https://www.taobao.com/ 可打开（HTTP 200，标题「淘宝」），未登录也能搜商品看榜单，下单要登录；天猫、千牛卖家中心入口都在站内。"
+    },
+    {
+      "id": "manual-life-goofish",
+      "name": "闲鱼",
+      "section": "life",
+      "subsection": "cloth",
+      "description": "闲鱼：二手交易与闲置转卖，手机数码、服饰箱包、潮玩卡券都能淘，网页版也能发闲置。",
+      "url": "https://www.goofish.com/",
+      "tags": [
+        "生活",
+        "二手",
+        "闲置",
+        "交易",
+        "省钱"
+      ],
+      "kind": "二手交易",
+      "need_login": true,
+      "update_info": "随时可用",
+      "note": "实测（2026-10-26）：https://www.goofish.com/ 可打开（HTTP 200，标题「闲鱼 - 闲不住？上闲鱼！」），网页版发闲置功能已上线，交易要登录。买二手注意只在站内交易——站里 CS 区就记过「假闲鱼网页/假客服解冻」的骗局。"
     }
   ]
 }

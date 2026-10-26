@@ -6725,6 +6725,27 @@
 
   /* ---------- 事件绑定 ---------- */
 
+  /**
+   * 支持外部深链：/mo/?q=关键词。
+   * 第一站 /qiu 求资源热榜的「找资源」按钮会带着热词跳过来，落地就能看到结果。
+   * 只填搜索框 + 回到「全部」分区第一页；关键词为空或参数不合法时静静不动。
+   */
+  function applyQueryFromUrl() {
+    let keyword = "";
+    try {
+      keyword = (new URLSearchParams(location.search).get("q") || "").trim().slice(0, 60);
+    } catch (err) {
+      return;
+    }
+    if (!keyword) return;
+    state.q = keyword;
+    state.section = "all";
+    state.sub = "all";
+    state.page = 1;
+    const input = $('[data-filter="q"]');
+    if (input) input.value = keyword;
+  }
+
   function bindControls() {
     const input = $('[data-filter="q"]');
     if (input) {
@@ -6792,6 +6813,8 @@
   async function init() {
     bindTheme();
     bindControls();
+    // 深链关键词要在首次 render 之前落进 state.q，否则首屏会先闪一下未筛选的列表
+    applyQueryFromUrl();
     bindWatch();
     bindMode();
     bindNoticeJump();
