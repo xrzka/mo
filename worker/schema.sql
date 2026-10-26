@@ -260,3 +260,15 @@ CREATE TABLE IF NOT EXISTS site_config (
   updated TEXT NOT NULL
 );
 
+
+-- ---------------------------------------------------------------
+-- 第一站 /qiu（求资源热榜）快照缓存。
+-- 四个平台各一行：payload 是归一化后的条目数组 JSON，fetched_at 是毫秒时间戳。
+-- 只当缓存用（10 分钟 TTL），删掉也只会让下一次请求重新拉上游。
+-- ---------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS hot_rank (
+  src        TEXT PRIMARY KEY,
+  payload    TEXT NOT NULL,
+  provider   TEXT NOT NULL DEFAULT '',
+  fetched_at INTEGER NOT NULL DEFAULT 0
+);

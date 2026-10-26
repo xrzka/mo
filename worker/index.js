@@ -1,4 +1,5 @@
 import { handle as handleBoardAdmin } from "./board_admin.js";
+import { handleHot } from "./hot.js";
 
 /**
  * 墨小说漫画 —— 点击 / 访问统计 + 资源帮找与失效反馈后端（Cloudflare Worker + D1）。
@@ -3175,6 +3176,12 @@ export default {
       if (url.pathname.startsWith("/api/board/")) {
         const boardResponse = await handleBoardAdmin(request, env);
         if (boardResponse) return boardResponse;
+      }
+
+      // 第一站 /qiu（求资源热榜）：四个平台的热搜/热榜聚合，见 hot.js
+      if (url.pathname === "/api/hot" && request.method === "GET") {
+        const hot = await handleHot(request, url, env);
+        if (hot) return json(hot.body, request, hot.status);
       }
 
       if (url.pathname === "/api/watch/music" && request.method === "GET") {
