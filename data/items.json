@@ -18131,6 +18131,46 @@
       "need_login": true,
       "update_info": "随时可用",
       "note": "实测（2026-10-26）：https://shimo.im/ 可打开（HTTP 200，标题「石墨文档官网-在线协同办公系统平台,支持云端多人在线协作文档,表格,幻灯片」）。云端 Office：文档/表格/幻灯片实时协同、评论与历史版本、知识库沉淀；页面标着「个人版 5 人 免费」，团队版与私有化部署另有方案。网页版登录即用，客户端在官网「下载」入口。"
+    },
+    {
+      "id": "manual-study-app-zybang",
+      "name": "作业帮（拍照搜题 · 作业辅导）",
+      "section": "study",
+      "subsection": "app",
+      "description": "作业帮：小初高全科拍照搜题 + 作业辅导 + 口算批改，题库与讲解视频都在 App 里，官网可扫码下载。",
+      "url": "https://www.zybang.com/",
+      "tags": [
+        "搜题",
+        "作业辅导",
+        "K12",
+        "拍照解题",
+        "学习 App",
+        "官网"
+      ],
+      "kind": "搜题 / 作业辅导",
+      "need_login": true,
+      "update_info": "随时可用",
+      "note": "实测（2026-10-26）：官网 https://www.zybang.com/ 可打开（HTTP 200，标题「作业帮-作业帮口算 在线教育引领者」），首页就是「扫码下载作业帮 APP · 小初高全科作业全辅导」。⚠ 搜题/题库只在 App 里，网页端没有：站内子路径 `/quest` 返回 404、`/course` 返回「接口不存在」，别把它们当入口。用之前先注册账号；答案仅供参考，抄答案不如看解析。"
+    },
+    {
+      "id": "manual-study-app-yuansouti",
+      "name": "小猿搜题（拍照搜题 · 真人讲题）",
+      "section": "study",
+      "subsection": "app",
+      "description": "小猿搜题（猿辅导旗下）：拍照搜题 + 32 亿题库 + 千万条真人讲题视频，覆盖小初高到大学，App 使用。",
+      "url": "https://www.yuansouti.com/",
+      "tags": [
+        "搜题",
+        "作业辅导",
+        "K12",
+        "讲题视频",
+        "学习 App",
+        "官网"
+      ],
+      "kind": "搜题 / 作业辅导",
+      "need_login": true,
+      "update_info": "随时可用",
+      "note": "实测（2026-10-26）：官网 https://www.yuansouti.com/ 可打开（HTTP 200，标题「小猿搜题 - 中小学教育和作业辅导神器」），页面自报 32 亿+ 题库、850 万+ 试卷、2000 万+ 真人讲题视频，主入口是「扫码下载小猿搜题 APP」。另一个域名 `souti.yuanfudao.com` 已不解析，别用。猿辅导官网 https://www.yuanfudao.com/ 里也能进这个产品（同集团）。"
     }
   ]
 }

@@ -133,7 +133,7 @@ const SECTION_SUBS = {
   watch: ["music", "manga", "anime", "novel"],
   game: ["site", "app", "gal"],
   music: ["site", "app", "download"],
-  study: ["course", "video", "doc"],
+  study: ["course", "video", "doc", "app"],
   tool: [],
   // 办公软件单独一区（app.js SECTIONS 里同名同小分区，test_sections.mjs 盯着）
   office2: ["app"],
