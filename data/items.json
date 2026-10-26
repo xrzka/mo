@@ -18052,6 +18052,85 @@
       "need_login": true,
       "update_info": "随时可用",
       "note": "实测（2026-10-26）：https://www.goofish.com/ 可打开（HTTP 200，标题「闲鱼 - 闲不住？上闲鱼！」），网页版发闲置功能已上线，交易要登录。买二手注意只在站内交易——站里 CS 区就记过「假闲鱼网页/假客服解冻」的骗局。"
+    },
+    {
+      "id": "manual-office2-app-feishu",
+      "name": "飞书（字节跳动 · 在线协作办公）",
+      "section": "office2",
+      "subsection": "app",
+      "description": "飞书：IM + 云文档 + 多维表格 + 视频会议一体的在线协作办公平台，网页版登录即用，个人/小团队免费。",
+      "url": "https://www.feishu.cn/",
+      "tags": [
+        "在线协作",
+        "办公",
+        "IM",
+        "云文档",
+        "视频会议",
+        "官网"
+      ],
+      "kind": "在线协作办公",
+      "need_login": true,
+      "update_info": "随时可用",
+      "note": "实测（2026-10-26）：https://www.feishu.cn/ 可打开（HTTP 200，标题「飞书｜字节跳动旗下AI工作平台 - 飞书官网」），首页就有「登录/注册」「免费试用」。网页版登录后即用（聊天、文档、表格、多维表格、会议都在里面）；客户端下载页 https://www.feishu.cn/download 也实测可打开（HTTP 200，支持 Windows / macOS / Linux / iOS / Android）。"
+    },
+    {
+      "id": "manual-office2-app-dingtalk",
+      "name": "钉钉（阿里 · 在线协作办公）",
+      "section": "office2",
+      "subsection": "app",
+      "description": "钉钉：组织通讯录 + IM + 考勤审批 + 视频会议的在线办公平台，网页版登录可用，个人可免费注册。",
+      "url": "https://www.dingtalk.com/",
+      "tags": [
+        "在线协作",
+        "办公",
+        "考勤审批",
+        "IM",
+        "视频会议",
+        "官网"
+      ],
+      "kind": "在线协作办公",
+      "need_login": true,
+      "update_info": "随时可用",
+      "note": "实测（2026-10-26）：https://www.dingtalk.com/ 可打开（HTTP 200，标题「钉钉，AI时代工作方式」）。主打组织/考勤/审批 + IM + 会议，网页版登录可用；客户端与移动端走官网「下载钉钉」入口（没有单独记下载直链，避免给没实测过的地址）。个人/小团队可免费注册。"
+    },
+    {
+      "id": "manual-office2-app-tencent-meeting",
+      "name": "腾讯会议（视频会议）",
+      "section": "office2",
+      "subsection": "app",
+      "description": "腾讯会议：线上视频会议，支持共享屏幕、录制、AI 纪要，用会议号加入会议免登录，发起会议要登录。",
+      "url": "https://meeting.tencent.com/",
+      "tags": [
+        "视频会议",
+        "办公",
+        "远程开会",
+        "共享屏幕",
+        "官网"
+      ],
+      "kind": "视频会议",
+      "need_login": true,
+      "update_info": "随时可用",
+      "note": "实测（2026-10-26）：https://meeting.tencent.com/ 可打开（HTTP 200，标题「腾讯会议官方——腾讯会议 会开会」），首页直接有「加入会议 / 发起会议」两个入口；**拿会议号加入不用登录**，自己发起会议要登录。客户端下载中心 https://meeting.tencent.com/download/ 实测可打开（HTTP 200，自动从 download-center.html 跳过来）。免费版有人数/时长限制，具体看官网定价页。"
+    },
+    {
+      "id": "manual-office2-app-shimo",
+      "name": "石墨文档（在线协同 Office）",
+      "section": "office2",
+      "subsection": "app",
+      "description": "石墨文档：云端 Office，文档 / 表格 / 幻灯片多人实时协同 + 知识库，网页版登录即用，个人版免费。",
+      "url": "https://shimo.im/",
+      "tags": [
+        "在线文档",
+        "协作",
+        "表格",
+        "幻灯片",
+        "办公",
+        "官网"
+      ],
+      "kind": "在线文档协作",
+      "need_login": true,
+      "update_info": "随时可用",
+      "note": "实测（2026-10-26）：https://shimo.im/ 可打开（HTTP 200，标题「石墨文档官网-在线协同办公系统平台,支持云端多人在线协作文档,表格,幻灯片」）。云端 Office：文档/表格/幻灯片实时协同、评论与历史版本、知识库沉淀；页面标着「个人版 5 人 免费」，团队版与私有化部署另有方案。网页版登录即用，客户端在官网「下载」入口。"
     }
   ]
 }
