@@ -89,6 +89,15 @@
         { id: "app", label: "软件" },
       ],
     },
+    // 生活区：衣食住行这类日常在用的平台（地图/打车/货运/外卖/电商）。
+    { id: "life", label: "生活区", icon: "🧺",
+      subs: [
+        { id: "cloth", label: "衣" },
+        { id: "food", label: "食" },
+        { id: "house", label: "住" },
+        { id: "travel", label: "行" },
+      ],
+    },
     { id: "ai", label: "AI", icon: "✦",
       subs: [
         { id: "relay", label: "中转站" },
