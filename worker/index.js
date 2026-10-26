@@ -1,5 +1,6 @@
 import { handle as handleBoardAdmin } from "./board_admin.js";
 import { handleHot } from "./hot.js";
+import { handleDemand, handleSearchLog } from "./demand.js";
 
 /**
  * 墨小说漫画 —— 点击 / 访问统计 + 资源帮找与失效反馈后端（Cloudflare Worker + D1）。
@@ -3182,6 +3183,18 @@ export default {
       if (url.pathname === "/api/hot" && request.method === "GET") {
         const hot = await handleHot(request, url, env);
         if (hot) return json(hot.body, request, hot.status);
+      }
+
+      // 第一站 /qiu（真实需求看板）：站内搜索热词 + 缺口 + 帮找 + 点击，见 demand.js
+      if (url.pathname === "/api/demand" && request.method === "GET") {
+        const demand = await handleDemand(request, url, env);
+        if (demand) return json(demand.body, request, demand.status);
+      }
+
+      // mo 站搜索框埋点。只记「词 + 结果数」，不记人（去重键在 KV 里用完即丢）。
+      if (url.pathname === "/api/search/log" && request.method === "POST") {
+        const logged = await handleSearchLog(request, env);
+        if (logged) return json(logged.body, request, logged.status);
       }
 
       if (url.pathname === "/api/watch/music" && request.method === "GET") {

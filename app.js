@@ -6758,6 +6758,41 @@
     if (input) input.value = keyword;
   }
 
+  /* ---------- 站内搜索埋点（第一站 /qiu 的「真实需求」看板要用） ---------- */
+
+  /**
+   * 用户在搜索框里搜了什么、搜到几条 —— 这是全网唯一能拿到的「真实资源需求」
+   * 数据（四个平台都只公开时政新闻味的热搜，不公开搜索词）。站长在第一站
+   * `https://xrzka.github.io/qiu/` 上看这些词，尤其是「搜了但站内 0 条」的。
+   *
+   * 隐私：只发「词 + 结果数」两个字段，不带任何身份；Worker 那边也只做计数。
+   * 同一个会话里同一个词只发一次，输入停下来 1.5s 才发，失败完全静默 —— 埋点
+   * 不该影响搜索本身，也不该让访客觉得被盯着。
+   */
+  const loggedSearchTerms = new Set();
+  let searchLogTimer = 0;
+
+  function logSearchTerm() {
+    const term = state.q.trim();
+    if (term.length < 2) return;
+    const key = term.toLowerCase();
+    if (loggedSearchTerms.has(key)) return;
+    loggedSearchTerms.add(key);
+
+    const api = apiBase();
+    if (!api) return;
+    try {
+      fetch(`${api}/api/search/log`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ term, results: visibleItems().length }),
+        keepalive: true,
+      }).catch(() => {});
+    } catch (err) {
+      /* 埋点失败不影响搜索 */
+    }
+  }
+
   function bindControls() {
     const input = $('[data-filter="q"]');
     if (input) {
@@ -6765,6 +6800,9 @@
         state.q = input.value.trim();
         state.page = 1; // 换搜索词回到第一页，否则可能停在空页
         render();
+        // 停下来才上报，别把「一」「一个」「一个人」都当成三次搜索
+        clearTimeout(searchLogTimer);
+        searchLogTimer = setTimeout(logSearchTerm, 1500);
       });
     }
     const form = $("[data-controls]");

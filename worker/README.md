@@ -203,13 +203,15 @@ curl --proxy http://127.0.0.1:7890 https://mo-stats.werneruszcb71.workers.dev/ap
 断言公告文案要用 `inner_text()` 而不是 `text_content()` —— 后者返回
 `node.textContent`，会把 `hidden` 的那半句也算进来，测不出可见性差别。
 
-第一站 `/qiu`（求资源热榜）：
+第一站 `/qiu`（求资源需求看板）：
 
 | 方法 | 路径 | 说明 |
 | --- | --- | --- |
 | GET | `/api/hot` | B站/抖音/快手/小红书热搜热榜聚合。`?src=bili\|douyin\|ks\|xhs` 只取一个平台，`?refresh=1` 强制重拉，`?debug=1` 附上每条上游的尝试结果 |
+| GET | `/api/demand` | 本站真实需求一次拿全：站内搜索热词 + 缺口 + 帮找榜 + 点击榜（带资源名）。见 `demand.js` |
+| POST | `/api/search/log` | 墨站搜索框埋点，`{"term":"关键词","results":3}`。只记词和结果数 |
 
-响应形状：`{generated_at, refreshed_at, ttl_seconds, limit, labels, data:{<平台>:{src,label,ok,cached,stale,provider,fetched_at,items:[{rank,title,hot,url,cover}]}}, attempts?}`。
+`/api/hot` 响应形状：`{generated_at, refreshed_at, ttl_seconds, limit, labels, data:{<平台>:{src,label,ok,cached,stale,provider,fetched_at,items:[{rank,title,hot,url,cover}]}}, attempts?}`。
 
 实现全在 `hot.js`。四个平台各有一条上游回退链（顺序、为什么这么排、实测哪个能用
 都写在文件顶部的注释里），成功结果按平台存进 D1 的 `hot_rank` 表，TTL 10 分钟；
@@ -218,7 +220,21 @@ curl --proxy http://127.0.0.1:7890 https://mo-stats.werneruszcb71.workers.dev/ap
 **表不存在也不会 500**，所有 D1 读写都包了 try/catch，只是退化成每次都去上游拉。
 给第一站的 `https://xrzka.github.io/qiu/` 用，前端只认这个接口、不直连第三方。
 
-**同一个仓库有两份部署，改完 `hot.js` 必须两边都推**，否则 `mo-stats.pages.dev`
+`/api/demand` 响应形状：`{generated_at, search:{terms,gaps,searches,terms_total,gaps_total}, wanted:{items,summary}, clicks:{month,year,names,buckets}}`。
+实现全在 `demand.js`，每一块单独 try/catch（少一块不影响其它块，表不存在也只是那块空着）：
+
+- `search_terms`：站内搜索词。`handleSearchLog` 清洗词（长度 2–40、去控制字符、拒 URL），
+  同一 IP + 同词在 `NOVEL_CACHE` KV 里去重 1 小时再 UPSERT，所以 `searches` 是
+  「有多少人搜过」而不是「被搜了几遍」。**只存词和数字，不存 IP、不存访客指纹。**
+- `requests`（`kind='want'`）：帮找榜，按票数降序。
+- `clicks`：月 / 年点击榜，id 通过抓 `https://xrzka.github.io/mo/data/items.json`
+  （`cf: {cacheTtl: 600}`）换成资源名；**`adult: true` 的条目会带标记，页面据此不列出**。
+- 时间桶格式必须和 `index.js` 的 `buckets()` 对齐（`YYYY-MM` / `YYYY`），抄错了查出来永远是空。
+
+提示词/热搜那边**没有**公共的「用户在搜什么资源」数据可用，所以真需求只能靠站内埋点：
+见第一站 README 的 `qiu/` 一节。
+
+**同一个仓库有两份部署，改完 `hot.js` / `demand.js` 必须两边都推**，否则 `mo-stats.pages.dev`
 那条还是旧代码（踩过：只 `wrangler deploy` 了 Worker，pages.dev 上 `/api/hot`
 的 `?debug=1` 还是老的链路）：
 
@@ -231,6 +247,7 @@ cd mo_site/worker/pages && npx wrangler pages deploy # Pages 入口
 
 ```bash
 npx wrangler d1 execute mo-stats --remote --file=schema_hot.sql
+npx wrangler d1 execute mo-stats --remote --file=schema_demand.sql
 ```
 
 站长后台（覆盖层）：
@@ -627,6 +644,7 @@ node test_worker.mjs             # 统计逻辑（真 SQL，node:sqlite 内存�
 node test_requests.mjs           # 帮找与失效反馈逻辑（两类去重互不干扰、投票幂等、限流、注入拦截）
 node test_admin.mjs              # 后台鉴权与覆盖层（密码、限流、越权字段、伪协议、多分区归属、新增/删除）
 node test_hot.mjs                # /api/hot（真上游四平台 + 缓存命中 + 强制刷新 + 上游全挂降级 + 缺表兜底）
+node test_demand.mjs             # /api/demand + /api/search/log（词清洗、去重、缺口、帮找排序、点击榜换名、缺表兜底）
 node test_sections.mjs           # 前后端分区白名单一致性 + items.json 里的取值都合法
 python test_browser.py           # 真 Chromium 端到端，含多地址回退、重试、降级、帮找与失效反馈全流程
 python test_live.py              # 打线上真接口（默认 pages.dev，可直连）
@@ -643,6 +661,14 @@ python test_live.py --api https://mo-stats.werneruszcb71.workers.dev --proxy htt
 每张卡片都有按钮（含无链接条目，文案换成求补档）、刷新后仍是完成态、
 重复反馈合并成票数、后端报错后按钮放回可点且不写本机记录、
 以及后端还是老版时整个入口消失。
+
+`test_demand.mjs` 同样用 `node:sqlite` 跑真实 SQL（`schema.sql` + `schema_demand.sql`），
+因为 `/api/demand` 最容易错的就是 SQL 本身：UPSERT 的累加、缺口筛选、
+票数排序、点击榜的时间桶。它盯的是：词清洗（长度/零宽字符/拒 URL）、
+同 IP 同词在 KV 里去重、换 IP 累加而零结果数不回退、汇总用真实总数而不是列表长度、
+缺口只含 `zero_results > 0`、帮找只列 `kind='want'` 且票数降序、点击榜只取本月桶、
+id 换成资源名并带 `adult` 标记、**缺表时 200 且三块都空着**（埋点返回 `ok:false` 而非 500）、
+KV 没绑也照样入账。items.json 的抓取用假 `fetch` 顶掉，不联网。
 
 后台那几条盯的是：未登录时 DOM 里压根没有编辑入口、密码错不给入口、
 改标题/简介/链接/提取码后当场生效且刷新仍在、访客（未登录）也看到改后的值、
