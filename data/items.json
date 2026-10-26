@@ -18171,6 +18171,27 @@
       "need_login": true,
       "update_info": "随时可用",
       "note": "实测（2026-10-26）：官网 https://www.yuansouti.com/ 可打开（HTTP 200，标题「小猿搜题 - 中小学教育和作业辅导神器」），页面自报 32 亿+ 题库、850 万+ 试卷、2000 万+ 真人讲题视频，主入口是「扫码下载小猿搜题 APP」。另一个域名 `souti.yuanfudao.com` 已不解析，别用。猿辅导官网 https://www.yuanfudao.com/ 里也能进这个产品（同集团）。"
+    },
+    {
+      "id": "manual-pickup-ai-jailbreak-archive",
+      "name": "AI 破甲词档案库（History-of-AI-Armor-Penetration · 344 份）",
+      "section": "pickup",
+      "subsection": "code",
+      "description": "Baimuky 的 AI 破甲词档案库：收录 344 份破甲/越狱提示词样本，覆盖 GPT、Claude、DeepSeek 等 9 类模型，来自 139 个公开上游项目，正文与来源元数据都在仓库里。",
+      "url": "https://github.com/Baimuky/History-of-AI-Armor-Penetration",
+      "tags": [
+        "GitHub",
+        "开源项目",
+        "破甲词",
+        "越狱提示词",
+        "提示注入",
+        "AI 安全",
+        "Python"
+      ],
+      "kind": "开源项目",
+      "need_login": false,
+      "update_info": "持续更新",
+      "note": "实测（2026-10-26）：仓库公开可访问（GitHub API 200，网页 200），2026-10-26 新建，42 star / 35 fork，Python 为主，约 3.3 MB，MIT 许可。目录：`prompts/` 按模型分 9 类（GPT 93、Claude 70、DeepSeek 61、universal 33、Grok 26、Gemini 24、Qwen 19、GLM 9、Kimi 9，合计 344 份）、`sources/sources.json`（139 个上游来源，约 1.5 MB）、`scripts/`（fetch_fast.py 采集 / split_aggregators.py 拆分 / classify.py 分类 / emit.py 生成 / merge_sources.py 合并）、`_analysis/`（classified.json、rejected.json）。每份样本前三行是来源元数据（上游仓库、原始路径、目标模型、采集日期），第四行起是正文。⚠ README 里的 `git clone` 命令和 star badge 还写着上游 `nanettecookeotpv510-code/AI-Jailbreak`，照抄会克隆到上游仓库；本条给的是 Baimuky 这个地址。"
     }
   ]
 }
