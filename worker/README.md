@@ -203,6 +203,36 @@ curl --proxy http://127.0.0.1:7890 https://mo-stats.werneruszcb71.workers.dev/ap
 断言公告文案要用 `inner_text()` 而不是 `text_content()` —— 后者返回
 `node.textContent`，会把 `hidden` 的那半句也算进来，测不出可见性差别。
 
+第一站 `/qiu`（求资源热榜）：
+
+| 方法 | 路径 | 说明 |
+| --- | --- | --- |
+| GET | `/api/hot` | B站/抖音/快手/小红书热搜热榜聚合。`?src=bili\|douyin\|ks\|xhs` 只取一个平台，`?refresh=1` 强制重拉，`?debug=1` 附上每条上游的尝试结果 |
+
+响应形状：`{generated_at, refreshed_at, ttl_seconds, limit, labels, data:{<平台>:{src,label,ok,cached,stale,provider,fetched_at,items:[{rank,title,hot,url,cover}]}}, attempts?}`。
+
+实现全在 `hot.js`。四个平台各有一条上游回退链（顺序、为什么这么排、实测哪个能用
+都写在文件顶部的注释里），成功结果按平台存进 D1 的 `hot_rank` 表，TTL 10 分钟；
+`refresh=1` 绕过 TTL 但 60s 内拉过还是给缓存（否则狂点刷新会把第三方额度打光）。
+上游全挂时回退到上次成功的快照并标 `stale: true`，实在没有才 `ok: false`；
+**表不存在也不会 500**，所有 D1 读写都包了 try/catch，只是退化成每次都去上游拉。
+给第一站的 `https://xrzka.github.io/qiu/` 用，前端只认这个接口、不直连第三方。
+
+**同一个仓库有两份部署，改完 `hot.js` 必须两边都推**，否则 `mo-stats.pages.dev`
+那条还是旧代码（踩过：只 `wrangler deploy` 了 Worker，pages.dev 上 `/api/hot`
+的 `?debug=1` 还是老的链路）：
+
+```bash
+cd mo_site/worker && npx wrangler deploy            # Worker 入口
+cd mo_site/worker/pages && npx wrangler pages deploy # Pages 入口
+```
+
+建表（可重复执行；一定要用 `--file`，PowerShell 会把内联 SQL 的引号吃掉）：
+
+```bash
+npx wrangler d1 execute mo-stats --remote --file=schema_hot.sql
+```
+
 站长后台（覆盖层）：
 
 | 方法 | 路径 | 说明 |
@@ -596,6 +626,7 @@ node test_selectors.mjs          # app.js 用的选择器在 index.html 里都�
 node test_worker.mjs             # 统计逻辑（真 SQL，node:sqlite 内存库当 D1）
 node test_requests.mjs           # 帮找与失效反馈逻辑（两类去重互不干扰、投票幂等、限流、注入拦截）
 node test_admin.mjs              # 后台鉴权与覆盖层（密码、限流、越权字段、伪协议、多分区归属、新增/删除）
+node test_hot.mjs                # /api/hot（真上游四平台 + 缓存命中 + 强制刷新 + 上游全挂降级 + 缺表兜底）
 node test_sections.mjs           # 前后端分区白名单一致性 + items.json 里的取值都合法
 python test_browser.py           # 真 Chromium 端到端，含多地址回退、重试、降级、帮找与失效反馈全流程
 python test_live.py              # 打线上真接口（默认 pages.dev，可直连）
