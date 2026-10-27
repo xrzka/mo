@@ -18223,6 +18223,292 @@
       "need_login": false,
       "update_info": "长期",
       "note": "实测（2026-10-26）：视频页可打开（标题「【求助】在闲鱼买内存被抢，走投无路，无法维权，」），UP「在闲鱼被抢1350内存」（mid 492306348），2026-09-12 15:02 发布、时长 7 分 21 秒（单 P），简介栏是空的；截至实测播放 11.9 万 / 点赞 2728 / 投币 124 / 收藏 282 / 弹幕 10 / 评论 898 / 转发 155。原始分享链接带一堆追踪参数（share_session_id 之类），这里只留干净的 `BV1UXYD6yEnb`。站内 CS 区还有「B站游戏区骗局：低价代练 · 假闲鱼」等条目，二手交易能走平台担保就别私下转账或线下交易。"
+    },
+    {
+      "id": "manual-game-x107",
+      "name": "【双端】GINKA/银花",
+      "section": "game",
+      "subsection": "gal",
+      "description": "GINKA/银花（PC + 安卓双端，UC 网盘分享）。",
+      "url": "https://drive.uc.cn/s/21da2fbe793e4?public=1",
+      "tags": [
+        "双端",
+        "PC",
+        "安卓",
+        "UC 网盘",
+        "galgame",
+        "Frontwing"
+      ],
+      "kind": "Galgame 资源",
+      "need_login": false,
+      "update_info": "网盘分享",
+      "note": "实测（2026-10-27）：UC 网盘分享可打开（HTTP 200），标「永久有效」，里面就一个包、名「x107」（分享者自己的编号，跟站内 id 无关），页面显示修改日期 2026-10-27 11:44，分享者 虚*。⚠ 成人向，未成年人别下。"
+    },
+    {
+      "id": "manual-game-x108",
+      "name": "【双端】繁花落舞恋如樱",
+      "section": "game",
+      "subsection": "gal",
+      "description": "繁花落舞恋如樱（PC + 安卓双端，UC 网盘分享）。",
+      "url": "https://drive.uc.cn/s/256543497aa34?public=1",
+      "tags": [
+        "双端",
+        "PC",
+        "安卓",
+        "UC 网盘",
+        "galgame"
+      ],
+      "kind": "Galgame 资源",
+      "need_login": false,
+      "update_info": "网盘分享",
+      "note": "实测（2026-10-27）：UC 网盘分享可打开（HTTP 200），标「永久有效」，里面就一个包、名「x108」（分享者自己的编号，跟站内 id 无关），页面显示修改日期 2026-10-27 11:46，分享者 虚*。⚠ 成人向，未成年人别下。"
+    },
+    {
+      "id": "manual-game-x109",
+      "name": "【PC】水烟水雾",
+      "section": "game",
+      "subsection": "gal",
+      "description": "水烟水雾（PC，UC 网盘分享）。",
+      "url": "https://drive.uc.cn/s/adc58443ae384?public=1",
+      "tags": [
+        "PC",
+        "UC 网盘",
+        "galgame"
+      ],
+      "kind": "Galgame 资源",
+      "need_login": false,
+      "update_info": "网盘分享",
+      "note": "实测（2026-10-27）：UC 网盘分享可打开（HTTP 200），标「永久有效」，里面就一个包、名「x109」（分享者自己的编号，跟站内 id 无关），页面显示修改日期 2026-10-27 11:46，分享者 虚*。⚠ 成人向，未成年人别下。"
+    },
+    {
+      "id": "manual-game-x110",
+      "name": "【双端】天色幻想岛",
+      "section": "game",
+      "subsection": "gal",
+      "description": "天色幻想岛（PC + 安卓双端，UC 网盘分享）。",
+      "url": "https://drive.uc.cn/s/07bf6c8b66a64?public=1",
+      "tags": [
+        "双端",
+        "PC",
+        "安卓",
+        "UC 网盘",
+        "galgame",
+        "柚子社"
+      ],
+      "kind": "Galgame 资源",
+      "need_login": false,
+      "update_info": "网盘分享",
+      "note": "实测（2026-10-27）：UC 网盘分享可打开（HTTP 200），标「永久有效」，里面就一个包、名「x110」（分享者自己的编号，跟站内 id 无关），页面显示修改日期 2026-10-27 11:47，分享者 虚*。⚠ 成人向，未成年人别下。"
+    },
+    {
+      "id": "manual-game-x111",
+      "name": "【双端】东津萌米",
+      "section": "game",
+      "subsection": "gal",
+      "description": "东津萌米（PC + 安卓双端，UC 网盘分享）。",
+      "url": "https://drive.uc.cn/s/d472680625064?public=1",
+      "tags": [
+        "双端",
+        "PC",
+        "安卓",
+        "UC 网盘",
+        "galgame"
+      ],
+      "kind": "Galgame 资源",
+      "need_login": false,
+      "update_info": "网盘分享",
+      "note": "实测（2026-10-27）：UC 网盘分享可打开（HTTP 200），标「永久有效」，里面就一个包、名「x111」（分享者自己的编号，跟站内 id 无关），页面显示修改日期 2026-10-27 11:48，分享者 虚*。⚠ 成人向，未成年人别下。"
+    },
+    {
+      "id": "manual-game-x112",
+      "name": "【双端】青梅竹马是人鱼姬",
+      "section": "game",
+      "subsection": "gal",
+      "description": "青梅竹马是人鱼姬（PC + 安卓双端，UC 网盘分享）。",
+      "url": "https://drive.uc.cn/s/bd2f0ca9f2244?public=1",
+      "tags": [
+        "双端",
+        "PC",
+        "安卓",
+        "UC 网盘",
+        "galgame"
+      ],
+      "kind": "Galgame 资源",
+      "need_login": false,
+      "update_info": "网盘分享",
+      "note": "实测（2026-10-27）：UC 网盘分享可打开（HTTP 200），标「永久有效」，里面就一个包、名「x112」（分享者自己的编号，跟站内 id 无关），页面显示修改日期 2026-10-27 11:48，分享者 虚*。⚠ 成人向，未成年人别下。"
+    },
+    {
+      "id": "manual-game-x113",
+      "name": "【双端】PARQUET",
+      "section": "game",
+      "subsection": "gal",
+      "description": "PARQUET（PC + 安卓双端，UC 网盘分享）。",
+      "url": "https://drive.uc.cn/s/4b7fd25feff74?public=1",
+      "tags": [
+        "双端",
+        "PC",
+        "安卓",
+        "UC 网盘",
+        "galgame",
+        "柚子社"
+      ],
+      "kind": "Galgame 资源",
+      "need_login": false,
+      "update_info": "网盘分享",
+      "note": "实测（2026-10-27）：UC 网盘分享可打开（HTTP 200），标「永久有效」，里面就一个包、名「x113」（分享者自己的编号，跟站内 id 无关），页面显示修改日期 2026-10-27 11:49，分享者 虚*。⚠ 成人向，未成年人别下。"
+    },
+    {
+      "id": "manual-game-x114",
+      "name": "【双端】我的恋爱天使太废柴了好可怕(废柴恋天使)",
+      "section": "game",
+      "subsection": "gal",
+      "description": "我的恋爱天使太废柴了好可怕(废柴恋天使)（PC + 安卓双端，UC 网盘分享）。",
+      "url": "https://drive.uc.cn/s/7ac10ee59acd4?public=1",
+      "tags": [
+        "双端",
+        "PC",
+        "安卓",
+        "UC 网盘",
+        "galgame"
+      ],
+      "kind": "Galgame 资源",
+      "need_login": false,
+      "update_info": "网盘分享",
+      "note": "实测（2026-10-27）：UC 网盘分享可打开（HTTP 200），标「永久有效」，里面就一个包、名「x114」（分享者自己的编号，跟站内 id 无关），页面显示修改日期 2026-10-27 11:50，分享者 虚*。⚠ 成人向，未成年人别下。"
+    },
+    {
+      "id": "manual-game-x115",
+      "name": "【双端】不可视之药与坎坷的命运+不可知的未来与透视的命运/(透明药+透视眼)",
+      "section": "game",
+      "subsection": "gal",
+      "description": "不可视之药与坎坷的命运+不可知的未来与透视的命运/(透明药+透视眼)（PC + 安卓双端，UC 网盘分享）。",
+      "url": "https://drive.uc.cn/s/0594bb66a6514?public=1",
+      "tags": [
+        "双端",
+        "PC",
+        "安卓",
+        "UC 网盘",
+        "galgame"
+      ],
+      "kind": "Galgame 资源",
+      "need_login": false,
+      "update_info": "网盘分享",
+      "note": "实测（2026-10-27）：UC 网盘分享可打开（HTTP 200），标「永久有效」，里面就一个包、名「x115」（分享者自己的编号，跟站内 id 无关），页面显示修改日期 2026-10-27 11:50，分享者 虚*。⚠ 成人向，未成年人别下。"
+    },
+    {
+      "id": "manual-game-x116",
+      "name": "【双端】娇蛮任性HighSpec(正篇+番外OC)",
+      "section": "game",
+      "subsection": "gal",
+      "description": "娇蛮任性HighSpec(正篇+番外OC)（PC + 安卓双端，UC 网盘分享）。",
+      "url": "https://drive.uc.cn/s/6f38596050e64?public=1",
+      "tags": [
+        "双端",
+        "PC",
+        "安卓",
+        "UC 网盘",
+        "galgame"
+      ],
+      "kind": "Galgame 资源",
+      "need_login": false,
+      "update_info": "网盘分享",
+      "note": "实测（2026-10-27）：UC 网盘分享可打开（HTTP 200），标「永久有效」，里面就一个包、名「x116」（分享者自己的编号，跟站内 id 无关），页面显示修改日期 2026-10-27 11:51，分享者 虚*。⚠ 成人向，未成年人别下。"
+    },
+    {
+      "id": "manual-game-x117",
+      "name": "【双端】树莓立方体",
+      "section": "game",
+      "subsection": "gal",
+      "description": "树莓立方体（PC + 安卓双端，UC 网盘分享）。",
+      "url": "https://drive.uc.cn/s/cdce8f8b17094?public=1",
+      "tags": [
+        "双端",
+        "PC",
+        "安卓",
+        "UC 网盘",
+        "galgame"
+      ],
+      "kind": "Galgame 资源",
+      "need_login": false,
+      "update_info": "网盘分享",
+      "note": "实测（2026-10-27）：UC 网盘分享可打开（HTTP 200），标「永久有效」，里面就一个包、名「x117」（分享者自己的编号，跟站内 id 无关），页面显示修改日期 2026-10-27 11:52，分享者 虚*。⚠ 成人向，未成年人别下。"
+    },
+    {
+      "id": "manual-game-x118",
+      "name": "【双端】不败世界与终焉之花/永不枯萎的世界与终结之花",
+      "section": "game",
+      "subsection": "gal",
+      "description": "不败世界与终焉之花/永不枯萎的世界与终结之花（PC + 安卓双端，UC 网盘分享）。",
+      "url": "https://drive.uc.cn/s/25338651118a4?public=1",
+      "tags": [
+        "双端",
+        "PC",
+        "安卓",
+        "UC 网盘",
+        "galgame"
+      ],
+      "kind": "Galgame 资源",
+      "need_login": false,
+      "update_info": "网盘分享",
+      "note": "实测（2026-10-27）：UC 网盘分享可打开（HTTP 200），标「永久有效」，里面就一个包、名「x118」（分享者自己的编号，跟站内 id 无关），页面显示修改日期 2026-10-27 11:55，分享者 虚*。⚠ 成人向，未成年人别下。"
+    },
+    {
+      "id": "manual-game-x119",
+      "name": "【双端】纸上魔法使",
+      "section": "game",
+      "subsection": "gal",
+      "description": "纸上魔法使（PC + 安卓双端，UC 网盘分享）。",
+      "url": "https://drive.uc.cn/s/d90f42c9ac924?public=1",
+      "tags": [
+        "双端",
+        "PC",
+        "安卓",
+        "UC 网盘",
+        "galgame"
+      ],
+      "kind": "Galgame 资源",
+      "need_login": false,
+      "update_info": "网盘分享",
+      "note": "实测（2026-10-27）：UC 网盘分享可打开（HTTP 200），标「永久有效」，里面就一个包、名「x119」（分享者自己的编号，跟站内 id 无关），页面显示修改日期 2026-10-27 11:55，分享者 虚*。⚠ 成人向，未成年人别下。"
+    },
+    {
+      "id": "manual-game-x120",
+      "name": "【PC】巧克甜恋/巧可甜恋(1+2+3三部)",
+      "section": "game",
+      "subsection": "gal",
+      "description": "巧克甜恋/巧可甜恋(1+2+3三部)（PC，UC 网盘分享）。",
+      "url": "https://drive.uc.cn/s/c7619b3265604?public=1",
+      "tags": [
+        "PC",
+        "UC 网盘",
+        "galgame"
+      ],
+      "kind": "Galgame 资源",
+      "need_login": false,
+      "update_info": "网盘分享",
+      "note": "实测（2026-10-27）：UC 网盘分享可打开（HTTP 200），标「永久有效」，里面就一个包、名「x120」（分享者自己的编号，跟站内 id 无关），页面显示修改日期 2026-10-27 11:56，分享者 虚*。⚠ 成人向，未成年人别下。"
+    },
+    {
+      "id": "manual-game-app-watt-toolkit",
+      "name": "Watt Toolkit / Steam++（Steam、GitHub 等加速器 · 百度网盘 + 原站）",
+      "section": "game",
+      "subsection": "app",
+      "description": "Watt Toolkit（原 Steam++）：免费的 Steam / GitHub / Origin 等网络加速工具（本地反代 + 证书），PC 端。这里收了百度网盘里的安装包，原站是 steampp.net。",
+      "url": "https://pan.baidu.com/s/1lJZoJYejUb3U2_ShZD4zxw?pwd=dxcx",
+      "tags": [
+        "PC",
+        "加速器",
+        "Steam",
+        "GitHub",
+        "百度网盘",
+        "开源"
+      ],
+      "kind": "加速 / 网络工具",
+      "need_login": false,
+      "update_info": "2026-10-27 分享（永久有效）",
+      "note": "提取码 dxcx。实测（2026-10-27）：百度网盘分享页可打开（HTTP 200，标题「加速器_免费高速下载|百度网盘-分享无限制」），标「过期时间：永久有效」，分享时间 2026-10-27 12:06、分享者 缀*成章，根目录是一个文件夹「加速器」（页面显示修改时间 12:03，大小没显示）；原站 https://steampp.net/ 实测 HTTP 200、标题「Watt Toolkit」。⚠ 站内「工具」区已有一条 xlsx-tool-78「【PC】Watt Toolkit/steam++（免费加速steam和github）」（指向原站、来自表格导入），本条是游戏区这边带网盘安装包的一份，不是重复登记。这类加速器要装根证书 / 改 hosts，装完自己看清它申请了什么权限，优先用原站或 GitHub 的最新版核对版本号。",
+      "password": "dxcx"
     }
   ]
 }
