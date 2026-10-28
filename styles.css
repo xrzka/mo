@@ -329,6 +329,8 @@ h1 {
 .like-btn:hover { border-color: var(--bad); color: var(--bad); }
 .like-btn.liked { border-color: var(--bad); background: var(--bad); color: #fff; }
 .like-count { font-variant-numeric: tabular-nums; }
+/* 点赞图标是 👍（emoji），比文字字形大一圈，压一下字号免得把胶囊撑高 */
+.like-ico { font-size: 13px; line-height: 1; }
 .fav-btn:hover { border-color: #e0a11a; color: #b8860b; }
 .fav-btn.faved { border-color: #e0a11a; background: #e0a11a; color: #fff; }
 
