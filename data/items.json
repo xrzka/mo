@@ -18943,6 +18943,30 @@
       "need_login": false,
       "update_info": "长期可用",
       "note": "实测（2026-10-29）：三个地址都 HTTP 200 —— 主下载页标题「Download Python | Python.org」、Windows 页标题「Python Releases for Windows | Python.org」、首页「Welcome to Python.org」；页面上当前的最新稳定版是 Python 3.15.2，另有 3.14.10、3.13.17 等维护版本。下载按钮是按浏览器 UA 自动挑平台的（用 Windows 打开就是 Windows 安装包）。⚠ 只认 python.org 这一个官方域名：网上「Python 中文网 / 某某软件园」给的安装包常被重打包或塞捆绑，装之前先看下载地址的域名；官网下载页不需要付费，也没有任何「加速下载」按钮。"
+    },
+    {
+      "id": "manual-prog-jetbrains-2025",
+      "name": "JetBrains 2025 全家桶（IDEA / PyCharm / WebStorm / GoLand / CLion / Rider / DataGrip 等，百度网盘）",
+      "section": "prog",
+      "subsection": null,
+      "description": "JetBrains 2025 版全家桶的网盘打包（这家 2000 年成立、总部在布拉格，做 IDE 的老牌）。包里是它整套开发工具：IntelliJ IDEA（Java/Kotlin）、PyCharm（Python）、WebStorm（前端 JS）、PHPStorm（PHP）、RubyMine（Ruby）、GoLand（Go）、CLion（C/C++）、Rider（.NET）、DataGrip（数据库），一个包给齐。",
+      "url": "https://pan.baidu.com/s/1soL6_t_aIeZKV6Ka7r4F0Q?pwd=xabf",
+      "tags": [
+        "PC",
+        "百度网盘",
+        "JetBrains",
+        "IDE",
+        "开发工具",
+        "编程",
+        "Java",
+        "Python",
+        "前端"
+      ],
+      "kind": "软件 / 开发工具（全家桶）",
+      "need_login": false,
+      "update_info": "2026-10-29 分享（永久有效）",
+      "note": "实测（2026-10-29 19:39）：分享页 HTTP 200，标题「JetBrains2025_免费高速下载|百度网盘-分享无限制」，提取码框在、无失效提示；根目录一项「JetBrains2025」，页面显示修改日期 2026-10-29 14:40、分享时间 19:22、分享者 缀*成章，标「永久有效」。里面是上面那 9 个 IDE 的 2025 版。⚠ 这类网盘「全家桶」基本都是第三方整合/激活包：可能带来历不明的激活器、补丁脚本或捆绑安装，下完先看清包里有什么、别拿不明脚本当服务跑；正规拿法也有——IDE 本身有免费社区版（IDEA Community / PyCharm Community），学生和开源项目可以在官网申请免费全功能授权，公司里用请走正版。",
+      "password": "xabf"
     }
   ]
 }
