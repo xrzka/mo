@@ -12,6 +12,28 @@
  *
  * 一次 `GET /api/demand` 全给，页面只发一个请求。每一块都单独 try/catch：
  * 少一块不影响其它块，表不存在也只是那一块空着，不会 500。
+ *
+ * ---------------------------------------------------------------------------
+ * 搜索榜的口径是照着 aicu.cc（哔哩哔哩查成分）的「用户名热搜」做的。
+ * 2026-10 把它的前端 bundle 拆开看了实现（`online.aicu.cc/api/community/trending`
+ * + `/search-events`），它的设计比「按历史累计次数排」合理得多，值得抄的部分：
+ *
+ *   - **滑动窗口 + 动量**：它算「最近 2 小时的量级 + 相对前 6 小时平均水平的动量」，
+ *     量级决定基本次序、动量只做加成。我们流量小得多，所以窗口放大成
+ *     近 7 天量级 + 相对前 7 天的动量（2 小时窗口在日活个位数的站上永远是空的）。
+ *   - **按访客去重，不按次数**：一个人狂搜不该把榜刷上去。它「同一浏览器/网络
+ *     对同一个 UID 10 分钟内最多算一次」，我们直接做到「一个人一个词只占一行」。
+ *   - **上榜有门槛**：它要求「至少 5 位不同访客搜过」才上榜。我们日活个位数，
+ *     门槛设 1，但把「几位访客」直接摊在页面上让站长自己判断。
+ *   - **trend 是名次对比，不是猜的**：它用同一套算法再算一份 2 小时前的榜单，
+ *     比较同一个 UID 在两份榜单里的名次。我们照做：跟前 7 天的榜单比名次。
+ *   - **算法写在页面上**：「热搜榜算法说明」弹窗逐条写明什么算、怎么排。
+ *     口径不写清楚，用户会以为数字是编的 —— 这个习惯也抄过来了（见 /qiu 的「数据口径」）。
+ *
+ * 有一处**故意不一样**：它只统计「查询成功的 UID」（失败的查询多半是输错或垃圾）。
+ * 我们反过来 —— 「搜了但站里 0 条」恰恰是**最值钱**的信号（有人要、你没货），
+ * 所以失败查询不但要记，还要单独排一个缺口榜。
+ * ---------------------------------------------------------------------------
  */
 
 /* ---------------- 常量 ---------------- */
@@ -19,15 +41,26 @@
 /** 搜索词长度下限 / 上限。太短（"a"）没信息量，太长多半是粘贴了整段话。 */
 const TERM_MIN = 2;
 const TERM_MAX = 40;
-/** 搜索热词榜 / 缺口榜的条数。 */
-const SEARCH_TOP = 60;
-const GAP_TOP = 30;
+/** 搜索榜的滑动窗口（天）与动量对比窗口（前一个等长窗口）。 */
+const WINDOW_DAYS = 7;
+/** 判定 trend 还要再往前看一个窗口，所以最多回溯三个窗口。 */
+const WINDOW_COUNT = 3;
+/**
+ * 上榜门槛（窗口内至少几位访客）。aicu 用的是 5 —— 他们日活大，5 位能滤掉噪声；
+ * 本站日活个位数，设 5 就永远是空榜，所以设 1，并在页面上把「几位访客」写出来。
+ * 想收紧就改这里（响应里也会回传 min_visitors，页面文案跟着走）。
+ */
+const MIN_VISITORS = 1;
+/** 同一访客对同一个词，1 小时内重复上报直接跳过 —— 省一次写，也防手抖连点。 */
+const DEDUP_MS = 3600 * 1000;
+/** 明细保留天数。过期的靠 cron 的 pruneSearchEvents 清掉，别让表无限长。 */
+const EVENT_KEEP_DAYS = 90;
+/** 前端传上来的随机 visitor_id 形状（跟 aicu 一样只收 16–64 位 URL 安全字符）。 */
+const VISITOR_RE = /^[A-Za-z0-9_-]{16,64}$/;
 /** 帮找榜条数。 */
 const WANTED_LIMIT = 60;
 /** 点击榜条数（月 / 年各取这么多）。 */
 const CLICK_TOP = 20;
-/** 同一个 IP 搜同一个词，1 小时内只记一笔 —— 让 searches 更接近「有多少人搜过」。 */
-const SEARCH_DEDUP_TTL = 3600;
 /** mo 站静态数据。只用来把 clicks 里的 id 换成资源名，拿不到就只显示 id。 */
 const ITEMS_URL = "https://xrzka.github.io/mo/data/items.json";
 
@@ -50,30 +83,63 @@ function demandCleanTerm(raw) {
   return term;
 }
 
-/** djb2，只用来做 KV 去重键（要 ASCII、要短）。碰撞只会少记一笔，无所谓。 */
-function demandHash(text) {
-  let h = 5381;
-  for (let i = 0; i < text.length; i++) {
-    h = ((h << 5) + h + text.charCodeAt(i)) | 0;
-  }
-  return (h >>> 0).toString(36);
-}
-
 const demandNum = (value) => {
   const n = Number(value);
   return Number.isFinite(n) && n > 0 ? n : 0;
 };
 
+async function demandSha256(text) {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+  return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+/**
+ * 访客身份。**只存哈希，不存原值，也不存 IP。**
+ *
+ * 优先用前端生成的随机 visitor_id（`localStorage` 里的 UUID，形如 aicu 的
+ * `aicuCommunityVisitorId`）：它不含任何个人信息，而且换网络、换 IP 都还是同一个人
+ * ——「几位不同访客搜过」才准。
+ *
+ * 前端没带（老缓存里的 JS、或者直接 curl）时兜底用 IP+UA，**并且带上当天日期**，
+ * 跨天的记录无法互相关联（跟 index.js 的 seen 表一个口径）。代价是这种情况下
+ * 同一个人隔天再搜索会算成两位，所以它只是兜底，主力是 visitor_id。
+ */
+async function demandVisitorKey(request, rawVisitor) {
+  if (typeof rawVisitor === "string" && VISITOR_RE.test(rawVisitor)) {
+    return (await demandSha256("v:" + rawVisitor)).slice(0, 32);
+  }
+  const ip = request.headers.get("CF-Connecting-IP") || "";
+  const ua = request.headers.get("User-Agent") || "";
+  const day = new Date().toISOString().slice(0, 10);
+  return (await demandSha256(`h:${ip}|${ua}|${day}`)).slice(0, 32);
+}
+
+/** 时间桶。**必须和 index.js 的 `buckets()` 对齐**，否则查出来的永远是空。 */
+function demandBuckets(now = new Date()) {
+  const pad2 = (n) => String(n).padStart(2, "0");
+  const day = `${now.getUTCFullYear()}-${pad2(now.getUTCMonth() + 1)}-${pad2(now.getUTCDate())}`;
+  return {
+    day,
+    month: day.slice(0, 7),
+    year: String(now.getUTCFullYear()),
+  };
+}
+
 /* ---------------- 写：搜索词埋点 ---------------- */
 
 /**
- * POST /api/search/log  {term, results}
+ * POST /api/search/log  {term, results, visitor_id?}
  *
- * 只记「词 + 结果数」，不记 IP、不记访客指纹 —— 这张表对外是聚合展示的，
- * 没必要留住任何能指向个人的东西。IP 只在本函数里当去重键用一下就丢。
+ * 只记「词 + 有没有结果 + 一位访客」，不记 IP、不记访客身份原值 —— 这张表对外是
+ * 聚合展示的，没必要留住任何能指向个人的东西。
  *
- * 去重放 KV（env.NOVEL_CACHE）而不是 D1：D1 每次写都要花钱，而这里丢几笔
- * 无所谓。KV 没绑或挂了就直接记账，不因为去重失败而丢数据。
+ * 写入用一条 UPSERT 搞定，去重靠主键 `(term, fp)`：
+ *   - 新访客新词     → INSERT，占一行
+ *   - 老访客同一个词 → 只更新时间和结果，**不加次数**（不然一个人能把榜刷上去），
+ *                      并且 1 小时内重复上报直接不动（`WHERE` 挂在 DO UPDATE 上，
+ *                      `meta.changes === 0` 就是被拦下了）
+ * 这样表里一个词有 N 行就等于「N 位访客想要它」，不需要额外的计数列 ——
+ * 少一列就少一处会和明细对不上的地方。
  */
 export async function handleSearchLog(request, env) {
   const body = await request.json().catch(() => ({}));
@@ -81,92 +147,172 @@ export async function handleSearchLog(request, env) {
   if (!term) return { status: 400, body: { error: "bad term" } };
 
   const results = Math.min(demandNum(body.results), 9999);
-
-  const ip = request.headers.get("CF-Connecting-IP") || "";
-  if (env.NOVEL_CACHE) {
-    try {
-      const key = `st:${ip}:${demandHash(term)}`;
-      if (await env.NOVEL_CACHE.get(key)) {
-        return { status: 200, body: { ok: true, deduped: true } };
-      }
-      await env.NOVEL_CACHE.put(key, "1", { expirationTtl: SEARCH_DEDUP_TTL });
-    } catch (err) {
-      /* KV 的问题不该让用户白搜一次，继续记 */
-    }
-  }
-
+  const fp = await demandVisitorKey(request, body.visitor_id);
   const now = Date.now();
+
+  let changes = 0;
   try {
-    await env.DB.prepare(
-      `INSERT INTO search_terms (term, searches, zero_results, last_results, first_at, last_at)
-       VALUES (?, 1, ?, ?, ?, ?)
-       ON CONFLICT(term) DO UPDATE SET
-         searches     = searches + 1,
-         zero_results = zero_results + excluded.zero_results,
-         last_results = excluded.last_results,
-         last_at      = excluded.last_at`
+    const res = await env.DB.prepare(
+      `INSERT INTO search_events (term, fp, at, results) VALUES (?, ?, ?, ?)
+       ON CONFLICT(term, fp) DO UPDATE SET
+         results = excluded.results,
+         at      = excluded.at
+       WHERE excluded.at - search_events.at >= ?`
     )
-      .bind(term, results > 0 ? 0 : 1, results, now, now)
+      .bind(term, fp, now, results, DEDUP_MS)
       .run();
+    changes = Number(res && res.meta && res.meta.changes) || 0;
   } catch (err) {
     // 表还没建：告诉调用方没记上，但不报 500（页面是 fire-and-forget，不看这个）
-    return { status: 200, body: { ok: false, error: "search_terms 表不可用" } };
+    return { status: 200, body: { ok: false, error: "search_events 表不可用" } };
   }
-  return { status: 200, body: { ok: true } };
+
+  // changes === 0：同一位访客 1 小时内已经报过这个词了，这次只算重复
+  return { status: 200, body: changes ? { ok: true } : { ok: true, deduped: true } };
 }
 
 /* ---------------- 读：各块聚合 ---------------- */
 
+/**
+ * 搜索榜。窗口内按访客数排，动量（本窗口相对上一个窗口的增长）只做加成。
+ *
+ * 热度值 = 近 7 天访客数 × 2 + max(0, 近 7 天访客数 − 前 7 天访客数)
+ *        = 量级(权重 2) + 动量(权重 1)
+ * 跟 aicu 一个思路：量级决定基本次序（长期有人要的东西不会被一次突发挤掉），
+ * 动量只把「突然被集中搜的」往前推一点。纯确定性计算，没有随机数 ——
+ * 数据没变化时刷新页面，名次不会自己跳。
+ */
 async function demandSearch(env) {
-  const out = { terms: [], gaps: [], searches: 0, terms_total: 0, gaps_total: 0 };
+  const out = {
+    window_days: WINDOW_DAYS,
+    min_visitors: MIN_VISITORS,
+    terms: [],
+    gaps: [],
+    visitors_total: 0,
+    terms_total: 0,
+    gaps_total: 0,
+    searches: 0,
+  };
+
+  const now = Date.now();
+  const dayMs = 86400000;
+  // 三个窗口从新到旧：0 = 最近 7 天，1 = 前 7 天，2 = 再往前 7 天
+  const edges = [];
+  for (let i = 0; i <= WINDOW_COUNT; i++) edges.push(now - i * WINDOW_DAYS * dayMs);
+
+  const windowRows = [];
   try {
-    const { results } = await env.DB.prepare(
-      `SELECT term, searches, zero_results, last_results, last_at
-         FROM search_terms ORDER BY searches DESC, last_at DESC LIMIT ?`
-    )
-      .bind(SEARCH_TOP)
-      .all();
-    out.terms = (results || []).map((r) => ({
-      term: r.term,
-      searches: demandNum(r.searches),
-      zero_results: demandNum(r.zero_results),
-      last_results: demandNum(r.last_results),
-      last_at: demandNum(r.last_at),
-    }));
+    for (let i = 0; i < WINDOW_COUNT; i++) {
+      const { results } = await env.DB.prepare(
+        `SELECT term,
+                COUNT(*)                                     AS visitors,
+                SUM(CASE WHEN results = 0 THEN 1 ELSE 0 END) AS zero_visitors
+           FROM search_events
+          WHERE at >= ? AND at < ?
+          GROUP BY term`
+      )
+        .bind(edges[i + 1], edges[i])
+        .all();
+      const map = new Map();
+      for (const row of results || []) {
+        map.set(row.term, {
+          visitors: demandNum(row.visitors),
+          zero_visitors: demandNum(row.zero_visitors),
+        });
+      }
+      windowRows.push(map);
+    }
   } catch (err) {
-    /* 表不存在 → 空 */
+    /* 表不存在 → 空榜 */
   }
+
+  // 每个词「上次搜的时候站里几条」—— 跟时间窗无关，所以取全表最新那一行。
+  // SQLite 的 bare column 规则保证 results 来自 MAX(at) 那行。
+  const lastResults = new Map();
   try {
     const { results } = await env.DB.prepare(
-      `SELECT term, searches, zero_results, last_results, last_at
-         FROM search_terms WHERE zero_results > 0
-        ORDER BY searches DESC, last_at DESC LIMIT ?`
-    )
-      .bind(GAP_TOP)
-      .all();
-    out.gaps = (results || []).map((r) => ({
-      term: r.term,
-      searches: demandNum(r.searches),
-      zero_results: demandNum(r.zero_results),
-      last_results: demandNum(r.last_results),
-      last_at: demandNum(r.last_at),
-    }));
+      `SELECT term, results, MAX(at) AS last_at FROM search_events GROUP BY term`
+    ).all();
+    for (const row of results || []) {
+      lastResults.set(row.term, {
+        last_results: demandNum(row.results),
+        last_at: demandNum(row.last_at),
+      });
+    }
   } catch (err) {
     /* 同上 */
   }
-  // 汇总用真实总数（列表是截断过的，别拿 length 当总数）
+
+  const hotOf = (visitors, prev) => visitors * 2 + Math.max(0, visitors - prev);
+
+  /** 按同一套算法算第 index 个窗口的榜单（index=0 是最近 7 天）。 */
+  const build = (index) => {
+    const cur = windowRows[index] || new Map();
+    const prev = windowRows[index + 1] || new Map();
+    const rows = [];
+    for (const [term, c] of cur) {
+      const prevV = (prev.get(term) || {}).visitors || 0;
+      rows.push({
+        term,
+        visitors: c.visitors,
+        prev_visitors: prevV,
+        zero_visitors: c.zero_visitors,
+        hot_value: hotOf(c.visitors, prevV),
+      });
+    }
+    rows.sort(
+      (a, b) => b.hot_value - a.hot_value || b.visitors - a.visitors || a.term.localeCompare(b.term)
+    );
+    return rows;
+  };
+
+  const current = build(0);
+  // trend 不靠猜：拿同一套算法再算一份「前 7 天」的榜单，比较同一个词的名次
+  // （aicu 的做法）。前一个窗口还没上榜的词算新进榜 → 上升。
+  const prevRank = new Map();
+  build(1).forEach((row, i) => prevRank.set(row.term, i + 1));
+  current.forEach((row, i) => {
+    const rank = i + 1;
+    const was = prevRank.get(row.term);
+    if (was == null || was > rank) row.trend = "up";
+    else if (was < rank) row.trend = "down";
+    else row.trend = "stable";
+  });
+
+  for (const row of current) {
+    const extra = lastResults.get(row.term);
+    row.last_results = extra ? extra.last_results : 0;
+    row.last_at = extra ? extra.last_at : 0;
+    // 兼容旧字段名：searches 现在就是「窗口内有几位访客」，不再是「搜了几遍」
+    row.searches = row.visitors;
+    row.zero_results = row.zero_visitors;
+    if (row.visitors < MIN_VISITORS) continue;
+    out.terms.push(row);
+    if (row.zero_visitors > 0) out.gaps.push(row);
+  }
+  // 缺口榜按「搜了没结果的人次」排 —— 有人要却没货，补货回报最确定
+  out.gaps.sort((a, b) => b.zero_visitors - a.zero_visitors || b.hot_value - a.hot_value);
+
+  // 汇总用真实总数（列表可能被截断，别拿 length 当总数）
   try {
     const row = await env.DB.prepare(
-      `SELECT COUNT(*) n, SUM(searches) s,
-              SUM(CASE WHEN zero_results > 0 THEN 1 ELSE 0 END) g
-         FROM search_terms`
+      `SELECT COUNT(*) n, COUNT(DISTINCT term) t,
+              SUM(CASE WHEN results = 0 THEN 1 ELSE 0 END) z
+         FROM search_events`
     ).first();
-    out.terms_total = demandNum(row && row.n);
-    out.searches = demandNum(row && row.s);
-    out.gaps_total = demandNum(row && row.g);
+    out.searches = demandNum(row && row.n);
+    out.terms_total = demandNum(row && row.t);
+    out.gaps_total = demandNum(row && row.z);
+    const windowRow = await env.DB.prepare(
+      "SELECT COUNT(*) n FROM search_events WHERE at >= ?"
+    )
+      .bind(edges[1])
+      .first();
+    out.visitors_total = demandNum(windowRow && windowRow.n);
   } catch (err) {
     /* 同上 */
   }
+
   return out;
 }
 
@@ -203,22 +349,6 @@ async function demandWanted(env) {
     /* 同上 */
   }
   return out;
-}
-
-/**
- * 时间桶。**必须和 index.js 的 `buckets()` 对齐**，否则查出来的永远是空。
- * 这里只复刻用得上的三个（过去式：day/week/month/year + all，周桶是 ISO 周
- * 字符串 `2026-W43` 而不是周一日期，容易抄错，索性只算需要的）。
- * index.js 那边改了格式，这里要跟着改。
- */
-function demandBuckets(now = new Date()) {
-  const pad2 = (n) => String(n).padStart(2, "0");
-  const day = `${now.getUTCFullYear()}-${pad2(now.getUTCMonth() + 1)}-${pad2(now.getUTCDate())}`;
-  return {
-    day,
-    month: day.slice(0, 7),
-    year: String(now.getUTCFullYear()),
-  };
 }
 
 async function demandClicks(env) {
@@ -271,6 +401,19 @@ async function demandItemNames(ids) {
     return map;
   } catch (err) {
     return {};
+  }
+}
+
+/* ---------------- 清理 ---------------- */
+
+/** 删掉过期的搜索明细。挂在 index.js 的定时任务上（每天 03:17）。 */
+export async function pruneSearchEvents(env) {
+  try {
+    const edge = Date.now() - EVENT_KEEP_DAYS * 86400000;
+    const res = await env.DB.prepare("DELETE FROM search_events WHERE at < ?").bind(edge).run();
+    return Number(res && res.meta && res.meta.changes) || 0;
+  } catch (err) {
+    return 0;
   }
 }
 

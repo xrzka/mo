@@ -209,7 +209,7 @@ curl --proxy http://127.0.0.1:7890 https://mo-stats.werneruszcb71.workers.dev/ap
 | --- | --- | --- |
 | GET | `/api/hot` | B站/抖音/快手/小红书热搜热榜聚合。`?src=bili\|douyin\|ks\|xhs` 只取一个平台，`?refresh=1` 强制重拉，`?debug=1` 附上每条上游的尝试结果 |
 | GET | `/api/demand` | 本站真实需求一次拿全：站内搜索热词 + 缺口 + 帮找榜 + 点击榜（带资源名）。见 `demand.js` |
-| POST | `/api/search/log` | 墨站搜索框埋点，`{"term":"关键词","results":3}`。只记词和结果数 |
+| POST | `/api/search/log` | 墨站搜索框埋点，`{"term":"关键词","results":3,"visitor_id":"<浏览器本地随机串>"}`。只记词、结果数和访客号的哈希 |
 
 `/api/hot` 响应形状：`{generated_at, refreshed_at, ttl_seconds, limit, labels, data:{<平台>:{src,label,ok,cached,stale,provider,fetched_at,items:[{rank,title,hot,url,cover}]}}, attempts?}`。
 
@@ -220,12 +220,24 @@ curl --proxy http://127.0.0.1:7890 https://mo-stats.werneruszcb71.workers.dev/ap
 **表不存在也不会 500**，所有 D1 读写都包了 try/catch，只是退化成每次都去上游拉。
 给第一站的 `https://xrzka.github.io/qiu/` 用，前端只认这个接口、不直连第三方。
 
-`/api/demand` 响应形状：`{generated_at, search:{terms,gaps,searches,terms_total,gaps_total}, wanted:{items,summary}, clicks:{month,year,names,buckets}}`。
+`/api/demand` 响应形状：`{generated_at, search:{window_days,min_visitors,terms,gaps,visitors_total,terms_total,gaps_total,searches}, wanted:{items,summary}, clicks:{month,year,names,buckets}}`。
+`search.terms[]` 的每一条是 `{term, visitors, prev_visitors, zero_visitors, hot_value, trend, last_results, last_at}`。
 实现全在 `demand.js`，每一块单独 try/catch（少一块不影响其它块，表不存在也只是那块空着）：
 
-- `search_terms`：站内搜索词。`handleSearchLog` 清洗词（长度 2–40、去控制字符、拒 URL），
-  同一 IP + 同词在 `NOVEL_CACHE` KV 里去重 1 小时再 UPSERT，所以 `searches` 是
-  「有多少人搜过」而不是「被搜了几遍」。**只存词和数字，不存 IP、不存访客指纹。**
+- `search_events`：站内搜索词的**明细**，一行 = 一位访客对一个词的有效搜索，主键 `(term, fp)`。
+  - `handleSearchLog` 清洗词（长度 2–40、去控制字符、零宽字符、拒 URL），然后一条 UPSERT 收尾：
+    老访客搜同一个词只更新时间和结果、**不加次数**，并且 1 小时内重复上报直接不动
+    （`WHERE` 挂在 `DO UPDATE` 上，`meta.changes === 0` 就是被拦下了）。
+    所以「一个词有几行」直接等于「几位访客想要它」，不需要额外的计数列。
+  - **口径照 aicu.cc 的「用户名热搜」抄的**（2026-10 拆它的前端 bundle 得到，
+    `online.aicu.cc/api/community/trending`）：滑动窗口 + 动量、按访客去重、上榜有门槛、
+    trend 是名次对比。窗口放到 7 天（2 小时窗口在日活个位数的站上永远空），
+    门槛从 5 降到 1 但把「几位访客」摊在页面上。文件顶部注释记了完整对比。
+  - 热度值 = `近 7 天访客数 × 2 + max(0, 近 7 天 − 前 7 天)`：量级权重 2、动量权重 1，
+    纯确定性，没有随机数。`trend` 用同一套算法再算一份「前 7 天」的榜单比名次。
+  - **隐私**：`fp` 是 sha256 摘要，不存 IP、不存访客 id 原值。优先摘要前端生成的随机
+    `visitor_id`（`localStorage`，不含个人信息、换网络也还是同一个人）；前端没带时兜底
+    摘要 `IP+UA+当天日期`，跨天无法关联。明细只留 90 天，由 cron 的 `pruneSearchEvents` 清。
 - `requests`（`kind='want'`）：帮找榜，按票数降序。
 - `clicks`：月 / 年点击榜，id 通过抓 `https://xrzka.github.io/mo/data/items.json`
   （`cf: {cacheTtl: 600}`）换成资源名；**`adult: true` 的条目会带标记，页面据此不列出**。
@@ -644,7 +656,7 @@ node test_worker.mjs             # 统计逻辑（真 SQL，node:sqlite 内存�
 node test_requests.mjs           # 帮找与失效反馈逻辑（两类去重互不干扰、投票幂等、限流、注入拦截）
 node test_admin.mjs              # 后台鉴权与覆盖层（密码、限流、越权字段、伪协议、多分区归属、新增/删除）
 node test_hot.mjs                # /api/hot（真上游四平台 + 缓存命中 + 强制刷新 + 上游全挂降级 + 缺表兜底）
-node test_demand.mjs             # /api/demand + /api/search/log（词清洗、去重、缺口、帮找排序、点击榜换名、缺表兜底）
+node test_demand.mjs             # /api/demand + /api/search/log（词清洗、按访客去重、滑动窗口、热度与趋势、缺口、帮找排序、点击榜换名、缺表兜底）
 node test_sections.mjs           # 前后端分区白名单一致性 + items.json 里的取值都合法
 python test_browser.py           # 真 Chromium 端到端，含多地址回退、重试、降级、帮找与失效反馈全流程
 python test_live.py              # 打线上真接口（默认 pages.dev，可直连）
@@ -663,12 +675,16 @@ python test_live.py --api https://mo-stats.werneruszcb71.workers.dev --proxy htt
 以及后端还是老版时整个入口消失。
 
 `test_demand.mjs` 同样用 `node:sqlite` 跑真实 SQL（`schema.sql` + `schema_demand.sql`），
-因为 `/api/demand` 最容易错的就是 SQL 本身：UPSERT 的累加、缺口筛选、
-票数排序、点击榜的时间桶。它盯的是：词清洗（长度/零宽字符/拒 URL）、
-同 IP 同词在 KV 里去重、换 IP 累加而零结果数不回退、汇总用真实总数而不是列表长度、
-缺口只含 `zero_results > 0`、帮找只列 `kind='want'` 且票数降序、点击榜只取本月桶、
-id 换成资源名并带 `adult` 标记、**缺表时 200 且三块都空着**（埋点返回 `ok:false` 而非 500）、
-KV 没绑也照样入账。items.json 的抓取用假 `fetch` 顶掉，不联网。
+因为 `/api/demand` 最容易错的就是 SQL 本身：UPSERT 的冲突分支、窗口筛选、
+名次对比、缺口排序、点击榜的时间桶。它盯的是：词清洗（长度/零宽字符/拒 URL）、
+同一位访客同词 1 小时内被拦下而超出 1 小时可以再报、不同访客各占一行、
+没带 `visitor_id` 时 IP+UA 兜底同样去重、三个窗口的划分与热度值
+（`访客×2 + max(0,本窗口−上一窗口)`）、名次前移/后移/新进榜三种 trend、
+窗口外或只有历史数据的词不上榜、缺口只含窗口内有人搜到 0 条的词、
+汇总用真实总数而不是列表长度、帮找只列 `kind='want'` 且票数降序、点击榜只取本月桶、
+id 换成资源名并带 `adult` 标记、`pruneSearchEvents` 只删过期明细、
+**缺表时 200 且各块都空着**（埋点返回 `ok:false` 而非 500，清理返回 0 而非抛错）。
+items.json 的抓取用假 `fetch` 顶掉，不联网。
 
 后台那几条盯的是：未登录时 DOM 里压根没有编辑入口、密码错不给入口、
 改标题/简介/链接/提取码后当场生效且刷新仍在、访客（未登录）也看到改后的值、

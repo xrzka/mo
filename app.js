@@ -135,6 +135,9 @@
         { id: "plugin", label: "插件" },
       ],
     },
+    // 编程区：官方站点 / 开发工具 / 文档这类。暂时不切小分区（卡片 subsection 为 null），
+    // 跟 CS、工具区一样先当一个大抽屉用；以后要分「网站 / 软件 / 文档」再加 subs。
+    { id: "prog", label: "编程区", icon: "💻" },
     // CS 区：以图片为主（只展示发布过的图）。条目里带 image 字段时，
     // 卡片主体直接展示那张图，不做链接型卡片。
     { id: "cs", label: "CS", icon: "🩹" },
@@ -6765,12 +6768,32 @@
    * 数据（四个平台都只公开时政新闻味的热搜，不公开搜索词）。站长在第一站
    * `https://xrzka.github.io/qiu/` 上看这些词，尤其是「搜了但站内 0 条」的。
    *
-   * 隐私：只发「词 + 结果数」两个字段，不带任何身份；Worker 那边也只做计数。
+   * 隐私：只发「词 + 结果数 + 一个随机访客号」三个字段。访客号是本站自己生成的
+   * 随机串（首次访问时生成、只存在 localStorage），**不含任何个人信息**，也换不了
+   * 钱 —— 它只用来让 Worker 那边把「同一个人搜了 20 次」算成一个人而不是需求 20 份
+   * （第一站 qiu 的榜按访客数排，不按次数排，跟 aicu.cc 的查成分热搜一个口径）。
    * 同一个会话里同一个词只发一次，输入停下来 1.5s 才发，失败完全静默 —— 埋点
    * 不该影响搜索本身，也不该让访客觉得被盯着。
    */
   const loggedSearchTerms = new Set();
   let searchLogTimer = 0;
+
+  /** 随机访客号：16 字节随机数的十六进制，存 localStorage，清掉就等于换一个人。 */
+  function visitorId() {
+    const KEY = "mo-visitor-id";
+    try {
+      const saved = localStorage.getItem(KEY);
+      if (saved && /^[A-Za-z0-9_-]{16,64}$/.test(saved)) return saved;
+      const bytes = new Uint8Array(16);
+      crypto.getRandomValues(bytes);
+      const id = [...bytes].map((b) => b.toString(16).padStart(2, "0")).join("");
+      localStorage.setItem(KEY, id);
+      return id;
+    } catch (err) {
+      // 隐私模式把 localStorage 锁了：不发访客号，Worker 那边用 IP+UA 兜底去重
+      return "";
+    }
+  }
 
   function logSearchTerm() {
     const term = state.q.trim();
@@ -6785,7 +6808,11 @@
       fetch(`${api}/api/search/log`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ term, results: visibleItems().length }),
+        body: JSON.stringify({
+          term,
+          results: visibleItems().length,
+          visitor_id: visitorId(),
+        }),
         keepalive: true,
       }).catch(() => {});
     } catch (err) {

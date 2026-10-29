@@ -2,15 +2,15 @@
  * demand.js 单测：站内搜索埋点 + /api/demand 的四块聚合。
  *
  * 和 test_worker.mjs 一样，用 node:sqlite 内存库当 D1 替身跑**真实 SQL** ——
- * 这里最容易错的就是 SQL 本身（UPSERT 的累加、缺口筛选、票数排序、时间桶），
- * 用假 Map 替身测不出来。
+ * 这里最容易错的就是 SQL 本身（UPSERT 的冲突分支、窗口筛选、名次对比、
+ * 缺口排序、时间桶），用假 Map 替身测不出来。
  *
  * 不联网：items.json 的抓取用假的 fetch 顶掉。
  * 跑法：node test_demand.mjs
  */
 import { readFileSync } from "node:fs";
 import { DatabaseSync } from "node:sqlite";
-import { handleDemand, handleSearchLog } from "./demand.js";
+import { handleDemand, handleSearchLog, pruneSearchEvents } from "./demand.js";
 
 let pass = 0;
 let fail = 0;
@@ -47,19 +47,12 @@ function makeD1(ddlFiles = ["./schema.sql", "./schema_demand.sql"]) {
   return { _db: db, prepare: (sql) => wrap(sql) };
 }
 
-/** KV 替身：只实现去重要用到的 get/put。 */
-function makeKV() {
-  const m = new Map();
-  return {
-    async get(k) {
-      return m.has(k) ? m.get(k) : null;
-    },
-    async put(k, v) {
-      m.set(k, v);
-    },
-    _map: m,
-  };
-}
+/**
+ * 造一个形状合法的前端 visitor_id（跟 aicu 一样 16–64 位 URL 安全字符）。
+ * 用 visitor_id 而不是 IP 来测去重，是因为 IP 兜底路径带了当天日期，
+ * 测窗口的时候会不好构造。
+ */
+const vid = (n) => String(n).padStart(16, "0");
 
 const post = (body, ip = "1.2.3.4") =>
   new Request("https://x/api/search/log", {
@@ -69,6 +62,8 @@ const post = (body, ip = "1.2.3.4") =>
   });
 
 const URL_DEMAND = new URL("https://mo-stats.pages.dev/api/demand");
+
+const dayMs = 86400000;
 
 /* ---------- 假 items.json ---------- */
 
@@ -90,7 +85,7 @@ globalThis.fetch = async (url) => {
 /* ---------- 用例 ---------- */
 
 async function main() {
-  const env = { DB: makeD1(), NOVEL_CACHE: makeKV() };
+  const env = { DB: makeD1() };
 
   console.log("== 搜索词清洗 ==");
   for (const [raw, label] of [
@@ -100,59 +95,152 @@ async function main() {
     ["https://example.com", "URL"],
     [null, "非字符串"],
   ]) {
-    const res = await handleSearchLog(post({ term: raw }), env);
+    const res = await handleSearchLog(post({ term: raw, visitor_id: vid(1) }), env);
     ok(res.status === 400, `拒绝${label}`, JSON.stringify(res.body));
   }
   {
     const res = await handleSearchLog(
-      post({ term: "  一人  之下\u200b  " }),
+      post({ term: "  一人  之下\u200b  ", visitor_id: vid(1) }),
       env
     );
-    const row = env.DB._db.prepare("SELECT term FROM search_terms").get();
-    ok(res.status === 200 && row && row.term === "一人 之下", "清洗空白与零宽字符", row && row.term);
-  }
-
-  console.log("== 记账与去重 ==");
-  env.DB._db.exec("DELETE FROM search_terms");
-  await handleSearchLog(post({ term: "一人之下", results: 0 }), env);
-  const dup = await handleSearchLog(post({ term: "一人之下", results: 0 }), env);
-  ok(dup.body.deduped === true, "同 IP + 同词 1 小时内去重");
-  {
-    const row = env.DB._db
-      .prepare("SELECT searches, zero_results FROM search_terms WHERE term = ?")
-      .get("一人之下");
-    ok(row.searches === 1 && row.zero_results === 1, "只记一笔，且标了 0 结果", JSON.stringify(row));
-  }
-  await handleSearchLog(post({ term: "一人之下", results: 5 }, "9.9.9.9"), env);
-  {
-    const row = env.DB._db
-      .prepare("SELECT searches, zero_results, last_results FROM search_terms WHERE term = ?")
-      .get("一人之下");
+    const row = env.DB._db.prepare("SELECT term FROM search_events").get();
     ok(
-      row.searches === 2 && row.zero_results === 1 && row.last_results === 5,
-      "换 IP 累加次数，零结果数不回退，上次结果刷新",
-      JSON.stringify(row)
+      res.status === 200 && row && row.term === "一人 之下",
+      "清洗空白与零宽字符",
+      row && row.term
     );
   }
-  await handleSearchLog(post({ term: "进击的巨人", results: 0 }, "9.9.9.9"), env);
-  await handleSearchLog(post({ term: "进击的巨人", results: 0 }, "8.8.8.8"), env);
-  await handleSearchLog(post({ term: "新手指南", results: 3 }, "9.9.9.9"), env);
 
-  console.log("== /api/demand：搜索与缺口 ==");
+  console.log("== 按访客去重（不是按次数计数） ==");
+  env.DB._db.exec("DELETE FROM search_events");
+  await handleSearchLog(post({ term: "一人之下", results: 0, visitor_id: vid(1) }), env);
   {
-    const res = await handleDemand(new Request("https://x/api/demand"), URL_DEMAND, env);
-    ok(res.status === 200, "整体 200");
+    const dup = await handleSearchLog(
+      post({ term: "一人之下", results: 0, visitor_id: vid(1) }),
+      env
+    );
+    const n = env.DB._db
+      .prepare("SELECT COUNT(*) c FROM search_events WHERE term = ?")
+      .get("一人之下").c;
+    ok(dup.body.deduped === true && n === 1, "同一位访客 1 小时内重复上报被拦下", `${n} 行`);
+  }
+  {
+    // 把时间往前挪 2 小时，1 小时去重窗口之外 → 应该真的写进去
+    env.DB._db
+      .prepare("UPDATE search_events SET at = at - ? WHERE term = ?")
+      .run(2 * 3600 * 1000, "一人之下");
+    const again = await handleSearchLog(
+      post({ term: "一人之下", results: 0, visitor_id: vid(1) }),
+      env
+    );
+    ok(again.body.deduped !== true, "超出 1 小时后同一位访客可以再报一次");
+  }
+  // 换访客：同一个词应该多出一行（这就是「几位访客」的来源）
+  await handleSearchLog(post({ term: "一人之下", results: 5, visitor_id: vid(2) }), env);
+  {
+    const rows = env.DB._db
+      .prepare("SELECT COUNT(*) c FROM search_events WHERE term = ?")
+      .get("一人之下").c;
+    ok(rows === 2, "不同访客各占一行", `${rows} 行`);
+    const last = env.DB._db
+      .prepare("SELECT results FROM search_events WHERE term = ? AND results > 0")
+      .get("一人之下");
+    ok(last && last.results === 5, "后来那次的结果覆盖到「上次结果」", JSON.stringify(last));
+  }
+  {
+    // 同一个 IP + 同一天没有 visitor_id 时，兜底指纹应该稳定（同一个人不会算成两个）
+    const bare = { DB: makeD1() };
+    await handleSearchLog(post({ term: "兜底指纹", results: 1 }), bare);
+    const dup = await handleSearchLog(post({ term: "兜底指纹", results: 1 }), bare);
+    const n = bare.DB._db.prepare("SELECT COUNT(*) c FROM search_events").get().c;
+    ok(dup.body.deduped === true && n === 1, "没带 visitor_id 时 IP+UA 兜底同样去重", `${n} 行`);
+  }
+
+  console.log("== 滑动窗口 + 热度值 + trend ==");
+  {
+    // 三个窗口的时间点：最近 7 天 / 前 7 天 / 再往前 7 天
+    const now = Date.now();
+    const recent = now - 1 * dayMs;
+    const prev = now - 8 * dayMs;
+    const older = now - 15 * dayMs;
+    const bare = { DB: makeD1() };
+    const ins = bare.DB._db.prepare(
+      "INSERT INTO search_events (term, fp, at, results) VALUES (?, ?, ?, ?)"
+    );
+    // 三体：最近 7 天 3 位访客、都搜到 0 条 → 热度 3*2+3=9，应该是第一名
+    ins.run("三体", "a1", recent, 0);
+    ins.run("三体", "a2", recent, 0);
+    ins.run("三体", "a3", recent, 0);
+    // 进击的巨人：最近 7 天 2 位，前 7 天 5 位 → 热度 4+0=4，名次从第 1 掉到第 3
+    ins.run("进击的巨人", "b1", recent, 5);
+    ins.run("进击的巨人", "b2", recent, 5);
+    for (let i = 0; i < 5; i++) ins.run("进击的巨人", `b9${i}`, prev, 5);
+    // 海贼王：只有前 7 天有 → 不该出现在本期榜上
+    for (let i = 0; i < 4; i++) ins.run("海贼王", `c${i}`, prev, 5);
+    // 某冷门老片：最近 7 天 1 位、0 条 → 热度 2+1=3
+    ins.run("某冷门老片", "d1", recent, 0);
+    // 一人之下：最近 7 天 2 位、前 7 天 1 位 → 热度 4+1=5，名次从第 3 升到第 2
+    ins.run("一人之下", "e1", recent, 3);
+    ins.run("一人之下", "e2", recent, 3);
+    ins.run("一人之下", "e3", prev, 3);
+    // 很老的词：三个窗口之外 → 只进全量汇总，不进榜
+    ins.run("很老的词", "f1", older, 2);
+
+    const res = await handleDemand(new Request("https://x/api/demand"), URL_DEMAND, bare);
     const s = res.body.search;
-    ok(s.terms.length === 3, "三个词都回来了", String(s.terms.length));
-    ok(s.terms[0].term === "进击的巨人" && s.terms[0].searches === 2, "按搜索次数排序",
-      JSON.stringify(s.terms[0]));
-    ok(s.gaps.length === 2, "缺口只含 0 结果的词", String(s.gaps.length));
+    ok(res.status === 200, "整体 200");
+    ok(s.window_days === 7 && s.min_visitors === 1, "回传窗口与门槛", JSON.stringify([s.window_days, s.min_visitors]));
+    ok(s.terms.length === 4, "只出本期窗口有数据的词", String(s.terms.length));
     ok(
-      s.gaps.every((g) => g.zero_results > 0),
-      "缺口条目都带 zero_results"
+      s.terms.map((t) => t.term).join(",") === "三体,一人之下,进击的巨人,某冷门老片",
+      "按热度值排序（量级为主、动量为辅）",
+      s.terms.map((t) => `${t.term}:${t.hot_value}`).join(" ")
     );
-    ok(s.searches === 5 && s.terms_total === 3 && s.gaps_total === 2,
-      "汇总用真实总数而不是列表长度", JSON.stringify({ s: s.searches, t: s.terms_total, g: s.gaps_total }));
+    ok(
+      s.terms[0].hot_value === 9 && s.terms[0].visitors === 3,
+      "热度 = 访客数×2 + 动量",
+      JSON.stringify(s.terms[0])
+    );
+    ok(
+      s.terms.find((t) => t.term === "进击的巨人").trend === "down",
+      "名次后移 → 下降",
+      JSON.stringify(s.terms.find((t) => t.term === "进击的巨人"))
+    );
+    ok(s.terms.find((t) => t.term === "一人之下").trend === "up", "名次前移 → 上升");
+    ok(s.terms.find((t) => t.term === "三体").trend === "up", "新进榜 → 上升");
+    ok(
+      !s.terms.some((t) => t.term === "海贼王") && !s.terms.some((t) => t.term === "很老的词"),
+      "窗口外/仅有历史数据的词不上榜"
+    );
+    ok(
+      s.terms.find((t) => t.term === "进击的巨人").prev_visitors === 5,
+      "回传上一个窗口的访客数"
+    );
+
+    console.log("== 缺口榜 ==");
+    ok(s.gaps.length === 2, "只含窗口内有人搜到 0 条的词", String(s.gaps.length));
+    ok(s.gaps[0].term === "三体" && s.gaps[0].zero_visitors === 3, "按「搜了没结果的人次」排", JSON.stringify(s.gaps[0]));
+    ok(s.gaps.every((g) => g.zero_visitors > 0), "缺口条目都带 zero_visitors");
+    ok(
+      s.gaps.every((g) => g.term !== "进击的巨人"),
+      "有结果的词不进缺口榜"
+    );
+
+    console.log("== 汇总口径 ==");
+    ok(s.visitors_total === 8, "窗口内人次 = 3+2+1+2", String(s.visitors_total));
+    ok(s.searches === 19, "全量人次含窗口外", String(s.searches));
+    ok(s.terms_total === 6, "全量表词数", String(s.terms_total));
+    ok(s.gaps_total === 4, "全量 0 结果人次", String(s.gaps_total));
+
+    console.log("== 明细保留期 ==");
+    ins.run("过期词", "z1", now - 200 * dayMs, 1);
+    const removed = await pruneSearchEvents(bare);
+    const gone = bare.DB._db
+      .prepare("SELECT COUNT(*) c FROM search_events WHERE term = ?")
+      .get("过期词").c;
+    const kept = bare.DB._db.prepare("SELECT COUNT(*) c FROM search_events").get().c;
+    ok(removed === 1 && gone === 0, "prune 只删过期那一行", `${removed} 行`);
+    ok(kept === 19, "窗口内的明细不动", `${kept} 行`);
   }
 
   console.log("== /api/demand：帮找榜 ==");
@@ -205,27 +293,20 @@ async function main() {
 
   console.log("== 表不存在也不能 500 ==");
   {
-    const bare = { DB: makeD1([]), NOVEL_CACHE: makeKV() };
+    const bare = { DB: makeD1([]) };
     const res = await handleDemand(new Request("https://x/api/demand"), URL_DEMAND, bare);
     ok(res.status === 200, "缺表仍 200");
     ok(
       res.body.search.terms.length === 0 &&
+        res.body.search.gaps.length === 0 &&
         res.body.wanted.items.length === 0 &&
         res.body.clicks.month.length === 0,
-      "缺表时三块都空着"
+      "缺表时各块都空着"
     );
-    const logged = await handleSearchLog(post({ term: "随便一个词" }), bare);
+    const logged = await handleSearchLog(post({ term: "随便一个词", visitor_id: vid(3) }), bare);
     ok(logged.status === 200 && logged.body.ok === false, "缺表时记账返回 ok:false 而不是 500");
-  }
-
-  console.log("== KV 挂了也要记账 ==");
-  {
-    const noKv = { DB: makeD1() };
-    const res = await handleSearchLog(post({ term: "没 KV 也得记", results: 1 }), noKv);
-    const row = noKv.DB._db
-      .prepare("SELECT searches FROM search_terms WHERE term = ?")
-      .get("没 KV 也得记");
-    ok(res.status === 200 && row && row.searches === 1, "没绑 KV 时照样入账");
+    const pruned = await pruneSearchEvents(bare);
+    ok(pruned === 0, "缺表时清理返回 0 而不是抛错");
   }
 
   globalThis.fetch = realFetch;

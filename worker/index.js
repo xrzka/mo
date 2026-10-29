@@ -1,6 +1,6 @@
 import { handle as handleBoardAdmin } from "./board_admin.js";
 import { handleHot } from "./hot.js";
-import { handleDemand, handleSearchLog } from "./demand.js";
+import { handleDemand, handleSearchLog, pruneSearchEvents } from "./demand.js";
 
 /**
  * 墨小说漫画 —— 点击 / 访问统计 + 资源帮找与失效反馈后端（Cloudflare Worker + D1）。
@@ -148,6 +148,8 @@ const SECTION_SUBS = {
   // 「精选」或「CS」分区的卡片就报「未知分区」。两边的白名单必须一致
   // （test_sections.mjs 就是盯这个的）。
   pickup: ["site", "app", "code", "plugin", "novel", "manga", "anime", "music", "game"],
+  // 编程区：暂时没有小分区（和 tool / forum / guide / cs 一样）
+  prog: [],
   cs: [],
 };
 
@@ -3533,6 +3535,8 @@ export default {
   /** cron 触发的清理，见 wrangler.toml 的 [triggers]。 */
   async scheduled(event, env) {
     if (env.DB) await cleanup(env);
+    // 搜索明细只留 90 天：它按天/周出榜，历史明细留着只会让表越来越大
+    if (env.DB) await pruneSearchEvents(env);
   },
 };
 
