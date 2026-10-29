@@ -18904,6 +18904,45 @@
       "need_login": false,
       "update_info": "网盘分享",
       "note": "实测（2026-10-29）：UC 网盘分享可打开（HTTP 200），标「永久有效」，里面就一个包、名「x140」（分享者自己的编号，跟站内 id 无关），页面显示修改日期 2026-10-29 12:26，分享者 虚*。站内已有同作条目 gal-602d95350b「纯白交响曲（未重置版）」、gal-595784432f「纯白交响曲 Remake for FHD」，本条是 UC 网盘的 FHD + SANA 打包。⚠ 成人向，未成年人别下。"
+    },
+    {
+      "id": "manual-prog-python-official",
+      "name": "Python 官方网站（官方下载入口）",
+      "section": "prog",
+      "subsection": null,
+      "description": "Python 的官方站点。下安装包只认官网（python.org）：主下载页会自动识别你的系统、给出最新稳定版的安装包，也可以手动挑版本；Windows 另有单独一页。",
+      "url": "https://www.python.org/downloads/",
+      "links": [
+        {
+          "name": "主下载页（自动识别系统）",
+          "url": "https://www.python.org/downloads/",
+          "password": "",
+          "label": "推荐"
+        },
+        {
+          "name": "Windows 专用下载页",
+          "url": "https://www.python.org/downloads/windows/",
+          "password": "",
+          "label": ""
+        },
+        {
+          "name": "官网首页 python.org",
+          "url": "https://www.python.org/",
+          "password": "",
+          "label": ""
+        }
+      ],
+      "tags": [
+        "官网",
+        "Python",
+        "编程",
+        "官方下载",
+        "跨平台"
+      ],
+      "kind": "网站 / 官方下载",
+      "need_login": false,
+      "update_info": "长期可用",
+      "note": "实测（2026-10-29）：三个地址都 HTTP 200 —— 主下载页标题「Download Python | Python.org」、Windows 页标题「Python Releases for Windows | Python.org」、首页「Welcome to Python.org」；页面上当前的最新稳定版是 Python 3.15.2，另有 3.14.10、3.13.17 等维护版本。下载按钮是按浏览器 UA 自动挑平台的（用 Windows 打开就是 Windows 安装包）。⚠ 只认 python.org 这一个官方域名：网上「Python 中文网 / 某某软件园」给的安装包常被重打包或塞捆绑，装之前先看下载地址的域名；官网下载页不需要付费，也没有任何「加速下载」按钮。"
     }
   ]
 }
