@@ -164,9 +164,11 @@ class StatsStub(http.server.BaseHTTPRequestHandler):
     sessions = set()
     admin_password = "correct-horse-battery"
     # 与 Worker 的 OVERRIDE_FIELDS 保持一致。多一项少一项都会让测试测不到实情。
+    # hidden / adult 是后来加的布尔字段（app 的 ADMIN_EDIT_FIELDS 会随「撤销全部改动」
+    # 一并置 null —— 少了它们 stub 会 400，撤销就永远不成功）。
     override_fields = (
         "name", "description", "url", "password", "note",
-        "section", "subsection", "placements", "deleted",
+        "section", "subsection", "placements", "deleted", "hidden", "adult",
     )
     # 一条资源最多挂几个分区。与 Worker 的 PLACEMENT_MAX 一致。
     placement_max = 8
@@ -274,8 +276,12 @@ class StatsStub(http.server.BaseHTTPRequestHandler):
                 return self._send({"error": "temporary watch failure"}, 503)
             action = (query.get("action") or [""])[0]
             if parsed.path == "/api/watch/music":
-                if action in ("", "getNewestSongsV2"):
-                    return self._send({"data": [{"id": 11, "name": "测试歌曲", "artists": [{"name": "测试歌手"}], "picUrl": ""}]})
+                # 音乐区默认走 explore（Worker 归一化成 {items:[...]}），
+                # 搜索走 searchV2（网易云原始形状）；getNewestSongsV2 保留兜底。
+                if action in ("", "explore", "getNewestSongsV2"):
+                    return self._send({"items": [{"id": 11, "name": "测试歌曲", "artists": [{"name": "测试歌手"}], "cover": ""}]})
+                if action == "searchV2":
+                    return self._send({"data": {"result": {"songs": [{"id": 11, "name": "测试歌曲", "ar": [{"name": "测试歌手"}], "al": {"picUrl": ""}}]}}})
                 if action == "getAlgerListenUrl":
                     return self._send({"data": "https://music.163.com/song.mp3"})
             if parsed.path == "/api/watch/audio":
@@ -291,9 +297,27 @@ class StatsStub(http.server.BaseHTTPRequestHandler):
                 if action == "list":
                     return self._send({"items": [{"id": "88", "title": "测试动画", "subtitle": "动画线路", "cover": ""}]})
                 if action == "detail":
-                    return self._send({"id": "88", "title": "测试动画", "episodes": [{"id": "88_1_1", "title": "第 1 集"}]})
-                if action == "play":
-                    return self._send({"id": "88_1_1", "embedUrl": "https://yun.92cj.com/player/test"})
+                    # 新版播放器不再用受信任 iframe，而是直连 m3u8（hls.js 播放、
+                    # 多线路自动降级）。线路结构 {label, source, eps:[{ep,url}]}，
+                    # url 要绝对地址 —— 浏览器把它当成相对当前页面的地址去拉。
+                    m3u8 = f"http://127.0.0.1:{self.server.server_address[1]}/api/watch/m3u8"
+                    return self._send({
+                        "id": "88",
+                        "title": "测试动画",
+                        "lines": [
+                            {"label": "线路1", "source": "quantum",
+                             "eps": [{"ep": "第 1 集", "url": m3u8}]},
+                        ],
+                    })
+            if parsed.path == "/api/watch/m3u8":
+                manifest = (
+                    "#EXTM3U\n#EXT-X-VERSION:3\n#EXT-X-TARGETDURATION:2\n"
+                    "#EXT-X-MEDIA-SEQUENCE:0\n#EXTINF:2.0,\nseg0.ts\n#EXT-X-ENDLIST\n"
+                )
+                return self._send_bytes(manifest.encode("utf-8"), "application/vnd.apple.mpegurl")
+            if parsed.path == "/api/watch/seg0.ts":
+                # 一个全零 TS 包：hls.js 解不出内容也无所谓，测试只断言播放器节点生成
+                return self._send_bytes(b"\x47\x00\x00\x00" + b"\x00" * 184, "video/mp2t")
             if parsed.path == "/api/watch/manga":
                 if action == "list":
                     return self._send({"items": [{"id": "7", "title": "测试漫画", "subtitle": "漫画线路", "cover": "/api/watch/asset?kind=manga&url=https%3A%2F%2Fi.lzimg.xyz%2Fcover.jpg"}]})
@@ -419,9 +443,9 @@ class StatsStub(http.server.BaseHTTPRequestHandler):
             for k, v in fields.items():
                 if v is None:
                     cur.pop(k, None)          # null 撤销这一项
-                elif k == "deleted":
+                elif k == "deleted" or k == "hidden" or k == "adult":
                     if not isinstance(v, bool):
-                        return self._send({"error": "deleted 必须是布尔值或 null"}, 400)
+                        return self._send({"error": f"{k} 必须是布尔值或 null"}, 400)
                     cur[k] = v
                 elif isinstance(v, str):
                     if k == "url" and v and not re.match(r"^https?://", v, re.I):
@@ -834,6 +858,8 @@ def test_adult_filter(page, base):
     check("未成年模式下排行榜不显示成人向条目", page.is_visible("[data-stats-empty]"))
 
     page.click("[data-mode-toggle]")
+    # 现在的年龄门要求填出生年份判定满 18，空着点确认只会弹校验错误
+    page.fill("[data-age-year]", "1990")
     page.click("[data-age-confirm]")
     page.wait_for_timeout(300)
     rows = rank_rows(page)
@@ -1490,7 +1516,8 @@ def test_broken_panel(page, base, stub_port):
     # 后端支持时，公告才教用户去点卡片里的按钮。
     # 用 inner_text 而不是 text_content —— 后者返回 node.textContent，
     # 把 hidden 的那半句也算进来，断言就测不到可见性了。
-    notice = page.locator(".notice-board-sub").inner_text()
+    # 公告里现在有两段 notice-board-sub（反馈提示 + 解压工具提示），这里要前者。
+    notice = page.locator(".notice-board-sub:not(.notice-board-unzip)").inner_text()
     check("公告指向卡片反馈按钮", "反馈按钮" in notice, notice.strip()[:80])
 
     kinds = page.eval_on_selector_all(
@@ -1704,8 +1731,8 @@ def test_broken_hidden_on_legacy_backend(page, base, stub_port):
     open_first_card(page)
     check("卡片没有失效反馈按钮", page.locator(".card-report-btn").count() == 0)
 
-    # 公告也不能教用户去点一个不存在的按钮
-    notice = page.locator(".notice-board-sub").inner_text()
+    # 公告也不能教用户去点一个不存在的按钮（同上，取反馈那段，不是解压那段）
+    notice = page.locator(".notice-board-sub:not(.notice-board-unzip)").inner_text()
     check("公告不提卡片反馈按钮", "反馈按钮" not in notice, notice.strip()[:80])
     check("公告退回反馈群说法", "反馈群" in notice, notice.strip()[:80])
 
@@ -1727,7 +1754,9 @@ def card_editor(page, item_id):
     if card.get_attribute("aria-expanded") != "true":
         card.click()
         page.wait_for_timeout(200)
-    btn = card.locator(".card-admin-btn")
+    # 卡片现在有 3 个后台按钮（编辑/一键隐藏/加入成人区），必须指名点「编辑这条」，
+    # 否则 Playwright 的 strict mode 会因匹配到多个而报错。
+    btn = card.locator('.card-admin-btn[data-field="adminBtn"]')
     if card.locator(".card-admin-form").is_hidden():
         btn.click()
         page.wait_for_timeout(300)
@@ -1852,8 +1881,8 @@ def test_admin_edit(page, base, stub_port):
     item_id = page.locator(".feed-card").nth(0).get_attribute("data-item-id")
     card = card_editor(page, item_id)
     fields = card.locator(".card-admin-form .admin-field")
-    # 五个文本字段 + 一块分区归属选择器（分区从两个下拉合并成了一个多行控件）
-    check("表单有 6 个字段", fields.count() == 6, str(fields.count()))
+    # 标题/简介/链接/提取码/备注 5 个 + 分区归属选择器 + 隐藏 + 成人区 = 8
+    check("表单有 8 个字段", fields.count() == 8, str(fields.count()))
 
     # 表单初值应是当前显示值，不是空的
     first_input = card.locator(".card-admin-form .admin-field input").nth(0)
@@ -2156,6 +2185,7 @@ def test_admin_same_section_multi_sub(page, base, stub_port):
     # 这条标了 adult，未成年模式下搜不到，先切到成年模式
     if page.locator(f'.feed-card[data-item-id="{ITEM}"]').count() == 0:
         page.click("[data-mode-toggle]")
+        page.fill("[data-age-year]", "1990")
         page.click("[data-age-confirm]")
         page.wait_for_timeout(500)
     card = card_editor(page, ITEM)
@@ -3047,7 +3077,10 @@ def test_watch_music(page, base, stub_port):
     page.wait_for_selector("audio.watch-player")
     audio = page.locator("audio.watch-player")
     check("音乐播放器已生成", audio.count() == 1)
-    check("音频使用 Worker 代理", "/api/watch/audio?url=" in audio.get_attribute("src"), audio.get_attribute("src"))
+    # 播放器现在把整首歌经 Worker 代理预下载成 blob 再播（修「放几秒停几秒」的
+    # Range 续传卡顿），audio.src 是 blob: —— 代理链路改从 stub 记录的请求里验。
+    proxied = [r for r in StatsStub.watch_requests if r.startswith("/api/watch/audio?url=")]
+    check("音频使用 Worker 代理", len(proxied) >= 1, json.dumps(StatsStub.watch_requests)[:120])
 
 
 def test_watch_novel(page, base, stub_port):
@@ -3067,18 +3100,20 @@ def test_watch_novel(page, base, stub_port):
 
 
 def test_watch_anime(page, base, stub_port):
-    """观看区：动画选集与受信任 iframe 播放器。"""
+    """观看区：动画选集与 m3u8 直连播放器（hls.js，多线路自动降级）。"""
     print("\n--- 观看区：动画播放 ---")
     open_watch_kind(page, base, stub_port, "动画")
     page.locator(".watch-card").click()
     page.get_by_role("button", name="第 1 集").click()
-    page.wait_for_selector("iframe.watch-video")
-    frame = page.locator("iframe.watch-video")
-    check("动画播放器已生成", frame.count() == 1)
-    check("动画播放器地址正确", frame.get_attribute("src") == "https://yun.92cj.com/player/test", frame.get_attribute("src"))
-    page.get_by_role("button", name="← 返回选集").click()
-    page.get_by_role("button", name="第 1 集").wait_for()
-    check("动画返回选集可用", page.get_by_role("button", name="第 1 集").count() == 1)
+    page.wait_for_selector("video.watch-player")
+    video = page.locator("video.watch-video")
+    check("动画播放器已生成", video.count() == 1)
+    # 新版：点集不换页，选集列表和播放器同屏
+    check("选集按钮仍在（点集不换页）", page.get_by_role("button", name="第 1 集").count() == 1)
+    check("播放清单走了 stub", any("/api/watch/m3u8" in r for r in StatsStub.watch_requests),
+          json.dumps(StatsStub.watch_requests)[:120])
+    page.get_by_role("button", name="← 返回列表").click()
+    check("返回列表回到卡片", page.locator(".watch-card").count() == 1)
 
 
 def test_watch_manga(page, base, stub_port):

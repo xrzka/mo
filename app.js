@@ -1515,7 +1515,16 @@
     page.forEach((it) => frag.appendChild(buildCard(it)));
     feed.appendChild(frag);
 
-    $("[data-empty]").hidden = list.length > 0;
+    const empty = $("[data-empty]");
+    empty.hidden = list.length > 0;
+    if (!list.length) {
+      // 空状态分两种：搜了没结果（把「让站长去补」的入口搬进来，作品名已填好）
+      // 和分区本身没收录（保持原来的提示文案）。
+      const q = (state.q || "").trim();
+      empty.textContent = "";
+      if (q.length >= 2) empty.append(buildAskNode(q));
+      else empty.textContent = "这个分区还没有收录资源，或没有匹配的搜索结果。";
+    }
     const secDef = SECTION_MAP.get(state.section);
     const subDef = (secDef.subs || []).find((s) => s.id === state.sub);
     const label = subDef ? `${secDef.label} · ${subDef.label}` : secDef.label;
@@ -6608,6 +6617,9 @@
         state.page = 1;
         renderModeUI();
         render();
+        // 统计面板可能正开着：模式切换改变了「哪些条目可见」，榜单要跟着重画，
+        // 否则成年模式下打开的排行榜还停在未成年时的空列表。
+        renderStats();
         return;
       }
       clearError();
@@ -6643,6 +6655,8 @@
       dialog.hidden = true;
       renderModeUI();
       render();
+      // 同上：统计面板开着时要重画，否则刚切的成年模式在榜单里不生效
+      renderStats();
     };
 
     $("[data-age-confirm]").addEventListener("click", submit);
@@ -6675,6 +6689,8 @@
         state.page = 1;
         renderModeUI();
         render();
+        // 同上：统计面板开着时要跟着重画
+        renderStats();
       });
     }
   }
@@ -6818,6 +6834,98 @@
     } catch (err) {
       /* 埋点失败不影响搜索 */
     }
+  }
+
+  /* ---- 搜了没结果 → 一键让站长去补 ----
+   * 实测「让用户自己填求助表单」基本没人写（不是懒得打字，是搜完 0 条就直接走了），
+   * 所以把求助入口搬到 0 结果的空状态里：作品名就是他刚搜的那个词，点一下就提交，
+   * 一个字都不用打。这样「搜了没结果」的记录就同时变成两份可用的东西：
+   * 站长的补货清单（qiu 页）+ 帮找列表里带票数的求助（别的访客能投票顶上去）。 */
+
+  const ASKED_KEY = "mo-asked-v1";
+
+  function loadAsked() {
+    try {
+      const raw = JSON.parse(localStorage.getItem(ASKED_KEY) || "[]");
+      return new Set(Array.isArray(raw) ? raw.filter((t) => typeof t === "string") : []);
+    } catch {
+      return new Set();
+    }
+  }
+
+  function markAsked(term) {
+    try {
+      const s = loadAsked();
+      s.add(term);
+      // 和「已反馈」同一口径：只留最近 200 条，别让 localStorage 无限长
+      localStorage.setItem(ASKED_KEY, JSON.stringify([...s].slice(-200)));
+    } catch {
+      /* 存不下也没事：后端会按标题去重合并 */
+    }
+  }
+
+  /** 把「没找到」的空状态补上求助按钮。term 是访客刚搜的那个词。 */
+  function buildAskNode(term) {
+    const wrap = document.createElement("div");
+    wrap.className = "empty-ask";
+
+    const asked = loadAsked().has(term);
+    const text = document.createElement("p");
+    text.className = "empty-ask-text";
+    text.textContent = asked
+      ? "这个作品你已经帮站长标记过了，正在补。"
+      : `站里没有「${term}」。想让站长去补的话，点一下就行（作品名已帮你填好）。`;
+    wrap.append(text);
+
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "empty-ask-btn";
+    btn.textContent = asked ? "已帮你要过了" : "没找到，让站长去补";
+    btn.disabled = asked;
+    wrap.append(btn);
+
+    const msg = document.createElement("span");
+    msg.className = "empty-ask-msg";
+    msg.setAttribute("aria-live", "polite");
+    wrap.append(msg);
+
+    btn.addEventListener("click", async () => {
+      if (btn.disabled) return;
+      const api = wantedApi();
+      if (!api) {
+        msg.textContent = "求助功能暂时不可用";
+        return;
+      }
+      btn.disabled = true;
+      btn.textContent = "提交中…";
+      try {
+        const res = await fetch(`${api}/api/requests`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title: term, note: "站内没搜到，从搜索空状态一键提交" }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          btn.disabled = false;
+          btn.textContent = "没找到，让站长去补";
+          msg.textContent = data.error || "提交失败，稍后再试";
+          return;
+        }
+        markAsked(term);
+        btn.textContent = "已帮你要过了";
+        msg.textContent = data.merged ? "已有人提过这部作品，帮你加了一票" : "收到，找到后会加进站里";
+        // 帮找列表变了，顺手刷新
+        if (state.wantedLoaded) {
+          await loadWanted();
+          renderWanted();
+        }
+      } catch (err) {
+        btn.disabled = false;
+        btn.textContent = "没找到，让站长去补";
+        msg.textContent = "网络不通，稍后再试";
+      }
+    });
+    return wrap;
   }
 
   function bindControls() {

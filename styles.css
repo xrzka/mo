@@ -514,6 +514,21 @@ h1 {
   border: 1px dashed var(--border);
   border-radius: var(--radius);
 }
+/* 搜了没结果 → 一键求助（作品名已填好，访客一个字都不用打） */
+.empty-ask { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.empty-ask-text { margin: 0; }
+.empty-ask-btn {
+  padding: 8px 18px;
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  background: var(--accent-soft, transparent);
+  color: var(--accent);
+  font-weight: 600;
+  cursor: pointer;
+}
+.empty-ask-btn:hover:not(:disabled) { filter: brightness(1.08); }
+.empty-ask-btn:disabled { opacity: 0.6; cursor: default; }
+.empty-ask-msg { font-size: 12px; color: var(--text-muted); }
 /* ---------- 入站公告 ---------- */
 .notice-board {
   display: flex;

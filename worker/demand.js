@@ -59,6 +59,8 @@ const EVENT_KEEP_DAYS = 90;
 const VISITOR_RE = /^[A-Za-z0-9_-]{16,64}$/;
 /** 帮找榜条数。 */
 const WANTED_LIMIT = 60;
+/** 搜索流水条数。站长照这份流水一条条补资源，40 条够看完最近几天。 */
+const RECENT_LIMIT = 40;
 /** 点击榜条数（月 / 年各取这么多）。 */
 const CLICK_TOP = 20;
 /** mo 站静态数据。只用来把 clicks 里的 id 换成资源名，拿不到就只显示 id。 */
@@ -188,6 +190,7 @@ async function demandSearch(env) {
     min_visitors: MIN_VISITORS,
     terms: [],
     gaps: [],
+    recent: [],
     visitors_total: 0,
     terms_total: 0,
     gaps_total: 0,
@@ -239,6 +242,25 @@ async function demandSearch(env) {
         last_at: demandNum(row.last_at),
       });
     }
+  } catch (err) {
+    /* 同上 */
+  }
+
+  // 最新搜索流水：按时间倒序的原始记录（已经过按访客去重，不是打点原始数据）。
+  // 热词榜回答「哪类词热」，这份流水回答「最近到底有人搜了什么、搜到没有」——
+  // 站长照着它一条条补资源，比看聚合榜直接。
+  out.recent = [];
+  try {
+    const { results } = await env.DB.prepare(
+      "SELECT term, results, at FROM search_events ORDER BY at DESC LIMIT ?"
+    )
+      .bind(RECENT_LIMIT)
+      .all();
+    out.recent = (results || []).map((r) => ({
+      term: r.term,
+      results: demandNum(r.results),
+      at: demandNum(r.at),
+    }));
   } catch (err) {
     /* 同上 */
   }

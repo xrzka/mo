@@ -232,6 +232,20 @@ async function main() {
     ok(s.terms_total === 6, "全量表词数", String(s.terms_total));
     ok(s.gaps_total === 4, "全量 0 结果人次", String(s.gaps_total));
 
+    console.log("== 搜索流水 ==");
+    ok(Array.isArray(s.recent) && s.recent.length === 19, "流水含全部 19 条明细（含窗口外）",
+      String(s.recent.length));
+    ok(
+      s.recent.every((r, i) => i === 0 || s.recent[i - 1].at >= r.at),
+      "流水按时间倒序"
+    );
+    ok(
+      s.recent.every((r) => "term" in r && "results" in r && "at" in r),
+      "每条带 term/results/at"
+    );
+    ok(s.recent[0].at > Date.now() - 2 * dayMs && s.recent[0].at <= Date.now(),
+      "最新一条来自最近 7 天窗口", JSON.stringify(s.recent[0]));
+
     console.log("== 明细保留期 ==");
     ins.run("过期词", "z1", now - 200 * dayMs, 1);
     const removed = await pruneSearchEvents(bare);
