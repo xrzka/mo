@@ -19397,6 +19397,25 @@
       "update_info": "随时可用",
       "note": "实测（2026-11-03 23:23）：HTTP 200 直连不用代理（代理同效），lang=ko，标题「고래툰 - 무료웹툰 웹툰미리보기」，自述按 요일 / 장르 / 플랫폼 快速浏览 연재 / 완결 / 인기 웹툰。首页公告「고래툰 신규 도메인 주소는 공식 텔레그램 채널 @grtoonurl 로 안내드립니다」—— 失效了去 Telegram 频道 @grtoonurl 找新编号（当前第 2 轮）。题材栏含 성인，近期更新榜清一色 19 金标（BL·백합 / 드라마 성인向为主），已按成人向收录，未成年别进。免登录、全站韩文。",
       "adult": true
+    },
+    {
+      "id": "manual-manga-site-rinko",
+      "name": "Rinko Comics（英译漫画站 · 韩漫为主 · 有安卓 App）",
+      "section": "manga",
+      "subsection": "site",
+      "description": "英文在线漫画站（Rinko Comics）：韩漫英译为主（Job-Change Log、The Problematic Prince、Cry, or Better Yet, Beg 等罗曼奇幻 / 少女·女性向），另设 Novels 小说板块；有官方安卓 App（站内公告免费下载）。全站英文，浏览免登录。",
+      "url": "https://rinkocomics.com/",
+      "tags": [
+        "英译",
+        "韩漫",
+        "在线阅读",
+        "安卓App",
+        "免登录"
+      ],
+      "kind": "在线漫画网站",
+      "need_login": false,
+      "update_info": "随时可用",
+      "note": "实测（2026-11-03 23:28）：HTTP 200 直连不用代理（代理同效），lang=en-US，标题「Rinko Comics – Immerse Yourself in Manhwa, Comics, Manga, and Manhua.」；导航 Home / Comics / Novels / Shop，首页作品 Job-Change Log、A Child Who Looks Like Me、The Count's Secret Maid、The Problematic Prince、Cry, or Better Yet, Beg 等，题材 Comedy / Drama / Romance / Shoujo / Josei —— 韩漫英译、少女·女性向为主。站内有官方安卓 App 公告（免费下载），Login / Sign Up / Shop 入口在 —— 部分章节可能要登录或付费，白嫖部分直接看。首页无成人内容，不标 adult。全站英文。"
     }
   ]
 }
