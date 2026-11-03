@@ -19162,6 +19162,40 @@
       "need_login": false,
       "update_info": "随时可用",
       "note": "实测（2026-11-03 10:29）：HTTP 200 可直连、lang=en，标题「www.mgeko.cc - Enjoy reading」，简介自述 completely free without any ads（无广告是主打卖点）；首页 Trending Today / Leaderboard（今日 / 本周 / 本月榜）带评分（The Regressed Mercenary's Machinations 4.6、The Shepherd Wizard 4.9、Myst, Might, Mayhem 4.7），韩漫为主，另有 Fan comics 板块。无成人内容、无年龄门。有登录但免登录可逛。全站英文、看的英译。"
+    },
+    {
+      "id": "manual-novel-site-lightnovel",
+      "name": "轻之国度（lightnovel.fun）",
+      "section": "novel",
+      "subsection": "site",
+      "description": "专注分享的 NACG 社群：中文轻小说社区，日轻为主，提供搜索、分类、排行、作品详情、EPUB 下载与在线阅读；板块有 轻小说 / 原创 / 同人 / EPUB，带论坛功能（发帖、动态）。有 APP。台版 / 简中 EPUB 制作用户不少。",
+      "url": "https://lightnovel.fun/",
+      "links": [
+        {
+          "name": "主站（直连稳）",
+          "url": "https://lightnovel.fun/",
+          "password": "",
+          "label": "推荐"
+        },
+        {
+          "name": "www 线路（偶发连不上）",
+          "url": "https://www.lightnovel.fun/",
+          "password": "",
+          "label": ""
+        }
+      ],
+      "tags": [
+        "轻小说",
+        "日轻",
+        "EPUB",
+        "论坛",
+        "中文",
+        "在线阅读"
+      ],
+      "kind": "轻小说社区",
+      "need_login": false,
+      "update_info": "随时可用",
+      "note": "实测（2026-11-03 19:14）：直连 lightnovel.fun HTTP 200（lang=zh-Hans），标题「轻之国度-专注分享的NACG社群」，提供搜索 / 分类 / 排行 / EPUB，热门有《义妹生活》等日轻，板块 轻小说 / 原创 / 同人 / EPUB，带论坛功能（发帖 / 动态）。⚠ www.lightnovel.fun 直连出现 ERR_CONNECTION_RESET（走代理 200）——所以主链接用不带 www 的域名，www 放第二条线路，都不行就走代理。浏览不用登录，部分下载可能要登录（论坛惯例）。"
     }
   ]
 }
