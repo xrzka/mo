@@ -19121,6 +19121,26 @@
       "need_login": false,
       "update_info": "随时可用",
       "note": "实测（2026-11-03 10:18）：HTTP 200 可直连、lang=en，标题「ReiManga - Read Manga Online Free」，简介自述 manga / manhwa / manhua 全收、更新快；首页热门带评分（Cherry Blossoms After Winter 8.5 分 6158 人评、I'll Be The Matriarch In This Life 9.3 分 6763 人评），最新更新按小时刷，列表里部分作品带 18+ 标（聚合站常态，无独立年龄门）。免登录可逛。全站英文，看的是英译版；日文原版站内另有 KLZ9。"
+    },
+    {
+      "id": "manual-manga-site-kaynscans",
+      "name": "Kayn Scans（免费英译漫画站 · 兼小说）",
+      "section": "manga",
+      "subsection": "site",
+      "description": "扫翻组运营的免费英译站：韩漫为主的 manhwa / comics 在线看，还兼有小说区，题材偏奇幻、武侠（무협）、浪漫；作品带社区评分，每日更新。有 Coins 商店（花钱早看几话，免费追更照常）。全站英文界面。",
+      "url": "https://kaynscans.com/",
+      "tags": [
+        "英译",
+        "英文漫画",
+        "漫画",
+        "在线阅读",
+        "韩漫",
+        "免注册"
+      ],
+      "kind": "在线漫画网站",
+      "need_login": false,
+      "update_info": "随时可用",
+      "note": "实测（2026-11-03 10:24）：HTTP 200 可直连、lang=en，标题「Kayn Scans — Read Novels, Manhwa & Comics Online Free」，导航 Home / Series / Collections / Community / Library / Coins Shop 等，首页热门带评分（Fog Land 4.8、Heavenly Demon Cultivation Simulation 4.8、The Poison Master Of Sichuan Tang Clan 4.7 等），公告区挂着 Apple Pay / Google Pay / PayPal 充值说明。部分作品带 Mature 标（无独立年龄门）。免登录可逛；付费是「早看几话」的解锁币，免费追更照常。全站英文、看的英译。"
     }
   ]
 }
