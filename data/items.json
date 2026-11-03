@@ -19338,6 +19338,25 @@
       "need_login": false,
       "update_info": "随时可用",
       "note": "实测（2026-11-03 22:21）：分享页有效，文件夹「绝代君临」，提取码 mpms（实测输入进入列表页），分享者「缀*成章」，过期时间：永久有效；网盘不登录看不到文件夹内部文件名和大小。小分区照站内同类分享的惯例归「韩轻」（n1、女勇者报恩记、反派想要安静地生活都在 kr）；译名要是实际是日轻 / 国轻，后台把分区挪过去就行。"
+    },
+    {
+      "id": "manual-novel-site-novexa",
+      "name": "Novexa Novels（英文翻译网文站 · 韩风为主）",
+      "section": "novel",
+      "subsection": "site",
+      "description": "英文在线小说站（Novexa Novels）：主打韩风网文英译（公爵夫人罗曼奇幻、猎人异能、重生 necromancer 这类），Series Lists / AZ Lists 两套导航，编辑推荐带评分。站内货币 Novexa Coins 解锁章节（商店常驻促销），白嫖部分照常看。全站英文。",
+      "url": "https://novexanovels.com/",
+      "tags": [
+        "英译",
+        "网文",
+        "韩风",
+        "在线阅读",
+        "部分付费"
+      ],
+      "kind": "在线小说网站",
+      "need_login": false,
+      "update_info": "随时可用",
+      "note": "实测（2026-11-03 23:02）：HTTP 200 直连不用代理（代理同效），lang=en-US，标题「Novexa Novels – The Story Never Ends」；首页 Editor's Choice 打《I BECAME THE WIFE OF THE CURSED GRAND DUKE》（9.8 分），题材 Fantasy / Romance / Action 韩风英译为主。导航 Series Lists / AZ Lists / Bookmark / Coin Shop；站内货币 Novexa Coins 有商城和促销横幅 —— 部分章节要买币或登录解锁，免费部分直接看。免登录可逛首页与列表，全站英文。"
     }
   ]
 }
