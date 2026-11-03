@@ -19416,6 +19416,25 @@
       "need_login": false,
       "update_info": "随时可用",
       "note": "实测（2026-11-03 23:28）：HTTP 200 直连不用代理（代理同效），lang=en-US，标题「Rinko Comics – Immerse Yourself in Manhwa, Comics, Manga, and Manhua.」；导航 Home / Comics / Novels / Shop，首页作品 Job-Change Log、A Child Who Looks Like Me、The Count's Secret Maid、The Problematic Prince、Cry, or Better Yet, Beg 等，题材 Comedy / Drama / Romance / Shoujo / Josei —— 韩漫英译、少女·女性向为主。站内有官方安卓 App 公告（免费下载），Login / Sign Up / Shop 入口在 —— 部分章节可能要登录或付费，白嫖部分直接看。首页无成人内容，不标 adult。全站英文。"
+    },
+    {
+      "id": "manual-novel-site-nextchapter",
+      "name": "NextChapter（漫画小说阅读追踪 · 英文）",
+      "section": "novel",
+      "subsection": "site",
+      "description": "英文阅读追踪库（NextChapter）：把 manhwa / manga / manhua / 小说记进一个库 —— Browse series、Reading lists、Community lists、Tier lists、Discovery 发现页，带全网评分聚合与 trending 榜。建库免费，记录 / 评论要 Sign in。定位是追踪工具不存正文，全站英文。",
+      "url": "https://nextchapter.moe/",
+      "tags": [
+        "英文",
+        "追踪",
+        "记录",
+        "评分聚合",
+        "免登录"
+      ],
+      "kind": "阅读追踪 / 记录工具",
+      "need_login": false,
+      "update_info": "随时可用",
+      "note": "实测（2026-11-03 23:34）：HTTP 200 直连不用代理（代理同效），lang=en，标题「NextChapter • Track manga, manhwa, manhua, and novels」，自述「Track your reading. Share your taste. Find your people.」—— 追踪记录库不是阅读站：Browse series / Reading lists / Community lists / Tier lists / Discovery，评分聚合标「Rated x.x around the web」。建库免费（Start your library — free），记录 / 评论要 Sign in。Trending 打 Jinx（3.9 分）、The Hounds of Sisyphus（4.1 分）等。漫画 manhwa 为主也收小说（照用户口径放小说区）。无 CF 盾、全站英文。"
     }
   ]
 }
