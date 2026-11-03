@@ -19196,6 +19196,45 @@
       "need_login": false,
       "update_info": "随时可用",
       "note": "实测（2026-11-03 19:14）：直连 lightnovel.fun HTTP 200（lang=zh-Hans），标题「轻之国度-专注分享的NACG社群」，提供搜索 / 分类 / 排行 / EPUB，热门有《义妹生活》等日轻，板块 轻小说 / 原创 / 同人 / EPUB，带论坛功能（发帖 / 动态）。⚠ 整站直连偶发 ERR_CONNECTION_RESET（不带 www 的 apex 和 www 都碰到过，重试或走代理就 200，走代理稳定）——所以给了两条线路，哪条能开用哪条，都不行就走代理。浏览不用登录，部分下载可能要登录（论坛惯例）。"
+    },
+    {
+      "id": "manual-pickup-moegirl",
+      "name": "萌娘百科（moegirl.uk 镜像）",
+      "section": "pickup",
+      "subsection": "site",
+      "description": "ACG 中文百科 wiki：动画 / 漫画 / 游戏 / 角色 / 声优 / 流行梗的资料库，查角色设定、作品条目、梗的出处基本都靠它。moegirl.uk 是萌娘百科的镜像域名之一。",
+      "url": "https://moegirl.uk/%E9%A6%96%E9%A1%B5",
+      "tags": [
+        "百科",
+        "wiki",
+        "ACG",
+        "查询工具",
+        "萌娘百科"
+      ],
+      "kind": "在线查询 / 自查工具",
+      "need_login": false,
+      "update_info": "随时可用",
+      "note": "实测（2026-11-03 19:33）：moegirl.uk 带 Cloudflare 人机验证盾 —— 直连和走代理都会先弹「请稍候…」验证页（headless 自动化穿不过去，挑战页显示「验证成功。正在等待响应」但一直不落地）；人肉浏览器正常访问即可。落地为萌娘百科首页（/首页）。查不到条目时换 moegirl.org.cn 主域名试试。"
+    },
+    {
+      "id": "manual-anime-site-tsdm39",
+      "name": "天使动漫论坛（tsdm39.com）",
+      "section": "anime",
+      "subsection": "site",
+      "description": "「梦开始的地方」——老牌 ACG 综合论坛（Discuz）：动画 / 漫画 / 轻小说 / 音乐资源 + TSDM 字幕组作品发布，社区功能多（签到 / 打工 / 银行 / 宠物 / 勋章 / 风格），讨论氛围温馨，新人报到有积分。",
+      "url": "https://www.tsdm39.com/",
+      "tags": [
+        "动漫论坛",
+        "天使动漫",
+        "字幕组",
+        "ACG",
+        "社区",
+        "资源"
+      ],
+      "kind": "动漫论坛",
+      "need_login": false,
+      "update_info": "随时可用",
+      "note": "实测（2026-11-03 19:33）：HTTP 200 直连，标题「天使动漫论坛 - 梦开始的地方 一个能轻松聊天结识同好的温馨小论坛 Angel Beats|TSDM字幕组|天使动漫网 - Powered by Discuz!」，今日 4062 帖 / 会员 222 万 / 帖子 2818 万，板块 天使·后花园（新人报到 / 若闲小阁）等，公告写 16 周年。游客可看部分板块，完整资源权限要登录（论坛惯例）。域名带编号（39）是防屏蔽轮换的惯用做法，失效了就找下一编号或从导航站要新地址。"
     }
   ]
 }
