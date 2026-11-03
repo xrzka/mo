@@ -19492,6 +19492,25 @@
       "need_login": false,
       "update_info": "随时可用",
     "note": "实测（2026-11-03 23:50）：直连 30 秒超时、走代理 HTTP 200，lang=ko，标题「카카오웹툰 - KAKAO WEBTOON」，自述「상상력을 자극하는 웹툰들을 만나보세요」；导航 보관함 / 시간표 / 랭킹，요일별 신작 + 완결，연재무료（连载免费）与 기다무（等就免费）筛选，作品 UP 标更新。首页公告「11월 9일 오전 11시 통합이 시작됩니다」—— 11-09 起与 KakaoPage 合并（#카카페），本卡与 KakaoPage 卡后续地址都看站内公告。首页无 성인 / 19금 字样，不标 adult。国内直连超时访问挂梯子；浏览免登录，看正文要 Kakao 账号。全站韩文。"
+    },
+    {
+      "id": "manual-game-app-emulators",
+      "name": "手机玩电脑游戏模拟器合集（盖世·吉里吉里·KR·TY·JoiPlay）",
+      "section": "game",
+      "subsection": "app",
+      "description": "百度网盘分享「手机玩电脑游戏用的 模拟器（看自己需求下载）」：盖世（PC / Unity 游戏上手机）、吉里吉里模拟器（KR 游戏）、KR 模拟器、TY 模拟器（Tyranor）、JoiPlay（RPG Maker 等）按需自取，手机玩 galgame / PC 游戏的入门装备；下载 / 保存要登录百度账号。",
+      "url": "https://pan.baidu.com/s/129dCOut98yE8AwuDaVlS6A?pwd=gnx5",
+      "tags": [
+        "安卓",
+        "模拟器",
+        "网盘",
+        "galgame",
+        "合集"
+      ],
+      "kind": "模拟器 App 合集（网盘）",
+      "need_login": true,
+      "update_info": "随时可用",
+      "note": "实测（2026-11-04 00:04）：分享页直开有效，提取码 gnx5 链接自动带入（不用手输），分享者缀*成章，文件夹「手机玩电脑游戏用的 模拟器（看自己需求下载）」内 4 个文件（2026-10-20 12:57），页面显示过期时间「永久有效」。收录五件套口径来自分享：盖世（PC / Unity 游戏）、吉里吉里模拟器（KR 游戏）、KR 模拟器、TY 模拟器（Tyranor）、JoiPlay（RPG Maker 等）—— 装哪个看要玩的游戏引擎，搭配站内游戏卡里标「joiplay 模拟器」的条目用。下载 / 保存要登录百度账号，永久有效。"
     }
   ]
 }
