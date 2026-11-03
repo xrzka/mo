@@ -19099,6 +19099,28 @@
       "update_info": "2026-11-02 分享（永久有效）",
       "note": "实测（2026-11-02 19:43）：分享页 HTTP 200，提取码框在、无失效提示，标「永久有效」，分享者 缀*成章；根目录一项「n1」是文件夹、里面 3 个文件（网盘不登录看不到具体文件名和大小）。⚠ 小分区是按站内同类分享的惯例归的「韩轻」（女勇者报恩记、反派想要安静地生活都在 kr）；两个译名在网上查不到出处，要是包里其实是日轻，后台把分区挪到「日轻」就行。",
       "password": "mza7"
+    },
+    {
+      "id": "manual-manga-site-reimanga",
+      "name": "ReiManga（免费英译漫画聚合站）",
+      "section": "manga",
+      "subsection": "site",
+      "description": "免费英译漫画聚合站：日漫（manga）、韩漫（manhwa）、国漫（manhua）英译版全收，热门作品带评分（Cherry Blossoms After Winter 8.5 分、I'll Be The Matriarch In This Life 9.3 分），最新更新按小时刷，有 Collections 收藏夹和读者点播（Request）功能。免登录可浏览，全站英文界面。",
+      "url": "https://reimanga.net/",
+      "tags": [
+        "英译",
+        "英文漫画",
+        "漫画",
+        "在线阅读",
+        "日漫",
+        "韩漫",
+        "国漫",
+        "免注册"
+      ],
+      "kind": "在线漫画网站",
+      "need_login": false,
+      "update_info": "随时可用",
+      "note": "实测（2026-11-03 10:18）：HTTP 200 可直连、lang=en，标题「ReiManga - Read Manga Online Free」，简介自述 manga / manhwa / manhua 全收、更新快；首页热门带评分（Cherry Blossoms After Winter 8.5 分 6158 人评、I'll Be The Matriarch In This Life 9.3 分 6763 人评），最新更新按小时刷，列表里部分作品带 18+ 标（聚合站常态，无独立年龄门）。免登录可逛。全站英文，看的是英译版；日文原版站内另有 KLZ9。"
     }
   ]
 }
