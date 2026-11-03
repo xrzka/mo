@@ -19299,6 +19299,27 @@
       "need_login": false,
       "update_info": "随时可用",
       "note": "实测（2026-11-03 21:50）：HTTP 200 直连不用代理，lang=ko，标题「웹소설의 유토피아, 글세상 문피아」，meta 自述「무료 웹소설 최다 보유 —— 现代奇幻 / 판타지 / 무협 인기 작품 무료 감상」，带 공모전（征文）与 문피아 아카데미（作家培养）。首页无成人专区、无年龄门（平台全年龄入口，个别作品的分级以站内标注为准）。全站韩文，免登录可逛首页。"
+    },
+    {
+      "id": "manual-manga-app-ehviewer",
+      "name": "EhViewer（E-Hentai 安卓阅读器 · 网盘安装包）",
+      "section": "manga",
+      "subsection": "app",
+      "description": "开源的 E-Hentai / ExHentai 安卓阅读器：支持搜索、标签过滤、收藏同步、批量下载、H@H 与 IP 检测等，多个社区分支（Ehviewer-Overhauled 等）持续维护。本条是网盘分享的安装包。",
+      "url": "https://pan.baidu.com/s/134uoP4bh4L5OZ39ezKH5Uw?pwd=8wcd",
+      "tags": [
+        "安卓",
+        "漫画阅读器",
+        "E-Hentai",
+        "成人向",
+        "百度网盘",
+        "开源"
+      ],
+      "kind": "网盘资源",
+      "need_login": false,
+      "update_info": "随时可用",
+      "note": "实测（2026-11-03 22:11）：分享有效，文件夹「EH」，提取码 8wcd（已实测输入进入列表页），分享者「缀*成章」，过期时间：永久有效。EhViewer 是 E-Hentai / ExHentai 的开源安卓阅读器（搜索 / 标签 / 收藏同步 / 批量下载），内容源以成人向为主，未成年别用。具体 APK 版本进网盘文件夹看，失效了说一声补新链。",
+      "adult": true
     }
   ]
 }
