@@ -19195,7 +19195,7 @@
       "kind": "轻小说社区",
       "need_login": false,
       "update_info": "随时可用",
-      "note": "实测（2026-11-03 19:14）：直连 lightnovel.fun HTTP 200（lang=zh-Hans），标题「轻之国度-专注分享的NACG社群」，提供搜索 / 分类 / 排行 / EPUB，热门有《义妹生活》等日轻，板块 轻小说 / 原创 / 同人 / EPUB，带论坛功能（发帖 / 动态）。⚠ www.lightnovel.fun 直连出现 ERR_CONNECTION_RESET（走代理 200）——所以主链接用不带 www 的域名，www 放第二条线路，都不行就走代理。浏览不用登录，部分下载可能要登录（论坛惯例）。"
+      "note": "实测（2026-11-03 19:14）：直连 lightnovel.fun HTTP 200（lang=zh-Hans），标题「轻之国度-专注分享的NACG社群」，提供搜索 / 分类 / 排行 / EPUB，热门有《义妹生活》等日轻，板块 轻小说 / 原创 / 同人 / EPUB，带论坛功能（发帖 / 动态）。⚠ 整站直连偶发 ERR_CONNECTION_RESET（不带 www 的 apex 和 www 都碰到过，重试或走代理就 200，走代理稳定）——所以给了两条线路，哪条能开用哪条，都不行就走代理。浏览不用登录，部分下载可能要登录（论坛惯例）。"
     }
   ]
 }
