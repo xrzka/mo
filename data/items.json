@@ -14571,11 +14571,11 @@
     },
     {
       "id": "manual-manga-6",
-      "name": "툰코 tkor149（韩版漫画 / 韩文原版）",
+      "name": "툰코（韩版漫画 / 韩文原版 · toonkor.net 线路）",
       "section": "manga",
       "subsection": "site",
-      "description": "韩文漫画在线站（툰코），聚合 Naver / Kakao / 레진 / 탑툰 等平台的作品。按人气、最新、标题排序，题材分动作、奇幻、罗曼史、武侠、学院、BL、恐怖等十余类。免登录直接看，域名按 tkorNNN 编号轮换。",
-      "url": "https://tkor149.com/",
+      "description": "韩文漫画在线站（툰코），聚合 Naver / Kakao / 레진 / 탑툰 等平台的作品。按人气、最新、标题排序，题材分动作、奇幻、罗曼史、武侠、学院、BL、恐怖等十余类。免登录直接看，地址按编号子域轮换（002.toonkor.net 这类）。",
+      "url": "https://002.toonkor.net/",
       "tags": [
         "在线阅读",
         "韩漫",
@@ -14586,7 +14586,7 @@
       "kind": "在线漫画网站",
       "need_login": false,
       "update_info": "每日更新",
-      "note": "实测国内可直连：首页、웹툰 列表页、作品内页都是 200，不用代理也不用登录。全站韩文，作品路径就是韩文标题（如 /광마회귀）。站内有 성인（成人）题材分类，未成年慎入。域名按编号轮换：tkor148 会 301 跳到 tkor149，tkor150 也开着；哪天这条打不开就把数字往上试。早先误记成 tkor101，那个编号连同 100/102/103/104/105/110 全是 Cloudflare 520。",
+      "note": "实测（2026-11-03 20:03）：老域名 tkor149.com 已死（DNS 都没了，ERR_NAME_NOT_RESOLVED），tkor150–154 全部超时；家族迁到 toonkor.net 编号子域 —— 002.toonkor.net HTTP 200 可直连，标题「툰코(Toonkor) - 웹툰」，老作品路径原样存活（/광마회귀 200：作者 유진성, JP / 이히、总 214화），导航带 주소알림 / 코사이트（改地址从这看）。编号失效了就搜「툰코 새주소」或从站内 주소알림 找最新编号。免登录、全站韩文，站内 19금 / BL 分类照旧，未成年慎入。⚠ 网上一堆仿站（toonkor07.com、toonkorea1.com、toonkor.kr 都是 WordPress 仿的，老作品路径打不开），认准 toonkor.net 编号子域。",
       "adult": true
     },
     {
@@ -18182,8 +18182,8 @@
       "tags": ["GitHub", "开源项目", "破甲词", "越狱提示词", "Jailbreak", "提示注入", "AI 安全", "Python"],
       "kind": "开源项目",
       "need_login": false,
-      "update_info": "2026-10-26 建仓（链接当天转 404，待恢复）",
-      "note": "实测（2026-10-26）：首次探测仓库公开可访问（GitHub API 200 / 网页 200），2026-10-26T12:20Z 建仓，当时 42 star / 35 fork，Python 为主，约 3.3 MB，MIT 许可；**同一天稍后再查该地址已 404**（`api.github.com/repos/Baimuky/History-of-AI-Armor-Penetration` 返回 NotFound，Baimuky 名下公开仓库列表也变空）——仓库被删除或转成私有，这个链接现在打不开，等恢复公开即可用；如果改了名，把本条 url 换成新地址就行。建仓时的目录结构：`prompts/` 按模型分 9 类（GPT 93、Claude 70、DeepSeek 61、universal 33、Grok 26、Gemini 24、Qwen 19、GLM 9、Kimi 9，合计 344 份）、`sources/sources.json`（139 个上游来源，约 1.5 MB）、`scripts/`（fetch_fast.py 采集 / split_aggregators.py 拆分 / classify.py 分类 / emit.py 生成 / merge_sources.py 合并）、`_analysis/`（classified.json、rejected.json）；每份样本前三行是来源元数据（上游仓库、原始路径、目标模型、采集日期），第四行起是正文。⚠ 仓库自带 README 里的 `git clone` 命令和 star badge 写的还是上游 `nanettecookeotpv510-code/AI-Jailbreak`，照抄会克隆到上游。"
+      "update_info": "2026-10-26 建仓，同日转 404；11-03 复测确认彻底消失（含 Wayback）",
+      "note": "实测（2026-10-26）：首次探测仓库公开可访问（GitHub API 200 / 网页 200），2026-10-26T12:20Z 建仓，当时 42 star / 35 fork，Python 为主，约 3.3 MB，MIT 许可；**同一天稍后再查该地址已 404**（`api.github.com/repos/Baimuky/History-of-AI-Armor-Penetration` 返回 NotFound，Baimuky 名下公开仓库列表也变空）——仓库被删除或转成私有，这个链接现在打不开，等恢复公开即可用；如果改了名，把本条 url 换成新地址就行。复测（2026-11-03 20:03）：仓库仍 404（API / 搜索 / 作者名下公开仓库都是 0），Wayback Machine 也没存档 —— 彻底没了，短期内恢复无期；卡片保留当档案，有新镜像再更新本条。建仓时的目录结构：`prompts/` 按模型分 9 类（GPT 93、Claude 70、DeepSeek 61、universal 33、Grok 26、Gemini 24、Qwen 19、GLM 9、Kimi 9，合计 344 份）、`sources/sources.json`（139 个上游来源，约 1.5 MB）、`scripts/`（fetch_fast.py 采集 / split_aggregators.py 拆分 / classify.py 分类 / emit.py 生成 / merge_sources.py 合并）、`_analysis/`（classified.json、rejected.json）；每份样本前三行是来源元数据（上游仓库、原始路径、目标模型、采集日期），第四行起是正文。⚠ 仓库自带 README 里的 `git clone` 命令和 star badge 写的还是上游 `nanettecookeotpv510-code/AI-Jailbreak`，照抄会克隆到上游。"
     },
     {
       "id": "manual-novel-dl-favor-copy",
