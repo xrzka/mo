@@ -255,8 +255,8 @@
       ],
       "kind": "网盘资源",
       "need_login": false,
-      "update_info": "网盘分享",
-      "note": "",
+      "update_info": "分享已失效（2026-11-03 复测）",
+      "note": " 复测（2026-11-03 23:0x）：分享已失效（链接不存在）；同作品还有一条可用分享（见《世上没有坏小姐漫画小说》另一条卡）。",
       "subsection": "kr",
       "password": "ksnk",
       "also_in": [
@@ -1308,8 +1308,8 @@
       ],
       "kind": "游戏资源",
       "need_login": false,
-      "update_info": "网盘分享",
-      "note": "",
+      "update_info": "分享已失效（2026-11-03 复测）",
+      "note": " 复测（2026-11-03 23:0x）：分享已失效（链接不存在），补新链再更新。",
       "password": "ee2b",
       "adult": true
     },
@@ -13779,8 +13779,8 @@
       ],
       "kind": "网盘资源",
       "need_login": false,
-      "update_info": "网盘分享",
-      "note": "机构总部的内部整合包，含 LOGO、Python/C++ 与 Scratch 学习视频、课程介绍、销售工具。内容和上面几条有重叠，想一次拿全可以下这个。"
+      "update_info": "分享已失效（2026-11-03 复测）",
+      "note": "机构总部的内部整合包，含 LOGO、Python/C++ 与 Scratch 学习视频、课程介绍、销售工具。内容和上面几条有重叠，想一次拿全可以下这个。 复测（2026-11-03 23:0x）：分享已失效（链接不存在），补新链再更新。"
     },
     {
       "id": "manual-novel-dl-9",
