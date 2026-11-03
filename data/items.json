@@ -19141,6 +19141,27 @@
       "need_login": false,
       "update_info": "随时可用",
       "note": "实测（2026-11-03 10:24）：HTTP 200 可直连、lang=en，标题「Kayn Scans — Read Novels, Manhwa & Comics Online Free」，导航 Home / Series / Collections / Community / Library / Coins Shop 等，首页热门带评分（Fog Land 4.8、Heavenly Demon Cultivation Simulation 4.8、The Poison Master Of Sichuan Tang Clan 4.7 等），公告区挂着 Apple Pay / Google Pay / PayPal 充值说明。部分作品带 Mature 标（无独立年龄门）。免登录可逛；付费是「早看几话」的解锁币，免费追更照常。全站英文、看的英译。"
+    },
+    {
+      "id": "manual-manga-site-mgeko",
+      "name": "Mgeko（免费英译漫画站 · 无广告）",
+      "section": "manga",
+      "subsection": "site",
+      "description": "免费英译漫画站：manga / manhwa / manhua 英译版全收，主打无广告（自述 completely free without any ads），Trending 榜单（今日 / 本周 / 本月）+ 排行榜 + 社区评分，韩漫为主（The Regressed Mercenary's Machinations、Myst, Might, Mayhem 等），另有 Fan comics 板块。全站英文界面，免登录可逛。",
+      "url": "https://www.mgeko.cc/",
+      "tags": [
+        "英译",
+        "英文漫画",
+        "漫画",
+        "在线阅读",
+        "韩漫",
+        "无广告",
+        "免注册"
+      ],
+      "kind": "在线漫画网站",
+      "need_login": false,
+      "update_info": "随时可用",
+      "note": "实测（2026-11-03 10:29）：HTTP 200 可直连、lang=en，标题「www.mgeko.cc - Enjoy reading」，简介自述 completely free without any ads（无广告是主打卖点）；首页 Trending Today / Leaderboard（今日 / 本周 / 本月榜）带评分（The Regressed Mercenary's Machinations 4.6、The Shepherd Wizard 4.9、Myst, Might, Mayhem 4.7），韩漫为主，另有 Fan comics 板块。无成人内容、无年龄门。有登录但免登录可逛。全站英文、看的英译。"
     }
   ]
 }
