@@ -19454,6 +19454,25 @@
       "need_login": false,
       "update_info": "随时可用",
       "note": "实测（2026-11-03 23:39）：HTTP 200 直连不用代理（代理同效），lang=en-US，标题「Coffee Manga Plus – Read Manga, Manhwa & Webtoons Online」；导航 Home / MANGAS / Top Views / Top Trending / Latest Updates，题材栏 MANHWA / ROMANCE / MANHUA / SHOUJO / FANTASY，热门更新榜 Trapped in a Dungeon With Monsters、The Wolf Who Toyed With the Black Snake、I Sold My Country in My Previous Life 等（10-30 仍在更）—— 韩漫英译为主、日更节奏。MY BOOKMARK 收藏要登录；个别作品带 18+ 角标（作品级分级，题材栏无成人专区、平台全年龄入口，不标 adult）。免登录可逛、全站英文。"
+    },
+    {
+      "id": "manual-novel-site-kakaopage",
+      "name": "카카오페이지 KakaoPage（韩国网文网漫大平台）",
+      "section": "novel",
+      "subsection": "site",
+      "description": "Kakao 旗下大平台（카카오페이지）：原创独家网文 / 网漫 / 图书一站 —— 웹소설 / 웹툰 / 책 / 요일연재 板块，实时榜 / 今日新作 / 男女人气 / 完结推荐等榜单；热门作品「等就免费」（기다리면 무료）。头部作品亿级 조회（인소의 법칙 1.5 亿）。全站韩文，国内直连超时要梯子，看正文要 Kakao 账号。",
+      "url": "https://page.kakao.com/",
+      "tags": [
+        "韩国网站",
+        "网文平台",
+        "韩文原版",
+        "需代理",
+        "等待免费"
+      ],
+      "kind": "网文平台",
+      "need_login": false,
+      "update_info": "随时可用",
+      "note": "实测（2026-11-03 23:43）：直连 30 秒超时、走代理 HTTP 200，lang=ko，标题「추천 - 지금핫한 | 카카오페이지」，自述「오리지널 독점 웹툰, 웹소설 부터 책 까지 한 곳에서 즐기세요. 인기 콘텐츠가 기다리면 무료!」（原创独家网漫网文到图书一站，热门内容等就免费）。板块 웹툰 / 웹소설 / 책 / 요일연재，榜 실시간 랭킹 / 오늘신작 / 남성인기 / 여성인기 / 완결추천 / 완전판；头部作品 [시스템의 이양이 완료되었습니다]、은퇴하려고 결혼했는데，인소의 법칙 1.5 亿 조회、서브 남주네 기사단장입니다 355 万 —— 大平台体量。个别作品带 18 角标（作品级分级，不标 adult）。国内直连超时访问挂梯子；浏览免登录，看正文要 Kakao 账号（等就免费机制）。全站韩文。"
     }
   ]
 }
