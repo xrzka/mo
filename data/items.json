@@ -19435,6 +19435,25 @@
       "need_login": false,
       "update_info": "随时可用",
       "note": "实测（2026-11-03 23:34）：HTTP 200 直连不用代理（代理同效），lang=en，标题「NextChapter • Track manga, manhwa, manhua, and novels」，自述「Track your reading. Share your taste. Find your people.」—— 追踪记录库不是阅读站：Browse series / Reading lists / Community lists / Tier lists / Discovery，评分聚合标「Rated x.x around the web」。建库免费（Start your library — free），记录 / 评论要 Sign in。Trending 打 Jinx（3.9 分）、The Hounds of Sisyphus（4.1 分）等。漫画 manhwa 为主也收小说（照用户口径放小说区）。无 CF 盾、全站英文。"
+    },
+    {
+      "id": "manual-manga-site-coffeemanga",
+      "name": "Coffee Manga Plus（英译漫画站 · 韩漫为主）",
+      "section": "manga",
+      "subsection": "site",
+      "description": "英文在线漫画站（Coffee Manga Plus）：Read Manga, Manhwa & Webtoons Online —— 韩漫英译为主，Top Views / Top Trending / Latest Updates 三榜 + MANHWA / ROMANCE / MANHUA / SHOUJO / FANTASY 题材栏，日更节奏，登录后可用 MY BOOKMARK 收藏。全站英文，免登录可逛。",
+      "url": "https://coffeemangaplus.com/",
+      "tags": [
+        "英译",
+        "韩漫",
+        "在线阅读",
+        "免登录",
+        "收藏夹"
+      ],
+      "kind": "在线漫画网站",
+      "need_login": false,
+      "update_info": "随时可用",
+      "note": "实测（2026-11-03 23:39）：HTTP 200 直连不用代理（代理同效），lang=en-US，标题「Coffee Manga Plus – Read Manga, Manhwa & Webtoons Online」；导航 Home / MANGAS / Top Views / Top Trending / Latest Updates，题材栏 MANHWA / ROMANCE / MANHUA / SHOUJO / FANTASY，热门更新榜 Trapped in a Dungeon With Monsters、The Wolf Who Toyed With the Black Snake、I Sold My Country in My Previous Life 等（10-30 仍在更）—— 韩漫英译为主、日更节奏。MY BOOKMARK 收藏要登录；个别作品带 18+ 角标（作品级分级，题材栏无成人专区、平台全年龄入口，不标 adult）。免登录可逛、全站英文。"
     }
   ]
 }
