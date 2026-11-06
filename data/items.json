@@ -19554,6 +19554,41 @@
       "update_info": "随时可用",
       "note": "实测（2026-11-05 11:50）：UC 分享直开有效，标题「x141 - UC网盘分享」，分享者虚*的分享，文件夹 x141 内 1 项，页面显示永久有效；public=1 免提取码，浏览分享不用登录（保存 / 下载要 UC 账号）。内容：PC + 安卓《可逆约会 リバーシブルデート》自带全回想存档。",
       "adult": true
+    },
+    {
+      "id": "manual-pickup-semi-design",
+      "name": "Semi Design（抖音开源设计系统 · 前端组件库）",
+      "section": "pickup",
+      "subsection": "code",
+      "description": "抖音（字节跳动）前端与 UED 团队维护的现代化设计系统 / 前端组件库（Semi Design）：组件、主题定制、设计转代码（Figma 稿一键生成真实代码）、模板、数据可视化五块，文档中英双语，GitHub 开源（9.9k star、已服务 10 万 + 用户），站内另提供 MCP & Skills 接入指引让 AI 读懂 Semi。",
+      "url": "https://semi.design/zh-CN/",
+      "tags": [
+        "设计系统",
+        "组件库",
+        "开源",
+        "前端",
+        "中英双语"
+      ],
+      "kind": "开源项目（设计系统 / 组件库）",
+      "need_login": false,
+      "update_info": "持续更新",
+      "note": "实测（2026-11-06 17:5x）：HTTP 200 直连不用代理（代理同效），lang=zh-CN，标题「Semi Design」；自述「由抖音前端与 UED 团队维护，易于定制的现代化设计系统，帮助设计师与开发者打造高质量产品」；导航 组件 / 主题 / 设计转代码 / 模板 / 数据可视化 / 博客，首页标 GitHub 9.9k star 与 10 万 + 用户，另有「使用 MCP & Skills 让 AI 对 Semi 了如指掌」指引；中英双语（右上切 EN），文档免登录可看（Bytedance SSO 仅内部相关功能）。做前端 / 工具界面可直接照抄它的 design tokens。"
+    },
+    {
+      "id": "xlsx-novel-3",
+      "name": "非自愿帝国主义者",
+      "section": "novel",
+      "subsection": "kr",
+      "description": "百度网盘分享：小说《非自愿帝国主义者》，提取码 wwuv，转存 / 下载要登录百度账号。目录编号 n3。",
+      "url": "https://pan.baidu.com/s/1SHs0M520VB4NSKRGuR9usg?pwd=wwuv",
+      "tags": [
+        "百度网盘"
+      ],
+      "kind": "网盘资源",
+      "need_login": false,
+      "update_info": "网盘分享",
+      "note": "实测（2026-11-06 17:5x）：分享页直开有效，提取码 wwuv 链接自动带入（不用手输），分享者缀*成章，文件夹「非自愿帝国主义者」内 3 个文件（2026-11-06 16:42），页面显示过期时间「永久有效」。目录编号 n3。语种 / 译名待考（按 xlsx-novel 家族惯例先放韩区），后台可挪分区。",
+      "password": "wwuv"
     }
   ]
 }
