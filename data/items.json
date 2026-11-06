@@ -19589,6 +19589,25 @@
       "update_info": "网盘分享",
       "note": "实测（2026-11-06 17:5x）：分享页直开有效，提取码 wwuv 链接自动带入（不用手输），分享者缀*成章，文件夹「非自愿帝国主义者」内 3 个文件（2026-11-06 16:42），页面显示过期时间「永久有效」。目录编号 n3。语种 / 译名待考（按 xlsx-novel 家族惯例先放韩区），后台可挪分区。",
       "password": "wwuv"
+    },
+    {
+      "id": "manual-pickup-rea",
+      "name": "REA（Reverse Engineer Anything · 逆向分析 MCP + CLI）",
+      "section": "pickup",
+      "subsection": "code",
+      "description": "morluto/rea（REA / rea-agents）把逆向分析做成 agent 可调用的统一工具面：一条 MCP + 一个 CLI 走同一套 workflow，静态分析只读文件不运行目标、运行期采集按当前用户权限执行，结论都带 evidence 与 limitation。免原生引擎即可覆盖 PE 证书 / 导入表 / 加固标志、Go 与 Rust 二进制、Godot PCK、PyInstaller、.NET、APK 签名、Flutter、IL2CPP metadata 等；Hopper / Ghidra / IDA / JADX / adb 作为可选 provider 接入。MIT，官网 rea.tools，npm 包 rea-agents。",
+      "url": "https://github.com/morluto/rea",
+      "tags": [
+        "逆向",
+        "MCP",
+        "CLI",
+        "AI Agent",
+        "开源"
+      ],
+      "kind": "开源项目（逆向分析 MCP / CLI）",
+      "need_login": false,
+      "update_info": "持续更新",
+      "note": "实测（2026-11-06 18:5x）：GitHub 仓库页与官网 rea.tools 直连 HTTP 200（本机 github.com DNS 被指到 127.0.0.1，抓页面得用真实浏览器）；仓库简介「Reverse engineer anything with agents, from app behavior down to native binaries」，页面显示约 43.6 万 Star / 10.8 万 Fork、6,597 commits、236 分支、40 标签，Issues 848 / PR 744，最新提交 fe27f96「test(ci): restore client registration and doctor checks」；最新发布 rea-agents v6.8.0（2026-10-25），npm registry latest 同为 6.8.0（2398 文件、带 SLSA provenance 签名）。官网安装就一句 npx rea-agents@latest setup；本机 engines 门槛 Node ^22.23.4 || ^24.22.1 || >=26.12.1（本机 v24.17.0 要先升才能装）。技能库另有本机档案 rea-reverse-mcp。"
     }
   ]
 }
