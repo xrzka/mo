@@ -19608,6 +19608,25 @@
       "need_login": false,
       "update_info": "持续更新",
       "note": "实测（2026-11-06 18:5x）：GitHub 仓库页与官网 rea.tools 直连 HTTP 200（本机 github.com DNS 被指到 127.0.0.1，抓页面得用真实浏览器）；仓库简介「Reverse engineer anything with agents, from app behavior down to native binaries」，页面显示约 43.6 万 Star / 10.8 万 Fork、6,597 commits、236 分支、40 标签，Issues 848 / PR 744，最新提交 fe27f96「test(ci): restore client registration and doctor checks」；最新发布 rea-agents v6.8.0（2026-10-25），npm registry latest 同为 6.8.0（2398 文件、带 SLSA provenance 签名）。官网安装就一句 npx rea-agents@latest setup；本机 engines 门槛 Node ^22.23.4 || ^24.22.1 || >=26.12.1（本机 v24.17.0 要先升才能装）。技能库另有本机档案 rea-reverse-mcp。"
+    },
+    {
+      "id": "manual-novel-site-ridibooks",
+      "name": "RIDI Books（리디 · 韩国最大电子书 / 网漫 / 网文平台）",
+      "section": "novel",
+      "subsection": "site",
+      "description": "韩国最大的电子书与内容平台 RIDI（리디）：本体分 만화 / 웹툰 / 웹소설 / 도서（漫画 / 网漫 / 网文 / 图书）四大块，另有 리디샵 与 셀렉트 订阅。韩文原版网文与轻小说（라노벨）资源在这里最全，独家作、连载更新与海外作品翻译版都在这。浏览商品页免登录，读作品要注册并充值（或订阅 셀렉트）；19 禁作品需过成人认证。",
+      "url": "https://ridibooks.com/",
+      "tags": [
+        "韩文",
+        "网文",
+        "电子书",
+        "网漫",
+        "平台"
+      ],
+      "kind": "电子书 / 网文平台",
+      "need_login": false,
+      "update_info": "持续更新",
+      "note": "实测（2026-11-07 18:2x）：直连 HTTP 200（约 11.5s）、走代理也能开（约 16.3s），lang=ko、无 CF 盾；标题「만화 웹툰 웹소설 도서는 리디」。首页导航 만화 / 웹툰 / 웹소설 / 도서 / 리디샵 / 셀렉트 / 전체 카테고리，分类栏含 추천 / 베스트 / 신작 / BL / 라노벨 / 판타지·SF / 해외 / 순정 / 드라마 / 액션 / 코믹；右上角有 캐시충전（充值）、카트（购物车）、내 서재（书架）、로그인·회원가입（登录 / 注册）。内容以付费为主（有独家 / 折扣与免费券活动），19 禁需成人认证，故不标成人站；看具体作品需注册充值。"
     }
   ]
 }
