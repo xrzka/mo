@@ -19736,6 +19736,24 @@
       "update_info": "网盘分享",
       "note": "实测（2026-11-11 12:1x）：分享页直开有效，标题「某天成为魔神_免费高速下载|百度网盘-分享无限制」，提取码 hxu6 链接自动带入（不用手输），分享者缀*成章，顶层文件夹「某天成为魔神」（2026-11-11 12:09，内层未展开），页面显示过期时间「永久有效」。目录编号 n5。语种 / 译名待考（按 xlsx-novel 家族惯例先放韩区），后台可挪分区。",
       "password": "hxu6"
+    },
+    {
+      "id": "manual-novel-site-faqwiki",
+      "name": "FAQ Wiki（faqwiki · 英译轻小说在线站）",
+      "section": "novel",
+      "subsection": "site",
+      "description": "FAQ Wiki（faqwiki.us）——英译轻小说在线阅读站，站内按 /novel/<slug>/ 组织作品页（已收录的随手卡《The Regressed Mercenary's Machinations》就是站内小说页）。整站被 Cloudflare 安全验证挡住，自动化环境打不开，站点全貌（栏目 / 语种 / 更新情况）待人工访问后补充。",
+      "url": "https://faqwiki.us/",
+      "tags": [
+        "英文",
+        "轻小说",
+        "CF盾",
+        "未核实"
+      ],
+      "kind": "在线小说站（英译轻小说向）",
+      "need_login": false,
+      "update_info": "未核实",
+      "note": "实测（2026-11-11 18:5x）：直连与代理均为 HTTP 403 + Cloudflare「请稍候…安全验证」挑战页（zh-cn），有头 Chrome 连试 4 轮约 30 秒仍未放行——本机自动化打不开，正文与栏目未核实。已知线索：站内作品页路径 /novel/<slug>/（manual-pickup-novel-2 即站内小说页，当时同样打不开、按标题定位填的简介）。人工浏览器一般可过盾，访问到后可回填站点定位、栏目与语种。"
     }
   ]
 }
