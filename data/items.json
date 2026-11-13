@@ -15821,7 +15821,13 @@
       "kind": "AI 创作工具",
       "need_login": true,
       "update_info": "随手收录",
-      "note": "国内直连超时（web_fetch 与浏览器都 ERR_CONNECTION_TIMED_OUT），页面正文未能核实，简介按站点定位填写，具体功能以实际访问为准，可能需要挂代理并注册登录。"
+      "note": "实测（2026-11-13 14:4x）：国内直连仍超时（ERR_CONNECTION_TIMED_OUT，约 21 秒）；走代理 HTTP 200（约 16 秒）能开，无盾。标题「YouMind - 你的 AI 学习与创作工作室」，首页一级栏目：AI 写作 / AI PPT / AI 图片 / AI 视频 / AI 网页，AI 视频示例如「创意可乐广告视频」「产品宣传短片」「等轴测解说视频」（模型 Opus 5.5），另有 YouTube/TikTok/Instagram 创作者案例、浏览器插件与 iOS/Android/macOS 客户端。本次按 AI 视频功能跨挂到 ai/视频；浏览首页免登录，生成功能需注册。早前（收录时）记录：国内直连超时、正文未核实——本次已按代理实访核实。",
+      "also_in": [
+        {
+          "section": "ai",
+          "subsection": "video"
+        }
+      ]
     },
     {
       "id": "manual-anime-site-iwara",
