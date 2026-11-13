@@ -15811,7 +15811,7 @@
       "id": "manual-pickup-youmind",
       "name": "YouMind",
       "section": "pickup",
-      "description": "AI 内容创作工作台，围绕「收集灵感 → 整理 → 创作」的一站式创作平台。",
+      "description": "AI 内容创作工作台（AI 学习与创作工作室）：收集灵感 → 整理 → 创作，设 AI 写作 / AI PPT / AI 图片 / AI 视频 / AI 网页 五大一级栏目，AI 视频可生成广告短片、解说视频等（模型 Opus 5.5）。",
       "url": "https://youmind.com/",
       "tags": [
         "AI创作",
