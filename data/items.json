@@ -19778,6 +19778,25 @@
       "need_login": true,
       "update_info": "持续更新",
       "note": "实测（2026-11-13 15:2x）：直连与代理都 HTTP 200（约 10 / 13 秒），无盾，不用代理；lang=zh-CN，标题「Agnes AI | Free Omni-Modal AI API, World-Class AI Models & AI Applications」。首页一级栏目：模型（文本 Agnes 2.5 Flash / 2.5 Pro / 2.5 Pro Beta / 2.5 Pro Theta / 3.0 Flash / 3.0 Pro；图像 Agnes Image 2.0 / 2.1 / 2.5 Flash；视频 Agnes Video 2.5 / 2.5 Flash）、产品（Agnes / Agnes Harness / Agnes Code / Pavo / Echo API）、开发者文档 / API 平台 / GitHub / Hugging Face / Discord。自称「免费 API 前沿模型 免费畅用」，页面晒 Artificial Analysis 榜单（Agnes-2.5-Pro-Theta 文本 24 分、Agnes-Image-2.0 图像 Elo 1178，与 GPT Image 2 / Nano Banana Pro / FLUX.2 Pro 同榜）——榜单数据真伪未核。浏览首页免登录，用 API 需注册。"
+    },
+    {
+      "id": "xlsx-game-143",
+      "name": "【SLG/AI汉化/PC+安卓】s级繁殖者 / S Rank Breeder[Ver6.0]",
+      "section": "game",
+      "description": "UC 网盘分享（x143）：SLG 游戏《s级繁殖者 / S Rank Breeder》Ver6.0，AI 汉化，PC + 安卓双端，免提取码直取（public 公开链接）。分享者目录编号即分享名 x143，永久有效。",
+      "url": "https://drive.uc.cn/s/d6b969bc7a484?public=1",
+      "tags": [
+        "网盘",
+        "UC网盘",
+        "SLG",
+        "PC+安卓",
+        "AI汉化"
+      ],
+      "kind": "游戏资源",
+      "need_login": false,
+      "update_info": "随时可用",
+      "note": "实测（2026-11-13 22:0x）：UC 分享直开有效，标题「x143 - UC网盘分享」，分享者虚*的分享，文件夹 x143 内 1 项（修改日期 2026-11-13 22:00），页面显示永久有效；public=1 免提取码，浏览分享不用登录（保存 / 下载要 UC 账号；实测自动化会话点保存时弹「账号涉嫌违规」横幅，属该会话账号自身状态，分享页浏览不受影响）。内容：SLG《s级繁殖者 / S Rank Breeder》Ver6.0，AI 汉化，PC + 安卓双端。目录编号 x143。",
+      "adult": true
     }
   ]
 }
