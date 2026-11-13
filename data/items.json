@@ -19760,6 +19760,24 @@
       "need_login": false,
       "update_info": "未核实",
       "note": "实测（2026-11-11 18:5x）：直连与代理均为 HTTP 403 + Cloudflare「请稍候…安全验证」挑战页（zh-cn），有头 Chrome 连试 4 轮约 30 秒仍未放行——本机自动化打不开，正文与栏目未核实。已知线索：站内作品页路径 /novel/<slug>/（manual-pickup-novel-2 即站内小说页，当时同样打不开、按标题定位填的简介）。人工浏览器一般可过盾，访问到后可回填站点定位、栏目与语种。"
+    },
+    {
+      "id": "manual-ai-tool-agnes",
+      "name": "Agnes AI（免费多模态 AI API 平台）",
+      "section": "ai",
+      "subsection": "tool",
+      "description": "免费畅用的全栈多模态 AI 平台（文本 / 图像 / 视频）：自研 Agnes 系列模型（文本 Agnes 2.5 / 3.0 系列，图像 Agnes Image 2.0 / 2.1 / 2.5，视频 Agnes Video 2.5 系列），统一 API 免费起步；产品套件含 Agnes（AI 原生应用）、Agnes Harness、Agnes Code、Pavo、Echo API，配开发者文档、API 平台、GitHub / Hugging Face / Discord 社区。页面晒 Artificial Analysis 榜单数据，真伪未核。",
+      "url": "https://www.agnes-ai.com/",
+      "tags": [
+        "AI",
+        "API",
+        "多模态",
+        "免费"
+      ],
+      "kind": "多模态 AI API 平台",
+      "need_login": true,
+      "update_info": "持续更新",
+      "note": "实测（2026-11-13 15:2x）：直连与代理都 HTTP 200（约 10 / 13 秒），无盾，不用代理；lang=zh-CN，标题「Agnes AI | Free Omni-Modal AI API, World-Class AI Models & AI Applications」。首页一级栏目：模型（文本 Agnes 2.5 Flash / 2.5 Pro / 2.5 Pro Beta / 2.5 Pro Theta / 3.0 Flash / 3.0 Pro；图像 Agnes Image 2.0 / 2.1 / 2.5 Flash；视频 Agnes Video 2.5 / 2.5 Flash）、产品（Agnes / Agnes Harness / Agnes Code / Pavo / Echo API）、开发者文档 / API 平台 / GitHub / Hugging Face / Discord。自称「免费 API 前沿模型 免费畅用」，页面晒 Artificial Analysis 榜单（Agnes-2.5-Pro-Theta 文本 24 分、Agnes-Image-2.0 图像 Elo 1178，与 GPT Image 2 / Nano Banana Pro / FLUX.2 Pro 同榜）——榜单数据真伪未核。浏览首页免登录，用 API 需注册。"
     }
   ]
 }
