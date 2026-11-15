@@ -19836,6 +19836,24 @@
       "update_info": "随时可用",
       "note": "实测（2026-11-15 10:5x）：UC 分享直开有效，标题「x145 - UC网盘分享」，分享者虚*的分享，文件夹 x145 内 1 项（修改日期 2026-11-15 10:54），页面显示永久有效；public=1 免提取码，浏览分享不用登录（保存 / 下载要 UC 账号；自动化会话点保存弹「账号涉嫌违规」横幅，属会话账号自身状态，分享页浏览不受影响）。内容：日式 SLG《爱与生活：幸福学生》V2.3+DLC 官方正式版，中文、动态，PC。同游戏旧版另见 xlsx-game-20（v2.10 官中步兵版）。目录编号 x145。",
       "adult": true
+    },
+    {
+      "id": "manual-pickup-plugin-dshhub",
+      "name": "DeepSeekHUB（deepseek.stream · DeepSeek Harness 插件生态市场）",
+      "section": "pickup",
+      "subsection": "plugin",
+      "description": "DeepSeek Harness（DSH）插件生态市场「DeepSeekHUB」：插件市场 + Skill 市场，603 款插件，按分类（工具与调用 / 模型适配 / Prompt 增强 / Agent 工作流 / 界面与主题 / 开发与调试）与场景（网页浏览 / 视觉多模态 / 本地 Ollama / CoT 思维链等）浏览，带热门总榜 / 必装精选 / 飙升新星 / 最新发布 / 累计下载 / GitHub Stars 榜单与社区评分；插件支持桌面端 exe / Web / Linux 客户端一键安装（客户端 v0.2.2-rc.2），有开发指南、发布入口、社区讨论与需求广场。",
+      "url": "https://deepseek.stream/",
+      "tags": [
+        "DSH",
+        "插件市场",
+        "Agent Skill",
+        "DeepSeek Harness"
+      ],
+      "kind": "插件 / Skill 市场",
+      "need_login": false,
+      "update_info": "持续更新",
+      "note": "实测（2026-11-15 16:4x）：直连与代理都 HTTP 200（约 12 秒），无盾，不用代理；lang=zh-CN，标题「DeepSeek Harness 插件生态市场 - 热门插件与skill市场」。导航：DeepSeekHUB / 插件市场 / Skill 市场 / 客户端 / 社区讨论 / 需求广场 / 软件安装包 / 开发指南 / 发布插件·skill / 登录·注册。共 603 款插件，热门总榜前三：dsh-plugin-verifier v0.1.1（第三方插件发行清单与风险检查）、dsh-web-ui v0.3.24（视觉多模态，官方来源，10.0 分 / 89 评 / 87,582 下载）、archify v1.0.0（仓库自动生成架构图）；客户端 v0.2.2-rc.2，桌面 exe / Web / Linux 三端一键安装。同类收录：FindHarness（另一个 DeepSeek Harness 插件目录）、dsh-purge（破甲插件本体，其 note 提示「Hub 页仅供阅读，勿走 deepseek.stream 的下载接口安装」——安装渠道以本机 dsh 启动器为准）。"
     }
   ]
 }
