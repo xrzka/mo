@@ -19910,6 +19910,26 @@
       "update_info": "持续更新",
       "note": "实测（2026-11-16 17:0x）：直连 ERR_CONNECTION_TIMED_OUT（约 21 秒）不通，需代理；走代理 HTTP 200（约 13 秒），lang=en，标题「Rule 34, if it exists there is a video of it - Rule34video.com」。无年龄确认门，免登录直接看。首页 Newest 计数 342,692 条视频，列表带评分百分比、时长、播放量，存在 4K 与 SUBTITLES 作品；导航 Tags / For you / Favourites / Community / Leaderboard / Top characters，筛选支持标签 · 分类 · 画师 · 类型 · 日期 · 时长 · 画质 · 上传者。站方公告：AI 生成视频已停止在本站接收、改投 rule34gen.com。全站成人向，仅成年模式可见。",
       "adult": true
+    },
+    {
+      "id": "manual-anime-site-rule34gen",
+      "name": "Rule34Gen（rule34gen.com · AI 生成 R34 动画视频）",
+      "section": "anime",
+      "subsection": "site",
+      "description": "rule34video.com 的 AI 视频分站：专收 AI 生成的 R34 动画 / 3D 视频（总站已停止接收 AI 内容并引导来此），另有 CREATE PORN 入口可在站内直接生成；支持标签、分类、画师、时长、画质筛选，带收藏夹与社区。",
+      "url": "https://rule34gen.com/",
+      "tags": [
+        "R34",
+        "AI 生成",
+        "成人动画",
+        "视频站",
+        "18禁"
+      ],
+      "kind": "成人动画视频站（AI 生成）",
+      "need_login": false,
+      "update_info": "持续更新",
+      "note": "实测（2026-11-16 17:1x）：直连 ERR_CONNECTION_RESET（约 1 秒即被重置，比超时更硬的拦截），需代理；走代理 HTTP 200（约 14 秒），lang=en，标题「Rule 34, if it exists there is a video of it - Rule34Gen.com」。无年龄确认门，免登录可看。Newest 计数 23,903 条；首页导航有 AI Porn 与 CREATE PORN（站内可直接生成 AI 视频），另有 Tags / Favourites / Community / All Categories / All Artists；列表带评分百分比、时长、播放量，作品多为 AI 生成的同人向短片与合集（含 Voiced、HMV 标注）。定位：rule34video.com 的 AI 分站——总站公告「AI 生成视频已停止在本站接收，改投 rule34gen.com」。全站成人向，仅成年模式可见。",
+      "adult": true
     }
   ]
 }
