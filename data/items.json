@@ -19890,6 +19890,26 @@
       "need_login": false,
       "update_info": "长期",
       "note": "实测（2026-11-16 16:0x）：直连 HTTP 200（约 9 秒）、lang=zh-cn、标题「欢迎来到 Steam」，本机国内直连可开、不用加速器（走代理反而慢，约 25 秒且价格显示欧元区）。首页栏目：商店 / 社区 / 关于 / 客服 / 安装 Steam / 登录，选单含语言 · 浏览 · 推荐 · 类别 · 畅玩方式 · 特别栏目 · 高级搜索；商品列表带热销排名、评测档位（好评如潮 / 特别好评 / 褒贬不一）与折扣价（示例 Euro Truck Simulator 2 -75% ¥23.24、Counter-Strike 2 免费开玩 1,422,718 篇评测）。关联：工具区已有 xlsx-tool-75「【网站】steam官网（可能不能直接进，要用到下面俩个用来加速才能进）」，那张是表格自动导入卡、URL 带 /0（实测同样 200 可开）；本卡是游戏·网站区的正式卡，加速器仅在个别网络环境才需要。"
+    },
+    {
+      "id": "manual-anime-site-rule34video",
+      "name": "Rule34Video（rule34video.com · R34 动画视频库）",
+      "section": "anime",
+      "subsection": "site",
+      "description": "Rule 34 主题的成人动画 / 3D 视频聚合站：按标签、角色、分类、画师、上传者、时长、画质多维筛选，含 4K 与带字幕作品；有 For you 推荐、收藏夹、社区与排行榜、Top characters 角色榜。站方公告：因 AI 生成视频大量涌入已停止在本站接收，改投 rule34gen.com。",
+      "url": "https://rule34video.com/",
+      "tags": [
+        "R34",
+        "成人动画",
+        "3D动画",
+        "视频站",
+        "18禁"
+      ],
+      "kind": "成人动画视频站",
+      "need_login": false,
+      "update_info": "持续更新",
+      "note": "实测（2026-11-16 17:0x）：直连 ERR_CONNECTION_TIMED_OUT（约 21 秒）不通，需代理；走代理 HTTP 200（约 13 秒），lang=en，标题「Rule 34, if it exists there is a video of it - Rule34video.com」。无年龄确认门，免登录直接看。首页 Newest 计数 342,692 条视频，列表带评分百分比、时长、播放量，存在 4K 与 SUBTITLES 作品；导航 Tags / For you / Favourites / Community / Leaderboard / Top characters，筛选支持标签 · 分类 · 画师 · 类型 · 日期 · 时长 · 画质 · 上传者。站方公告：AI 生成视频已停止在本站接收、改投 rule34gen.com。全站成人向，仅成年模式可见。",
+      "adult": true
     }
   ]
 }
