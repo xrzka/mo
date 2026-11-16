@@ -15199,7 +15199,7 @@
       "kind": "成人漫画在线站",
       "need_login": false,
       "update_info": "持续更新",
-      "note": "全站 18+ 成人向内容，默认按成人向收录（仅成年模式可见）。域名常被封 / 更换（18comic 系列有 .vip/.org/.name 等多个镜像），失效时搜「禁漫天堂」或 JMComic 找当前地址。 复测（2026-11-03 20:2x）：挂 Cloudflare 盾（人机验证），自动化过不去，浏览器可进。"
+      "note": "全站 18+ 成人向内容，默认按成人向收录（仅成年模式可见）。域名常被封 / 更换（18comic 系列有 .vip/.org/.name 等多个镜像），失效时搜「禁漫天堂」或 JMComic 找当前地址。 复测（2026-11-03 20:2x）：挂 Cloudflare 盾（人机验证），自动化过不去，浏览器可进。 复测（2026-11-16 16:3x）：直连 ERR_CONNECTION_TIMED_OUT（约 21 秒）已不通，走代理 HTTP 403 + Cloudflare「请稍候…安全验证」盾，自动化依旧过不去，浏览器手动可进。"
     },
     {
       "id": "manual-manga-site-pixiv",
