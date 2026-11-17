@@ -103,6 +103,15 @@ def apply_fixups(items: list[dict]) -> int:
             n += 1
         if add_cross_sections(item):
             n += 1
+        key = _url_key(item.get("url", ""))
+        cross = {_url_key(k): v for k, v in CROSS_SECTION_BY_URL.items()}.get(key)
+        if cross and item.get("also_in") != cross:
+            item["also_in"] = [dict(x) for x in cross]
+            n += 1
+        extra_note = {_url_key(k): v for k, v in NOTE_BY_URL.items()}.get(key)
+        if extra_note and extra_note not in (item.get("note") or ""):
+            item["note"] = f"{(item.get('note') or '').strip()} {extra_note}".strip()
+            n += 1
     return n
 
 

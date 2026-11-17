@@ -2402,7 +2402,13 @@
       "kind": "工具 / 网站",
       "need_login": false,
       "update_info": "长期可用",
-      "note": ""
+      "also_in": [
+        {
+          "section": "game",
+          "subsection": "site"
+        }
+      ],
+      "note": "实测（2026-11-17 16:3x）：直连与走代理都返回 HTTP 403 + Cloudflare「请稍候…Checking your browser」人机验证盾，抓不到页面内容，站内结构未核实，需浏览器手动打开过验证；盾页自带说明称 SteamDB 是社区站、不提供 API，要 Steam 数据请用官方 Steam Web API。"
     },
     {
       "id": "xlsx-tool-77",
