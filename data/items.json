@@ -19936,6 +19936,24 @@
       "update_info": "持续更新",
       "note": "实测（2026-11-16 17:1x）：直连 ERR_CONNECTION_RESET（约 1 秒即被重置，比超时更硬的拦截），需代理；走代理 HTTP 200（约 14 秒），lang=en，标题「Rule 34, if it exists there is a video of it - Rule34Gen.com」。无年龄确认门，免登录可看。Newest 计数 23,903 条；首页导航有 AI Porn 与 CREATE PORN（站内可直接生成 AI 视频），另有 Tags / Favourites / Community / All Categories / All Artists；列表带评分百分比、时长、播放量，作品多为 AI 生成的同人向短片与合集（含 Voiced、HMV 标注）。定位：rule34video.com 的 AI 分站——总站公告「AI 生成视频已停止在本站接收，改投 rule34gen.com」。全站成人向，仅成年模式可见。",
       "adult": true
+    },
+    {
+      "id": "manual-pickup-icu-insulin-rumor",
+      "name": "网传：ICU 医生用大剂量胰岛素 + 镇定药杀人（三更研究所）",
+      "section": "pickup",
+      "subsection": null,
+      "description": "某站评论里的说法：美国一名重症监护（ICU）医生以大剂量胰岛素配合其他镇定类药物对重症病人下手，称一般尸检很难查出，被害人数「几十人是有的」但无法考证，并提到三更研究所做过相关视频。属网友转述的见闻，未核实。",
+      "url": "https://search.bilibili.com/all?keyword=三更研究所",
+      "tags": [
+        "见闻",
+        "传闻",
+        "未核实",
+        "三更研究所"
+      ],
+      "kind": "评论转述 / 未核实",
+      "need_login": false,
+      "update_info": "未核实",
+      "note": "收录说明（2026-11-17）：你给的是一条评论文字、没带链接，所以 url 填的是查证入口（B 站搜「三更研究所」），不是原评论地址。传闻内容：美国 ICU 医生用大剂量胰岛素 + 其他镇定类药物作案，称常规尸检难以查出，数量「几十人」无法考证。按常识补两点（均在「未核实」前提下的讨论）：一、外源性胰岛素确实不在常规毒物筛查项里，法医要靠胰岛素 / C 肽比值这类专门检测才看得出来，所以「尸检难查」这半句有专业依据；二、美国确有 ICU 医生超量用药致多人死亡的公开案件，但公开报道里用的是芬太尼类镇痛药，与「胰岛素」这个细节对不上。整条按传闻收录，未做事实核实。"
     }
   ]
 }
