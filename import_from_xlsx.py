@@ -64,6 +64,25 @@ RENAME_BY_URL = {
         "【网站】终末地一图流 · 基质识别（自动识别武器基质）",
 }
 
+# 表格条目也想在别的分区露出时，按 URL 补 also_in。
+# 写在这里而不是导入后手改：xlsx- 条目每次导入都从表格重建，手改必被冲掉。
+CROSS_SECTION_BY_URL: dict[str, list[dict]] = {
+    "https://steamdb.info": [{"section": "game", "subsection": "site"}],
+}
+
+# 表格里没有实测信息，按 URL 补一句实测结论（同样写在脚本里，重跑保留）
+NOTE_BY_URL: dict[str, str] = {
+    "https://steamdb.info":
+        "实测（2026-11-17 16:3x）：直连与走代理都返回 HTTP 403 + Cloudflare"
+        "「请稍候…Checking your browser」人机验证盾，抓不到页面内容，站内结构未核实，"
+        "需浏览器手动打开过验证；盾页自带说明称 SteamDB 是社区站、不提供 API，"
+        "要 Steam 数据请用官方 Steam Web API。",
+}
+
+
+def _url_key(url: str) -> str:
+    return (url or "").rstrip("/").lower()
+
 
 def apply_fixups(items: list[dict]) -> int:
     """套用归类与名称修正，返回改动条数。"""
