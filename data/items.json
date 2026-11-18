@@ -19984,6 +19984,25 @@
       "need_login": false,
       "update_info": "持续维护（最近提交 2026-11-03）",
       "note": "实测（2026-11-18 17:2x）：GitHub 仓库直开 200，2.6k stars / 135 forks / 28 commits，最新提交 2026-11-03（维护活跃），有 Releases；仓库自述 A free Wenku8 and local-book reader for Android, iOS and HarmonyOS，功能：离线阅读 / TTS 朗读 / 阅读报告 / 桌面小组件 / S3 同步。度盘分享带 ?pwd=cxuh 直开有效（提取码已验证）：分享者缀*成章，文件夹「小说」内 4 个文件（修改日期 2026-11-18 17:19），页面显示永久有效，未展开内层。同站网页版另见 manual-novel-6（轻小说文库 wenku8 网站）。"
+    },
+    {
+      "id": "manual-game-site-firestone",
+      "name": "Firestone（炉石传说数据与酒馆战棋梯队）",
+      "section": "game",
+      "subsection": "site",
+      "description": "炉石传说伴侣工具 Firestone 的数据站：酒馆战棋英雄梯队（排名 / 选取率 / 排名分布 / 最强流派，按分段与最新补丁刷新），另有流派与卡牌数据页；配套桌面端 Firestone 可下载，界面支持简体 / 繁體中文等 14 种语言。",
+      "url": "https://www.firestoneapp.com/battlegrounds/heroes",
+      "tags": [
+        "炉石传说",
+        "酒馆战棋",
+        "梯队",
+        "数据站",
+        "伴侣工具"
+      ],
+      "kind": "游戏数据 / 梯队站",
+      "need_login": false,
+      "update_info": "数据持续更新",
+      "note": "实测（2026-11-18 18:1x）：直连 HTTP 200（约 12 秒）可开、无盾，lang=zh-CN，标题「Firestone - 炉石传说数据与环境洞察」。酒馆战棋英雄页四列：排名 / 选取率 / 排名分布 / 最强流派，按 A、B 等分级（样例：扣子均排 3.88、选取率 55.7%、523 场；德雷阿佳丝、帕奇维克、风暴之王托里姆、尤格-萨隆等），页头「最近更新 2小时前 · 总对局数 21,272」。导航：酒馆战棋（英雄 / 流派 / 卡牌）/ 会员 / 下载 Firestone / 常见问题 / 文档，界面支持简体 / 繁體等 14 种语言。补充：代理会话下页面正常打开但数据区显示「总对局数 0」（最近更新「少于一小时前」），直连会话数据正常——数据可能按地区 / 时机分片，以实际打开为准。"
     }
   ]
 }
