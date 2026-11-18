@@ -20003,6 +20003,25 @@
       "need_login": false,
       "update_info": "数据持续更新",
       "note": "实测（2026-11-18 18:1x）：直连 HTTP 200（约 12 秒）可开、无盾，lang=zh-CN，标题「Firestone - 炉石传说数据与环境洞察」。酒馆战棋英雄页四列：排名 / 选取率 / 排名分布 / 最强流派，按 A、B 等分级（样例：扣子均排 3.88、选取率 55.7%、523 场；德雷阿佳丝、帕奇维克、风暴之王托里姆、尤格-萨隆等），页头「最近更新 2小时前 · 总对局数 21,272」。导航：酒馆战棋（英雄 / 流派 / 卡牌）/ 会员 / 下载 Firestone / 常见问题 / 文档，界面支持简体 / 繁體等 14 种语言。补充：代理会话下页面正常打开但数据区显示「总对局数 0」（最近更新「少于一小时前」），直连会话数据正常——数据可能按地区 / 时机分片，以实际打开为准。"
+    },
+    {
+      "id": "manual-novel-site-hameln",
+      "name": "小説を読もう！ハーメルン（syosetu.org · 日文网文站）",
+      "section": "novel",
+      "subsection": "site",
+      "description": "日本老牌网文投稿站「小説を読もう！」（通称ハーメルン / Hameln）：用户投稿原创连载小说，含 R15 / R18 分区（R18 需年龄确认），免费阅读；与「小説家になろう」（syosetu.com）是两家不同的站点。当前挂 Cloudflare 硬拦，站内结构未核实。",
+      "url": "https://syosetu.org/",
+      "tags": [
+        "日文",
+        "网文",
+        "投稿站",
+        "未核实"
+      ],
+      "kind": "日文网文站",
+      "need_login": false,
+      "update_info": "未核实（Cloudflare 硬拦）",
+      "note": "实测（2026-11-18 18:4x）：直连 / 走代理 × headless / 有头共四种组合全部 HTTP 403「Attention Required! | Cloudflare — Sorry, you have been blocked」，是 Cloudflare WAF 硬拦（非人机验证页），本机四种姿势都过不去，站内结构未核实。站点背景按公开常识（未逐一核实）：syosetu.org 是「小説を読もう！」（通称ハーメルン），日本老牌网文投稿站，全年龄内容为主 + R15 / R18 分区（R18 需年龄确认），免费阅读；与「小説家になろう」（syosetu.com）是两家不同的站，后者的 18 禁镜像 novel18.syosetu.com 另有卡 manual-novel-site-syosetu18。adult 按「R18 一级分区 + 年龄确认」口径标注（同 Novelpia）。",
+      "adult": true
     }
   ]
 }
