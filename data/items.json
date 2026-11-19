@@ -20047,6 +20047,25 @@
       "need_login": false,
       "update_info": "持续更新",
       "note": "实测（2026-11-19 11:1x）：下载页直连 HTTP 200（约 11 秒）可开、无盾，代理 200（约 20 秒）；lang=en，标题「Download Gauth: Your Step-by-Step AI Homework Helper with Live Online Tutors」。页面给 Google Play（com.education.android.h.intelligence）与 App Store（id1542571008）两个商店入口，未提供直装 APK；另有 Gauth Web 网页版入口。功能按页面自述：拍照上传 → AI 分步解答（Math / Physics / Pre-Algebra / Algebra / Trigonometry / Calculus / Statistics），真人导师 24/7 在线（付费）；免费可下载，无限次解答与 Gauth AI Pro 需订阅。界面语言 20+（含日本語，未见简体中文）。同类：作业帮、小猿搜题（study/app）。"
+    },
+    {
+      "id": "manual-study-doc-yuwen",
+      "name": "语文（度盘资料包）",
+      "section": "study",
+      "subsection": "doc",
+      "description": "语文学习资料网盘包（百度网盘）：文件夹「语文」内 1 个文件，永久有效，提取码 ju89；分享者缀*成章（与轻小说文库 APP 的度盘分享同一位分享者）。",
+      "url": "https://pan.baidu.com/s/1wrzrhdbdG6CcRe0rvCjJ_w?pwd=ju89",
+      "tags": [
+        "语文",
+        "学习资料",
+        "网盘",
+        "百度网盘"
+      ],
+      "kind": "学习资料",
+      "need_login": false,
+      "update_info": "网盘分享",
+      "note": "实测（2026-11-19 11:3x）：度盘分享带 ?pwd=ju89 直开有效（提取码已验证，文件列表直接出来）：分享者缀*成章，文件夹「语文」内 1 个文件（修改日期 2026-11-19 11:27），页面显示永久有效，未展开内层、未下载核实文件格式与内容，按分享名「语文」记为语文学习资料。",
+      "password": "ju89"
     }
   ]
 }
