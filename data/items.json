@@ -20362,6 +20362,25 @@
       "need_login": false,
       "update_info": "持续更新",
       "note": "实测（2026-11-19 14:3x）：直连 HTTP 200（约 9 秒）可开、无盾，标题「杭州图书馆」；旧域名 hzlib.net 会跳转到 zjhzlib.cn（本卡用最终域名）。公告：善本古籍阅览申请、一键借阅·书店借书、国医康养主题分馆等。与国家图书馆卡 manual-study-doc-nlc 同组收录。"
+    },
+    {
+      "id": "manual-game-app-emulator-uc",
+      "name": "手机模拟器（UC 网盘分享 · 模拟器文件夹）",
+      "section": "game",
+      "subsection": "app",
+      "description": "手机模拟器资源包（UC/夸克网盘）：文件夹「模拟器」内 1 项（2026-02-21 目录），永久有效，免提取码直开；具体内容未展开核实（方向未知：可能是 PC 玩手机游戏的安卓模拟器，也可能是手机玩 PC 的方案）。与手机玩电脑游戏模拟器合集、多开鸭同属模拟器向。",
+      "url": "https://drive.uc.cn/s/f2656cb6a3c84?public=1",
+      "tags": [
+        "模拟器",
+        "安卓",
+        "游戏工具",
+        "网盘",
+        "夸克网盘"
+      ],
+      "kind": "模拟器资源包",
+      "need_login": false,
+      "update_info": "网盘分享",
+      "note": "实测（2026-11-19 21:2x）：夸克分享带 ?public=1 直开有效（免提取码，文件列表直接出来）：分享者虚\\*，文件夹「模拟器」内 1 项（修改日期 2026-02-21 11:08），页面显示永久有效，未展开内层、未下载核实内容与方向。相关卡：manual-game-app-emulators（手机玩电脑游戏模拟器合集，方向相反）、gal-40bf78ec9f 与 gal-1ed1851b06（tool 区手机模拟器 / 解压教程组）、manual-pickup-duokaiya（模拟器多开资源站）。"
     }
   ]
 }
