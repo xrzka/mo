@@ -20028,6 +20028,25 @@
       "update_info": "未核实（Cloudflare 硬拦）",
       "note": "实测（2026-11-18 18:4x）：直连 / 走代理 × headless / 有头共四种组合全部 HTTP 403「Attention Required! | Cloudflare — Sorry, you have been blocked」，是 Cloudflare WAF 硬拦（非人机验证页），本机四种姿势都过不去，站内结构未核实。站点背景按公开常识（未逐一核实）：syosetu.org 是「小説を読もう！」（通称ハーメルン），日本老牌网文投稿站，全年龄内容为主 + R15 / R18 分区（R18 需年龄确认），免费阅读；与「小説家になろう」（syosetu.com）是两家不同的站，后者的 18 禁镜像 novel18.syosetu.com 另有卡 manual-novel-site-syosetu18。adult 按「R18 一级分区 + 年龄确认」口径标注（同 Novelpia）。",
       "adult": true
+    },
+    {
+      "id": "manual-study-app-gauth",
+      "name": "Gauth（原 GauthMath · AI 拍照解题 APP）",
+      "section": "study",
+      "subsection": "app",
+      "description": "AI 作业辅导 APP「Gauth」（原 GauthMath）：拍照上传题目、AI 分步解答，覆盖代数 / 几何 / 三角 / 微积分 / 统计与物理等，另有真人导师在线答疑（24/7，付费）；下载页提供 Google Play 与 App Store 双入口，另有 Gauth Web 网页版可直接用；基础功能免费，无限次解答与 AI Pro 需订阅。与作业帮 / 小猿搜题同类，主打英文题面。",
+      "url": "https://www.gauthmath.com/download",
+      "tags": [
+        "AI 解题",
+        "拍照搜题",
+        "作业辅导",
+        "数学",
+        "APP"
+      ],
+      "kind": "学习 APP（AI 解题）",
+      "need_login": false,
+      "update_info": "持续更新",
+      "note": "实测（2026-11-19 11:1x）：下载页直连 HTTP 200（约 11 秒）可开、无盾，代理 200（约 20 秒）；lang=en，标题「Download Gauth: Your Step-by-Step AI Homework Helper with Live Online Tutors」。页面给 Google Play（com.education.android.h.intelligence）与 App Store（id1542571008）两个商店入口，未提供直装 APK；另有 Gauth Web 网页版入口。功能按页面自述：拍照上传 → AI 分步解答（Math / Physics / Pre-Algebra / Algebra / Trigonometry / Calculus / Statistics），真人导师 24/7 在线（付费）；免费可下载，无限次解答与 Gauth AI Pro 需订阅。界面语言 20+（含日本語，未见简体中文）。同类：作业帮、小猿搜题（study/app）。"
     }
   ]
 }
