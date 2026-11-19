@@ -20066,6 +20066,25 @@
       "update_info": "网盘分享",
       "note": "实测（2026-11-19 11:3x）：度盘分享带 ?pwd=ju89 直开有效（提取码已验证，文件列表直接出来）：分享者缀*成章，文件夹「语文」内 1 个文件（修改日期 2026-11-19 11:27），页面显示永久有效，未展开内层、未下载核实文件格式与内容，按分享名「语文」记为语文学习资料。",
       "password": "ju89"
+    },
+    {
+      "id": "manual-novel-jp-5",
+      "name": "败犬女主太多了（負けヒロインが多すぎる！ · 度盘资源包）",
+      "section": "novel",
+      "subsection": "jp",
+      "description": "人气轻小说《败犬女主太多了！》（負けヒロインが多すぎる！，雨森焚火原作）度盘资源包：文件夹内 3 个文件，永久有效，提取码 tscb；分享者缀*成章（与文库 APP、语文资料包同一分享者）。具体文件（卷数/格式）未展开核实。",
+      "url": "https://pan.baidu.com/s/1iPcKfNGxZpxZSJ7beTogWQ?pwd=tscb",
+      "tags": [
+        "败犬女主太多了",
+        "日轻",
+        "网盘",
+        "百度网盘"
+      ],
+      "kind": "轻小说资源包",
+      "need_login": false,
+      "update_info": "网盘分享",
+      "note": "实测（2026-11-19 14:0x）：度盘分享带 ?pwd=tscb 直开有效（提取码已验证，文件列表直接出来）：分享者缀*成章（与 manual-novel-app-wenku8-flutter、manual-study-doc-yuwen 同一位分享者），文件夹「败犬女主太多了」内 3 个文件（修改日期 2026-11-19 14:05），页面显示永久有效，未展开内层、未下载核实卷数与格式。原作为雨森焚火的轻小说《負けヒロインが多すぎる！》；在线阅读渠道：站内幻梦轻小说（manual-novel-site-huanmeng / manual-novel-app-huanmeng）简介中亦提及本作。",
+      "password": "tscb"
     }
   ]
 }
