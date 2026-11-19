@@ -20104,6 +20104,264 @@
       "need_login": false,
       "update_info": "持续更新",
       "note": "实测（2026-11-19 14:1x）：直连 HTTP 200（约 10 秒）自动跳 /web/index.shtml 可开、无盾（代理 200 但慢达 42 秒，国内站走代理反而吃亏），标题「中国国家图书馆 · 中国国家数字图书馆 · 国家典籍博物馆」。资源体系：数字资源 / 特色资源 / 外购资源 / 馆藏目录，另有中华古籍智慧化服务平台、民国时期地方文献知识库、影音视听知识服务平台、中国盲人数字图书馆、丝绸之路数字图书馆等专题库；部分外购数据库需注册读者账号后远程访问。"
+    },
+    {
+      "id": "manual-study-doc-cqlib",
+      "name": "重庆图书馆（cqlib.cn）",
+      "section": "study",
+      "subsection": "doc",
+      "description": "重庆图书馆（市级主馆）官网：馆藏书目查询、资源统一检索、图书续借预约、数字资源访问与活动报名，另有数字图书馆与成渝数字资源共享；馆址沙坪坝区凤天大道。",
+      "url": "https://www.cqlib.cn/",
+      "tags": [
+        "图书馆",
+        "文献检索",
+        "重庆",
+        "学习"
+      ],
+      "kind": "公共图书馆官网",
+      "need_login": false,
+      "update_info": "持续更新",
+      "note": "实测（2026-11-19 14:2x）：直连 HTTP 200（约 6 秒）可开、无盾，标题「重庆图书馆」。功能：资源统一检索 / 图书文献检索（题名、作者、主题词、ISBN、索书号、分类号）/ 数字图书馆 / 成渝数字资源共享 / 活动报名。与国家图书馆卡 manual-study-doc-nlc 同组收录。"
+    },
+    {
+      "id": "manual-study-doc-cqbblib",
+      "name": "北碚图书馆（cqbblib.org.cn）",
+      "section": "study",
+      "subsection": "doc",
+      "description": "北碚图书馆（区级馆，国家一级图书馆）官网：馆藏检索、统一检索、数字服务与阅读推广；馆藏约 108.9 万、古籍馆约 10.1 万册，卢作孚专题文献知识服务平台已上线；馆址北碚区公园村。",
+      "url": "https://www.cqbblib.org.cn/",
+      "tags": [
+        "图书馆",
+        "文献检索",
+        "重庆",
+        "古籍",
+        "学习"
+      ],
+      "kind": "公共图书馆官网",
+      "need_login": false,
+      "update_info": "持续更新",
+      "note": "实测（2026-11-19 14:2x）：直连 HTTP 200（约 6 秒）可开、无盾，标题「北碚图书馆」。首页数据：馆藏数量 1,088,910 / 古籍馆数量 100,994 册 / 今日入馆 1069；动态：卢作孚专题文献知识服务平台在北碚上线。与国家图书馆卡 manual-study-doc-nlc 同组收录。"
+    },
+    {
+      "id": "manual-study-doc-clcn",
+      "name": "首都图书馆（clcn.net.cn）",
+      "section": "study",
+      "subsection": "doc",
+      "description": "首都图书馆（北京市属主馆）官网：书目检索覆盖中文图书 / 报刊 / 视听 / 北京文献 / 民国图书 / 古籍特藏 / 少儿图书，在线咨询、活动与讲座，另有北京城市图书馆子站；开馆时间周二至周日 9:00-21:00（周一闭馆）。",
+      "url": "https://www.clcn.net.cn/",
+      "tags": [
+        "图书馆",
+        "文献检索",
+        "北京",
+        "学习"
+      ],
+      "kind": "公共图书馆官网",
+      "need_login": false,
+      "update_info": "持续更新",
+      "note": "实测（2026-11-19 14:2x）：直连 HTTP 200（约 7 秒）可开、无盾，标题「首都图书馆」。检索分类齐全（含北京文献、民国图书、古籍特藏），导航含北京城市图书馆。与国家图书馆卡 manual-study-doc-nlc 同组收录。"
+    },
+    {
+      "id": "manual-study-doc-shlib",
+      "name": "上海图书馆（library.sh.cn）",
+      "section": "study",
+      "subsection": "doc",
+      "description": "上海图书馆（上海科学技术情报研究所）官网：图书 / 期刊 / 报纸 / 数字资源 / 历史文献资源一站检索，上图讲座、展览、培训，家谱馆与数字人文服务，另提供情报服务与上海市红色资源名录。",
+      "url": "https://www.library.sh.cn/",
+      "tags": [
+        "图书馆",
+        "文献检索",
+        "上海",
+        "家谱",
+        "学习"
+      ],
+      "kind": "公共图书馆官网",
+      "need_login": false,
+      "update_info": "持续更新",
+      "note": "实测（2026-11-19 14:2x）：直连 HTTP 200（约 6 秒）可开、无盾，标题「首页 - 上海图书馆」。特色：家谱馆、历史文献资源、数字人文服务、上图讲座 / 展览 / 培训。与国家图书馆卡 manual-study-doc-nlc 同组收录。"
+    },
+    {
+      "id": "manual-study-doc-tjlib",
+      "name": "天津图书馆（tjl.tj.cn）",
+      "section": "study",
+      "subsection": "doc",
+      "description": "天津图书馆官网：电子图书 / 电子报纸 / 电子期刊、数字资源与自建资源、天图资源发现、书刊检索与网上续借、参考咨询。",
+      "url": "https://www.tjl.tj.cn/",
+      "tags": [
+        "图书馆",
+        "文献检索",
+        "天津",
+        "学习"
+      ],
+      "kind": "公共图书馆官网",
+      "need_login": false,
+      "update_info": "持续更新",
+      "note": "实测（2026-11-19 14:2x）：直连 HTTP 200（约 6 秒）可开、无盾，标题「天津图书馆」。功能：天图资源发现 / 网上续借 / 读者荐书 / 网上阅览 / 参考咨询。与国家图书馆卡 manual-study-doc-nlc 同组收录。"
+    },
+    {
+      "id": "manual-study-doc-zjlib",
+      "name": "浙江图书馆（zjlib.cn）",
+      "section": "study",
+      "subsection": "doc",
+      "description": "浙江图书馆官网：数字资源、馆藏分布与特色文献，文澜重光专栏、在线展览、阅读榜单，注册指南与图书荐购，面向全省服务。",
+      "url": "https://www.zjlib.cn/",
+      "tags": [
+        "图书馆",
+        "文献检索",
+        "浙江",
+        "学习"
+      ],
+      "kind": "公共图书馆官网",
+      "need_login": false,
+      "update_info": "持续更新",
+      "note": "实测（2026-11-19 14:2x）：直连 HTTP 200（约 8 秒）可开、无盾，标题「浙江图书馆」。功能：数字资源 / 特色文献 / 文澜重光 / 在线展览 / 图书荐购 / 参考咨询。与国家图书馆卡 manual-study-doc-nlc 同组收录。"
+    },
+    {
+      "id": "manual-study-doc-jslib",
+      "name": "南京图书馆（jslib.org.cn）",
+      "section": "study",
+      "subsection": "doc",
+      "description": "南京图书馆官网：南图馆藏书目检索、龙蟠知识服务、馆际互借与文献传递、文献收录引用专题检索、知识产权信息与科技查新服务。",
+      "url": "https://www.jslib.org.cn/",
+      "tags": [
+        "图书馆",
+        "文献检索",
+        "江苏",
+        "学习"
+      ],
+      "kind": "公共图书馆官网",
+      "need_login": false,
+      "update_info": "持续更新",
+      "note": "实测（2026-11-19 14:2x）：直连 HTTP 200（约 7 秒）可开、无盾，标题「南京图书馆」。功能：龙蟠知识服务 / 馆际互借与文献传递 / 科技查新 / 知识产权信息服务。与国家图书馆卡 manual-study-doc-nlc 同组收录。"
+    },
+    {
+      "id": "manual-study-doc-zslib",
+      "name": "广东省立中山图书馆（zslib.com.cn）",
+      "section": "study",
+      "subsection": "doc",
+      "description": "广东省立中山图书馆（广东省古籍保护中心）官网：馆藏检索、电子资源检索、在线办证，馆藏覆盖图书 / 期刊 / 报纸 / 特藏文献 / 外文书刊 / 视听资料 / 缩微。",
+      "url": "https://www.zslib.com.cn/",
+      "tags": [
+        "图书馆",
+        "文献检索",
+        "广东",
+        "古籍",
+        "学习"
+      ],
+      "kind": "公共图书馆官网",
+      "need_login": false,
+      "update_info": "持续更新",
+      "note": "实测（2026-11-19 14:2x）：直连 HTTP 200（约 9 秒）可开、无盾，标题「广东省立中山图书馆(广东省古籍保护中心)」。功能：馆藏检索 / 电子资源检索 / 在线办证 / 易书。与国家图书馆卡 manual-study-doc-nlc 同组收录。"
+    },
+    {
+      "id": "manual-study-doc-szlib",
+      "name": "深圳图书馆（szlib.org.cn）",
+      "section": "study",
+      "subsection": "doc",
+      "description": "深圳图书馆官网：检索与高级搜索、数字资源导航、讲座培训展览等活动日历，中心馆与深图北馆两馆区。",
+      "url": "https://www.szlib.org.cn/",
+      "tags": [
+        "图书馆",
+        "文献检索",
+        "广东",
+        "深圳",
+        "学习"
+      ],
+      "kind": "公共图书馆官网",
+      "need_login": false,
+      "update_info": "持续更新",
+      "note": "实测（2026-11-19 14:2x）：直连 HTTP 200（约 8 秒）可开、无盾，标题「深圳图书馆」。功能：数字资源 / 活动日历 / 高级搜索；馆区：中心馆 + 深图北馆。与国家图书馆卡 manual-study-doc-nlc 同组收录。"
+    },
+    {
+      "id": "manual-study-doc-gzlib",
+      "name": "广州图书馆（gzlib.org.cn）",
+      "section": "study",
+      "subsection": "doc",
+      "description": "广州图书馆官网：书目检索、线上注册读者证、数字资源导航，公益活动与讲座展览（2026 年广州公益阅读等）。",
+      "url": "https://www.gzlib.org.cn/",
+      "tags": [
+        "图书馆",
+        "文献检索",
+        "广东",
+        "广州",
+        "学习"
+      ],
+      "kind": "公共图书馆官网",
+      "need_login": false,
+      "update_info": "持续更新",
+      "note": "实测（2026-11-19 14:2x）：直连 HTTP 200（约 6 秒）可开、无盾，标题「广州图书馆·首页」。功能：书目检索 / 线上注册 / 数字资源导航；公告区提示防假冒名义招聘。与国家图书馆卡 manual-study-doc-nlc 同组收录。"
+    },
+    {
+      "id": "manual-study-doc-hnlib",
+      "name": "湖南图书馆（library.hn.cn）",
+      "section": "study",
+      "subsection": "doc",
+      "description": "湖南图书馆官网：AI 馆员、虚拟图书馆、数字阅读平台与微信公众号入口。",
+      "url": "http://www.library.hn.cn/",
+      "tags": [
+        "图书馆",
+        "文献检索",
+        "湖南",
+        "学习"
+      ],
+      "kind": "公共图书馆官网",
+      "need_login": false,
+      "update_info": "持续更新",
+      "note": "实测（2026-11-19 14:3x）：直连 HTTP 200（约 9 秒）可开、无盾，标题「湖南图书馆」。首页元素较简（AI馆员 / 虚拟图书馆 / 数字阅读平台），深层页面未逐一核实。与国家图书馆卡 manual-study-doc-nlc 同组收录。"
+    },
+    {
+      "id": "manual-study-doc-hblib",
+      "name": "湖北省图书馆（library.hb.cn）",
+      "section": "study",
+      "subsection": "doc",
+      "description": "湖北省图书馆官网：数字资源、新书 / 报刊 / 馆长荐书、在线展览，办证须知、借阅规则等读者服务，另有楚天书房与基层图书馆资讯。",
+      "url": "https://www.library.hb.cn/",
+      "tags": [
+        "图书馆",
+        "文献检索",
+        "湖北",
+        "学习"
+      ],
+      "kind": "公共图书馆官网",
+      "need_login": false,
+      "update_info": "持续更新",
+      "note": "实测（2026-11-19 14:3x）：直连 HTTP 200（约 10 秒，http 会升级 https）可开、无盾，标题「湖北省图书馆」。功能：数字资源 / 在线展览 / 品牌活动 / 楚天书房。与国家图书馆卡 manual-study-doc-nlc 同组收录。"
+    },
+    {
+      "id": "manual-study-doc-sxlib",
+      "name": "陕西省图书馆（sxlib.org.cn）",
+      "section": "study",
+      "subsection": "doc",
+      "description": "陕西省图书馆官网：文献检索与纸电一体化统一检索、线上办证 / 退证、陕图掌上借还、陕图讲坛与新刊下载。",
+      "url": "https://www.sxlib.org.cn/",
+      "tags": [
+        "图书馆",
+        "文献检索",
+        "陕西",
+        "学习"
+      ],
+      "kind": "公共图书馆官网",
+      "need_login": false,
+      "update_info": "持续更新",
+      "note": "实测（2026-11-19 14:3x）：直连 HTTP 200（约 10 秒）可开、无盾，标题「陕西省图书馆-真诚服务读者！」。公告：线上办证 / 退证 / 缴滞纳金、纸电一体化统一检索、掌上借还上线。与国家图书馆卡 manual-study-doc-nlc 同组收录。"
+    },
+    {
+      "id": "manual-study-doc-hzlib",
+      "name": "杭州图书馆（zjhzlib.cn）",
+      "section": "study",
+      "subsection": "doc",
+      "description": "杭州图书馆官网：书目检索与续借、善本古籍阅览（需申请）、一键借阅·书店借书服务、主题分馆与活动公告。",
+      "url": "https://www.zjhzlib.cn/",
+      "tags": [
+        "图书馆",
+        "文献检索",
+        "浙江",
+        "杭州",
+        "学习"
+      ],
+      "kind": "公共图书馆官网",
+      "need_login": false,
+      "update_info": "持续更新",
+      "note": "实测（2026-11-19 14:3x）：直连 HTTP 200（约 9 秒）可开、无盾，标题「杭州图书馆」；旧域名 hzlib.net 会跳转到 zjhzlib.cn（本卡用最终域名）。公告：善本古籍阅览申请、一键借阅·书店借书、国医康养主题分馆等。与国家图书馆卡 manual-study-doc-nlc 同组收录。"
     }
   ]
 }
