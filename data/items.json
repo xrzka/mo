@@ -20381,6 +20381,25 @@
       "need_login": false,
       "update_info": "网盘分享",
       "note": "实测（2026-11-19 21:2x）：夸克分享带 ?public=1 直开有效（免提取码，文件列表直接出来）：分享者虚\\*，文件夹「模拟器」内 1 项（修改日期 2026-02-21 11:08），页面显示永久有效，未展开内层、未下载核实内容与方向。相关卡：manual-game-app-emulators（手机玩电脑游戏模拟器合集，方向相反）、gal-40bf78ec9f 与 gal-1ed1851b06（tool 区手机模拟器 / 解压教程组）、manual-pickup-duokaiya（模拟器多开资源站）。"
+    },
+    {
+      "id": "manual-pickup-priceai",
+      "name": "PriceAI（AI 卡网订阅与中转 API 比价雷达）",
+      "section": "pickup",
+      "subsection": "site",
+      "description": "AI 订阅 / API 购买比价站：把官方订阅、卡网订阅、官方 API、中转 API 放同一入口，按购买路径分流——订阅新手先看官方价再挑卡网现货，开发接入先看 DeepSeek / 千问 / Kimi / GLM 官方 API 免费额度再比中转；比价格、来源、库存、更新时间，强调风险边界；GitHub 开源，有 Telegram / QQ 群。",
+      "url": "https://priceai.cc/",
+      "tags": [
+        "AI",
+        "比价",
+        "API",
+        "卡网",
+        "中转"
+      ],
+      "kind": "AI 比价导航站",
+      "need_login": false,
+      "update_info": "持续更新",
+      "note": "实测（2026-11-20 10:3x）：直连 HTTP 200（约 11 秒）可开、无盾（代理 200 约 13 秒），lang=zh-CN，标题「PriceAI | AI 低价卡网订阅与中转 API 比价雷达」。四模块：卡网订阅 / 官方订阅 / 官方 API / 中转 API，另有指南、批发撮合、GitHub 开源、Telegram、QQ 群。页面自述比价格 / 来源 / 库存 / 更新时间并强调风险边界——卡网与中转渠道本身有风险，站内信息未逐条核价，以实际打开为准。同类：manual-pickup-llm-stats（AI 模型排行榜对比）。"
     }
   ]
 }
