@@ -20419,6 +20419,26 @@
       "update_info": "网盘分享",
       "note": "实测（2026-11-20 13:1x）：度盘分享带 ?pwd=gpvz 直开有效（提取码已验证，文件列表直接出来）：分享者缀*成章（与 manual-novel-app-wenku8-flutter、manual-study-doc-yuwen、manual-novel-jp-5 同一位分享者），文件夹「青春猪头少年」内 4 个文件（修改日期 2026-11-20 13:12），页面显示永久有效，未展开内层、未下载核实卷数与格式。原作为鸭志田一的轻小说《青春ブタ野郎》系列（含樱岛麻衣篇等）。",
       "password": "gpvz"
+    },
+    {
+      "id": "xlsx-game-146",
+      "name": "【双端】近月少女的礼仪(正篇1+2)",
+      "section": "game",
+      "subsection": null,
+      "description": "UC 网盘分享（x146）：Navel 名作《近月少女的礼仪》（月に寄りそう乙女の作法）正篇 1+2 双端版（PC / 安卓），UC 盘免码直开、永久有效。同作另有迅雷盘源 gal-cce3d9a12f（PC、ons 模拟器）。",
+      "url": "https://drive.uc.cn/s/451a59e634964?public=1",
+      "tags": [
+        "Galgame",
+        "Navel",
+        "双端",
+        "安卓",
+        "UC网盘"
+      ],
+      "kind": "Galgame（双端）",
+      "need_login": false,
+      "update_info": "网盘分享",
+      "note": "实测（2026-11-20 19:3x）：UC 分享带 ?public=1 直开有效（免提取码，文件列表直接出来）：分享者虚\\*（与模拟器包 manual-game-app-emulator-uc 同一位分享者），文件夹「x146」内 1 项（修改日期 2026-11-19 21:01），页面显示永久有效，未展开内层、未下载核实，双端按分享名理解为 PC + 安卓。同作另一源：gal-cce3d9a12f（迅雷盘，PC / ons 模拟器，压缩包解压码 0721）。adult 按 Galgame 流默认（Navel 18+ 作品）。",
+      "adult": true
     }
   ]
 }
