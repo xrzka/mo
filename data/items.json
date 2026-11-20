@@ -20400,6 +20400,25 @@
       "need_login": false,
       "update_info": "持续更新",
       "note": "实测（2026-11-20 10:3x）：直连 HTTP 200（约 11 秒）可开、无盾（代理 200 约 13 秒），lang=zh-CN，标题「PriceAI | AI 低价卡网订阅与中转 API 比价雷达」。四模块：卡网订阅 / 官方订阅 / 官方 API / 中转 API，另有指南、批发撮合、GitHub 开源、Telegram、QQ 群。页面自述比价格 / 来源 / 库存 / 更新时间并强调风险边界——卡网与中转渠道本身有风险，站内信息未逐条核价，以实际打开为准。同类：manual-pickup-llm-stats（AI 模型排行榜对比）。"
+    },
+    {
+      "id": "manual-novel-jp-6",
+      "name": "青春猪头少年（青春ブタ野郎 · 度盘资源包）",
+      "section": "novel",
+      "subsection": "jp",
+      "description": "人气轻小说《青春猪头少年》系列（青春ブタ野郎，鸭志田一原作）度盘资源包：文件夹内 4 个文件，永久有效，提取码 gpvz；分享者缀*成章（文库 APP / 语文 / 败犬女主同一分享者）。具体文件（卷数/格式）未展开核实。",
+      "url": "https://pan.baidu.com/s/1X9w-pUbxlHK_9zswM2NJpw?pwd=gpvz",
+      "tags": [
+        "青春猪头少年",
+        "日轻",
+        "网盘",
+        "百度网盘"
+      ],
+      "kind": "轻小说资源包",
+      "need_login": false,
+      "update_info": "网盘分享",
+      "note": "实测（2026-11-20 13:1x）：度盘分享带 ?pwd=gpvz 直开有效（提取码已验证，文件列表直接出来）：分享者缀*成章（与 manual-novel-app-wenku8-flutter、manual-study-doc-yuwen、manual-novel-jp-5 同一位分享者），文件夹「青春猪头少年」内 4 个文件（修改日期 2026-11-20 13:12），页面显示永久有效，未展开内层、未下载核实卷数与格式。原作为鸭志田一的轻小说《青春ブタ野郎》系列（含樱岛麻衣篇等）。",
+      "password": "gpvz"
     }
   ]
 }
