@@ -851,6 +851,9 @@
       const next = { ...l };
       if (ov && ov.url) next.url = url || l.url;
       if (ov && ov.password !== undefined) next.password = password;
+      // 管理员改的「链接按钮文字」：只动主按钮（url-only 卡就是「打开」那行，
+      // 多源卡是第一个源的名字）。留空/没改就维持原样。
+      if (ov && ov.link_label) next.name = ov.link_label;
       return next;
     });
 
@@ -883,6 +886,11 @@
       hidden: !!(ov && ov.hidden === true),
       // 后台是否改过这条，卡片上给个小标记，方便自己核对
       edited: !!(ov && Object.keys(ov).some((k) => k !== "updated")),
+      // 管理员可改的「按钮文字」：link_label = 主链接按钮那行高亮字（url-only 卡
+      // 就是「打开」，多源卡是第一个源名）；tool_label = 这张卡上「一键解压工具」
+      // 行的文字。空串 = 未覆盖，回落原值。编辑面板直接读写这两个键。
+      link_label: pick("link_label", ""),
+      tool_label: pick("tool_label", ""),
       links,
     };
   }
@@ -3432,6 +3440,9 @@
     { key: "description", label: "简介", type: "textarea" },
     { key: "url", label: "跳转链接", type: "text" },
     { key: "password", label: "提取码", type: "text" },
+    // 按钮文字两类：只改字，不动跳转地址。url 改地址在「跳转链接」里。
+    { key: "link_label", label: "链接按钮文字（改「打开」/主源按钮那行高亮字，留空 = 原样）", type: "text" },
+    { key: "tool_label", label: "解压行文字（这张卡上「一键解压工具」那行的字，留空 = 全局默认）", type: "text" },
     { key: "note", label: "备注", type: "textarea" },
     { key: "placements", label: "所属位置（分区 + 小分区，可加多个）", type: "placements" },
     { key: "hidden", label: "隐藏（访客看不到，可在后台取消）", type: "checkbox" },

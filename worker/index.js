@@ -103,6 +103,10 @@ const QA_WORD_LIMIT = 2000;
 const OVERRIDE_FIELDS = [
   "name", "description", "url", "password", "note",
   "section", "subsection", "placements", "deleted", "hidden", "adult",
+  // 管理员可改的「按钮文字」：link_label = 主链接按钮那行高亮字（url-only 卡
+  // 就是「打开」，多源卡是第一个源名）；tool_label = 该卡「一键解压工具」行的文字。
+  // 只改显示字，不影响跳转地址（地址走 url）。与 app.js ADMIN_EDIT_FIELDS 同步。
+  "link_label", "tool_label",
 ];
 
 /** 各字段长度上限（按字符数，中文算 1）。 */
@@ -118,6 +122,8 @@ const OVERRIDE_MAX = {
   deleted: 1,
   hidden: 1,
   adult: 1,
+  link_label: 60,
+  tool_label: 60,
 };
 
 /**
