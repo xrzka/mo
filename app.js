@@ -1306,7 +1306,8 @@
       ta.href = unzipTool.url;
       ta.target = "_blank";
       ta.rel = "noreferrer noopener";
-      ta.textContent = (unzipTool.name || "一键解压工具") + " ↗";
+      // 管理员给这张卡单独改过的解压行文字优先；没改就用全局默认名。
+      ta.textContent = (item.tool_label || unzipTool.name || "一键解压工具") + " ↗";
       if (unzipTool.note) ta.title = unzipTool.note;
       row.appendChild(ta);
 
