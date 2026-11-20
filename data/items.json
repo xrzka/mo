@@ -20439,6 +20439,46 @@
       "update_info": "网盘分享",
       "note": "实测（2026-11-20 19:3x）：UC 分享带 ?public=1 直开有效（免提取码，文件列表直接出来）：分享者虚\\*（与模拟器包 manual-game-app-emulator-uc 同一位分享者），文件夹「x146」内 1 项（修改日期 2026-11-19 21:01），页面显示永久有效，未展开内层、未下载核实，双端按分享名理解为 PC + 安卓。同作另一源：gal-cce3d9a12f（迅雷盘，PC / ons 模拟器，压缩包解压码 0721）。adult 按 Galgame 流默认（Navel 18+ 作品）。",
       "adult": true
+    },
+    {
+      "id": "manual-novel-dl-12",
+      "name": "十日终焉（度盘资源包）",
+      "section": "novel",
+      "subsection": "download",
+      "description": "悬疑无限流网文《十日终焉》（杀虫队队员 · 起点中文网）度盘资源包：文件夹内 3 个文件，永久有效，提取码 8ea3；分享者缀*成章（文库 APP / 语文 / 败犬 / 猪头少年同分享者）。卷数/格式未展开核实。",
+      "url": "https://pan.baidu.com/s/1BLSL_taUlggRpS3B4iw9Pw?pwd=8ea3",
+      "tags": [
+        "十日终焉",
+        "网文",
+        "悬疑",
+        "网盘",
+        "百度网盘"
+      ],
+      "kind": "中文小说资源包",
+      "need_login": false,
+      "update_info": "网盘分享",
+      "note": "实测（2026-11-21 0:4x）：度盘分享带 ?pwd=8ea3 直开有效（提取码已验证，文件列表直接出来）：分享者缀*成章（与 manual-novel-app-wenku8-flutter、manual-study-doc-yuwen、manual-novel-jp-5、manual-novel-jp-6 同一位分享者，第五条），文件夹「十日终焉」内 3 个文件（修改日期 2026-11-21 00:45），页面显示永久有效，未展开内层、未下载核实卷数与格式。原作为杀虫队队员的悬疑无限流网文，起点中文网连载。",
+      "password": "8ea3"
+    },
+    {
+      "id": "manual-novel-dl-13",
+      "name": "龙族（度盘资源包）",
+      "section": "novel",
+      "subsection": "download",
+      "description": "江南的奇幻小说《龙族》系列度盘资源包：文件夹内 1 个文件，永久有效，提取码 ey3e；分享者缀*成章（文库 APP / 语文 / 败犬 / 猪头少年 / 十日终焉同分享者）。具体文件（几部合辑还是单册）未展开核实。",
+      "url": "https://pan.baidu.com/s/1dKsgKynpkdYLIYJKbe5evQ?pwd=ey3e",
+      "tags": [
+        "龙族",
+        "江南",
+        "奇幻",
+        "网盘",
+        "百度网盘"
+      ],
+      "kind": "中文小说资源包",
+      "need_login": false,
+      "update_info": "网盘分享",
+      "note": "实测（2026-11-21 0:4x）：度盘分享带 ?pwd=ey3e 直开有效（提取码已验证，文件列表直接出来）：分享者缀*成章（与 manual-novel-app-wenku8-flutter、manual-study-doc-yuwen、manual-novel-jp-5、manual-novel-jp-6、manual-novel-dl-12 同一位分享者，第六条），文件夹「龙族」内 1 个文件（修改日期 2026-11-21 00:46），页面显示永久有效，未展开内层、未下载核实。原作为江南的《龙族》系列奇幻小说。",
+      "password": "ey3e"
     }
   ]
 }
