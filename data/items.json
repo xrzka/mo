@@ -20380,7 +20380,7 @@
       "kind": "模拟器资源包",
       "need_login": false,
       "update_info": "网盘分享",
-      "note": "实测（2026-11-19 21:2x）：夸克分享带 ?public=1 直开有效（免提取码，文件列表直接出来）：分享者虚\\*，文件夹「模拟器」内 1 项（修改日期 2026-02-21 11:08），页面显示永久有效，未展开内层、未下载核实内容与方向。相关卡：manual-game-app-emulators（手机玩电脑游戏模拟器合集，方向相反）、gal-40bf78ec9f 与 gal-1ed1851b06（tool 区手机模拟器 / 解压教程组）、manual-pickup-duokaiya（模拟器多开资源站）。"
+      "note": "实测（2026-11-19 21:2x）：夸克分享带 ?public=1 直开有效（免提取码，文件列表直接出来）：分享者虚*，文件夹「模拟器」内 1 项（修改日期 2026-02-21 11:08），页面显示永久有效，未展开内层、未下载核实内容与方向。相关卡：manual-game-app-emulators（手机玩电脑游戏模拟器合集，方向相反）、gal-40bf78ec9f 与 gal-1ed1851b06（tool 区手机模拟器 / 解压教程组）、manual-pickup-duokaiya（模拟器多开资源站）。"
     },
     {
       "id": "manual-pickup-priceai",
@@ -20437,7 +20437,7 @@
       "kind": "Galgame（双端）",
       "need_login": false,
       "update_info": "网盘分享",
-      "note": "实测（2026-11-20 19:3x）：UC 分享带 ?public=1 直开有效（免提取码，文件列表直接出来）：分享者虚\\*（与模拟器包 manual-game-app-emulator-uc 同一位分享者），文件夹「x146」内 1 项（修改日期 2026-11-19 21:01），页面显示永久有效，未展开内层、未下载核实，双端按分享名理解为 PC + 安卓。同作另一源：gal-cce3d9a12f（迅雷盘，PC / ons 模拟器，压缩包解压码 0721）。adult 按 Galgame 流默认（Navel 18+ 作品）。",
+      "note": "实测（2026-11-20 19:3x）：UC 分享带 ?public=1 直开有效（免提取码，文件列表直接出来）：分享者虚*（与模拟器包 manual-game-app-emulator-uc 同一位分享者），文件夹「x146」内 1 项（修改日期 2026-11-19 21:01），页面显示永久有效，未展开内层、未下载核实，双端按分享名理解为 PC + 安卓。同作另一源：gal-cce3d9a12f（迅雷盘，PC / ons 模拟器，压缩包解压码 0721）。adult 按 Galgame 流默认（Navel 18+ 作品）。",
       "adult": true
     },
     {
