@@ -20498,6 +20498,45 @@
       "need_login": false,
       "update_info": "网盘分享",
       "note": "实测（2026-11-21 13:1x）：夸克分享直开有效（免提取码）：分享者充满*力的薯条（与缀*成章不是同一人），共 7 个文件 18.6M，内为文件夹「小说」（修改日期 2026-11-21 13:16），页面显示永久有效，未展开内层、未下载核实书目——按用户给的分享名「笔趣阁」记为笔趣阁向小说合集，实际书目以打开为准。同区参考：manual-novel-dl-12（十日终焉）、manual-novel-dl-13（龙族）。"
+    },
+    {
+      "id": "manual-novel-jp-7",
+      "name": "魔女之旅（魔女の旅々 · 度盘资源包）",
+      "section": "novel",
+      "subsection": "jp",
+      "description": "人气轻小说《魔女之旅》（魔女の旅々，白石定规原作）度盘资源包：文件夹内 4 个文件，永久有效，提取码 wfk1；分享者缀*成章（文库 APP / 语文 / 败犬 / 猪头少年 / 十日终焉 / 龙族同分享者）。卷数/格式未展开核实。",
+      "url": "https://pan.baidu.com/s/10QlOYlt4E3O9PjghaQaw-w?pwd=wfk1",
+      "tags": [
+        "魔女之旅",
+        "日轻",
+        "网盘",
+        "百度网盘"
+      ],
+      "kind": "轻小说资源包",
+      "need_login": false,
+      "update_info": "网盘分享",
+      "note": "实测（2026-11-21 23:4x）：度盘分享带 ?pwd=wfk1 直开有效（提取码已验证，文件列表直接出来）：分享者缀*成章（与 manual-novel-app-wenku8-flutter、manual-study-doc-yuwen、manual-novel-jp-5、manual-novel-jp-6、manual-novel-dl-12、manual-novel-dl-13 同一位分享者，第七条），文件夹「魔女之旅」内 4 个文件（修改日期 2026-11-21 23:47），页面显示永久有效，未展开内层、未下载核实卷数与格式。原作为白石定规的轻小说《魔女の旅々》（伊蕾娜旅行记）。",
+      "password": "wfk1"
+    },
+    {
+      "id": "manual-novel-dl-15",
+      "name": "网络文学书单（704 部经典电子书合集 · 度盘）",
+      "section": "novel",
+      "subsection": "download",
+      "description": "网络文学大合集（夸度盘分享）：网络文学 704 部经典电子书、130 位大神作家作品合集，单文件打包，永久有效，提取码 nbuu；分享者缀*成章（同分享者串第八条）。具体书目以打开为准。",
+      "url": "https://pan.baidu.com/s/1_FslcL8W0jPGJxDolX8JCg?pwd=nbuu",
+      "tags": [
+        "网文",
+        "书单",
+        "小说合集",
+        "网盘",
+        "百度网盘"
+      ],
+      "kind": "中文小说资源包",
+      "need_login": false,
+      "update_info": "网盘分享",
+      "note": "实测（2026-11-21 23:4x）：度盘分享带 ?pwd=nbuu 直开有效（提取码已验证，文件列表直接出来）：分享者缀*成章（与 manual-novel-app-wenku8-flutter、manual-study-doc-yuwen、manual-novel-jp-5、manual-novel-jp-6、manual-novel-dl-12、manual-novel-dl-13、manual-novel-jp-7 同一位分享者，第八条），文件夹「网络文学书单（网络文学704部经典电子书！130位大神作家作品合集！）」内 1 个文件（修改日期 2026-03-10 13:01，旧打包重新分享），页面显示永久有效，未展开内层、未下载核实书目。704 部书单按分享名记录，实际以打开为准。",
+      "password": "nbuu"
     }
   ]
 }
