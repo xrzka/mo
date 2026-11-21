@@ -130,12 +130,12 @@ CREATE TABLE IF NOT EXISTS overrides (
   -- NULL = 不覆盖、用 items.json 的原值。同样要补列：
   -- ALTER TABLE overrides ADD COLUMN adult INTEGER;
   adult       INTEGER,
-  -- 管理员可改的「按钮文字」：link_label = 主链接按钮那行高亮字（url-only 卡
-  -- 就是「打开」，多源卡是第一个源名）；tool_label = 该卡「一键解压工具」行的
-  -- 文字。只改显示字，不影响跳转地址。老库补列：
-  -- ALTER TABLE overrides ADD COLUMN link_label TEXT;
+  -- 管理员可改的「按钮文字」：links = 每行链接按钮的 {name, label} 数组（JSON 字符串，
+  -- 下标与 items 的 links 对齐）—— 卡上实际有几个按钮就改几行，不是所有卡都有「打开」；
+  -- tool_label = 该卡「一键解压工具」行的文字。只改显示字，不影响跳转地址。老库补列：
+  -- ALTER TABLE overrides ADD COLUMN links TEXT;
   -- ALTER TABLE overrides ADD COLUMN tool_label TEXT;
-  link_label  TEXT,
+  links       TEXT,
   tool_label  TEXT,
   updated  TEXT NOT NULL,
   by_who   TEXT NOT NULL DEFAULT ''

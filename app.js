@@ -846,14 +846,29 @@
     // 只有后台真的改过 url / 提取码时，才让第一条源跟着主 url 走。
     // 旧写法无条件覆盖第一条，会把「第一条源本来就是另一个地址」的卡片
     // （典型：入口域名 vs 主站、官方域名带不带 www）指到错的链接上。
+    // 管理员改的「链接按钮文字」：links 覆盖是 JSON 数组，按下标逐行合并 ——
+    // 每项 {name?, label?}，name 改按钮名、label 改「·」后面的备注；
+    // 缺项/空串回落原值。url-only 卡的兜底行（「打开」）也是 links[0]，一样能改。
+    // 卡上实际有几个按钮就编辑几行 —— 不是所有卡都有「打开」，多源卡是
+    // 「源名 · 备注」好几行（如 GitHub 原版 · GitHub Release + 度盘备份 · 百度网盘）。
+    let ovLinks = null;
+    if (ov && ov.links) {
+      try {
+        const a = JSON.parse(ov.links);
+        if (Array.isArray(a)) ovLinks = a;
+      } catch {}
+    }
     const links = rawLinks.map((l, i) => {
-      if (i !== 0) return l;
+      const m = ovLinks && ovLinks[i];
       const next = { ...l };
-      if (ov && ov.url) next.url = url || l.url;
-      if (ov && ov.password !== undefined) next.password = password;
-      // 管理员改的「链接按钮文字」：只动主按钮（url-only 卡就是「打开」那行，
-      // 多源卡是第一个源的名字）。留空/没改就维持原样。
-      if (ov && ov.link_label) next.name = ov.link_label;
+      if (i === 0) {
+        if (ov && ov.url) next.url = url || l.url;
+        if (ov && ov.password !== undefined) next.password = password;
+      }
+      if (m && typeof m === "object") {
+        if (m.name) next.name = m.name;
+        if (m.label !== undefined && m.label !== null) next.label = m.label;
+      }
       return next;
     });
 
@@ -886,10 +901,8 @@
       hidden: !!(ov && ov.hidden === true),
       // 后台是否改过这条，卡片上给个小标记，方便自己核对
       edited: !!(ov && Object.keys(ov).some((k) => k !== "updated")),
-      // 管理员可改的「按钮文字」：link_label = 主链接按钮那行高亮字（url-only 卡
-      // 就是「打开」，多源卡是第一个源名）；tool_label = 这张卡上「一键解压工具」
-      // 行的文字。空串 = 未覆盖，回落原值。编辑面板直接读写这两个键。
-      link_label: pick("link_label", ""),
+      // 管理员可改的「按钮文字」：links 覆盖（每行按钮名/备注）已在上方合并进
+      // links；tool_label = 这张卡上「一键解压工具」行的文字。空 = 未覆盖，回落原值。
       tool_label: pick("tool_label", ""),
       links,
     };
@@ -3441,8 +3454,9 @@
     { key: "description", label: "简介", type: "textarea" },
     { key: "url", label: "跳转链接", type: "text" },
     { key: "password", label: "提取码", type: "text" },
-    // 按钮文字两类：只改字，不动跳转地址。url 改地址在「跳转链接」里。
-    { key: "link_label", label: "链接按钮文字（改「打开」/主源按钮那行高亮字，留空 = 原样）", type: "text" },
+    // 链接行文字：按卡上实际有的按钮逐行改（「按钮名 + 备注」）—— 不是所有卡都有
+    // 「打开」，多源卡是「源名 · 备注」好几行。只改字，不动跳转地址（地址走 url）。
+    { key: "links", label: "链接按钮文字（逐行改按钮名 / 备注，留空 = 原样）", type: "links" },
     { key: "tool_label", label: "解压行文字（这张卡上「一键解压工具」那行的字，留空 = 全局默认）", type: "text" },
     { key: "note", label: "备注", type: "textarea" },
     { key: "placements", label: "所属位置（分区 + 小分区，可加多个）", type: "placements" },
@@ -3657,6 +3671,31 @@
         // 当前归属直接取 normalize 后的 sections —— 它已经把覆盖层、
         // items.json 的 also_in 都算进去了，比在这里重新解析一遍可靠。
         picker = buildPlacementPicker(row, item.sections || []);
+      } else if (f.type === "links") {
+        // 每行按钮两个输入：按钮名 + 备注（「·」后面那段）。行数跟着 item.links 走
+        // （含 url-only 卡兜底出来的「打开」行）。空输入 = 回落原值。
+        // 存成 JSON 数组字符串，下标与 item.links 对齐，后端按 TEXT 存。
+        const rows = document.createElement("div");
+        rows.className = "admin-field-links";
+        const pairs = (item.links || []).map((l) => {
+          const line = document.createElement("div");
+          line.className = "admin-link-row";
+          const n = document.createElement("input");
+          n.type = "text";
+          n.value = l.name || "";
+          n.placeholder = "按钮名（留空 = 原样）";
+          n.title = "跳转地址：" + (l.url || "");
+          const lb = document.createElement("input");
+          lb.type = "text";
+          lb.value = l.label || "";
+          lb.placeholder = "备注（留空 = 原样）";
+          line.appendChild(n);
+          line.appendChild(lb);
+          rows.appendChild(line);
+          return { name: n, label: lb };
+        });
+        row.appendChild(rows);
+        inputs[f.key] = pairs;
       } else if (f.type === "checkbox") {
         row.classList.add("admin-field-inline");
         const el = document.createElement("input");
@@ -3717,6 +3756,24 @@
         const v = inputs[f.key].value;
         if (v !== (item[f.key] || "")) fields[f.key] = v;
       });
+
+      // 链接行文字：与当前显示值有差异才提交（JSON 数组字符串，下标对齐 item.links）。
+      // 全空数组等价于没改 —— 不发这个字段，免得把「没覆盖」写成覆盖。
+      {
+        const pairs = inputs.links;
+        if (pairs && pairs.length) {
+          const cur = item.links || [];
+          let changed = false;
+          const arr = pairs.map((p, i) => {
+            const name = p.name.value.trim();
+            const label = p.label.value.trim();
+            const o = cur[i] || {};
+            if (name !== (o.name || "") || label !== (o.label || "")) changed = true;
+            return { name, label };
+          });
+          if (changed) fields.links = JSON.stringify(arr);
+        }
+      }
 
       // 分区归属：拼成 'novel:jp,manga:download' 与当前生效值比对。
       const placementsNow = picker ? picker.read() : "";

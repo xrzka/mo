@@ -103,10 +103,11 @@ const QA_WORD_LIMIT = 2000;
 const OVERRIDE_FIELDS = [
   "name", "description", "url", "password", "note",
   "section", "subsection", "placements", "deleted", "hidden", "adult",
-  // 管理员可改的「按钮文字」：link_label = 主链接按钮那行高亮字（url-only 卡
-  // 就是「打开」，多源卡是第一个源名）；tool_label = 该卡「一键解压工具」行的文字。
-  // 只改显示字，不影响跳转地址（地址走 url）。与 app.js ADMIN_EDIT_FIELDS 同步。
-  "link_label", "tool_label",
+  // 管理员可改的「按钮文字」：links = 每行链接按钮的 {name, label} 数组（JSON 字符串
+  // 存储，下标与 items 的 links 对齐）—— 卡上实际有几个按钮就改几行，不是所有卡都有
+  // 「打开」；tool_label = 该卡「一键解压工具」行的文字。只改显示字，不影响跳转地址
+  // （地址走 url）。与 app.js ADMIN_EDIT_FIELDS 同步。
+  "links", "tool_label",
 ];
 
 /** 各字段长度上限（按字符数，中文算 1）。 */
@@ -2824,6 +2825,34 @@ async function saveOverride(env, body) {
       const p = parsePlacements(clean);
       if (!p.ok) return { status: 400, body: { error: p.error } };
       next[f] = p.value;
+      continue;
+    }
+    // links 是「每行链接按钮的按钮名/备注」JSON 数组（字符串存储）。这里校验形状：
+    // 必须能解析成数组、每项是对象且只有 name/label 两个字符串字段、条数封顶 ——
+    // 坏 JSON 存进去前端会整体回落原值，但存之前拦住能少踩一次「保存成功但没变」。
+    if (f === "links" && clean) {
+      let arr;
+      try {
+        arr = JSON.parse(clean);
+      } catch {
+        return { status: 400, body: { error: "links 必须是 JSON 数组字符串" } };
+      }
+      if (!Array.isArray(arr) || arr.length === 0 || arr.length > 12) {
+        return { status: 400, body: { error: "links 必须是 1–12 项的数组" } };
+      }
+      const bad = arr.some(
+        (e) =>
+          !e ||
+          typeof e !== "object" ||
+          Array.isArray(e) ||
+          Object.keys(e).some((k) => k !== "name" && k !== "label") ||
+          (e.name !== undefined && typeof e.name !== "string") ||
+          (e.label !== undefined && typeof e.label !== "string")
+      );
+      if (bad) {
+        return { status: 400, body: { error: "links 每项只能是 {name?, label?} 字符串" } };
+      }
+      next[f] = clean;
       continue;
     }
     next[f] = clean;
