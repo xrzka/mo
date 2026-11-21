@@ -3747,7 +3747,7 @@
       // 全量提交会把「没覆盖」的字段也写成覆盖，之后想回落原值都难。
       const fields = {};
       ADMIN_EDIT_FIELDS.forEach((f) => {
-        if (f.type === "placements") return;   // 分区单独处理，见下
+        if (f.type === "placements" || f.type === "links") return;   // 分别单独处理，见下
         if (f.type === "checkbox") {
           const on = inputs[f.key].checked;
           if (on !== !!item[f.key]) fields[f.key] = on;

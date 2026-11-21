@@ -123,7 +123,7 @@ const OVERRIDE_MAX = {
   deleted: 1,
   hidden: 1,
   adult: 1,
-  link_label: 60,
+  links: 2000,
   tool_label: 60,
 };
 
