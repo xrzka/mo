@@ -20737,6 +20737,30 @@
           "label": "度盘",
           "password": "23rh",
           "url": "https://pan.baidu.com/s/1VrC7GUCwpTcM8a39Zekrow?pwd=23rh"
+        },
+        {
+          "name": "果然我的青春恋爱喜剧搞错了",
+          "label": "度盘",
+          "password": "59dv",
+          "url": "https://pan.baidu.com/s/1eCoh_ebf79iYscXZqBD0-A?pwd=59dv"
+        },
+        {
+          "name": "86-不存在的战区-",
+          "label": "度盘",
+          "password": "7n2q",
+          "url": "https://pan.baidu.com/s/1VK490PPYyaByW0mML4dy8g?pwd=7n2q"
+        },
+        {
+          "name": "可塑性记忆 Heartfelt Thanks",
+          "label": "度盘",
+          "password": "n3tq",
+          "url": "https://pan.baidu.com/s/1orPjpKRla_l60FUDJPxgUA?pwd=n3tq"
+        },
+        {
+          "name": "恋爱寄生虫",
+          "label": "度盘",
+          "password": "ua2t",
+          "url": "https://pan.baidu.com/s/14DG8jphmb45SJhXIACqzew?pwd=ua2t"
         }
       ],
       "tags": [
@@ -20748,7 +20772,7 @@
       "kind": "导航卡",
       "need_login": false,
       "update_info": "2026-11-22 建档 9 条",
-      "note": "建档（2026-11-22）：汇总九张卡的原链接与提取码，来源 manual-novel-app-wenku8-flutter / manual-study-doc-yuwen / manual-novel-jp-5 / manual-novel-jp-6 / manual-novel-dl-12 / manual-novel-dl-13 / manual-novel-jp-7 / manual-novel-dl-15 / manual-novel-dl-16；九条均于 2026-11-19 ~ 11-22 实测有效。今后缀*成章新分享直接往这张卡的 links 追加。"
+      "note": "建档（2026-11-22）：汇总十三张卡的原链接与提取码，来源 manual-novel-app-wenku8-flutter / manual-study-doc-yuwen / manual-novel-jp-5 / manual-novel-jp-6 / manual-novel-dl-12 / manual-novel-dl-13 / manual-novel-jp-7 / manual-novel-dl-15 / manual-novel-dl-16；十三条均于 2026-11-19 ~ 11-22 实测有效。今后缀*成章新分享直接往这张卡的 links 追加。"
     },
     {
       "id": "manual-pickup-site-sound-lab",
@@ -20809,6 +20833,7 @@
       "subsection": "jp",
       "description": "渡航《果然我的青春恋爱喜剧搞错了》（やはり俺の青春ラブコメはまちがっている。/春物）网盘全本：共 5 个文件（全卷）。侍学园奉仕部与比企谷八幡的毒舌青春恋爱物语。永久有效分享，提取码在链接内自动填充。",
       "url": "https://pan.baidu.com/s/1eCoh_ebf79iYscXZqBD0-A?pwd=59dv",
+      "password": "59dv",
       "tags": [
         "轻小说",
         "日轻",
@@ -20828,6 +20853,7 @@
       "subsection": "jp",
       "description": "安里アサト《86-不存在的战区-》（86―エイティシックス―）网盘分享：共 4 个文件（全卷）。被称作「86」的少年少女在无人知晓的战场上作战的军事科幻。永久有效分享，提取码在链接内自动填充。",
       "url": "https://pan.baidu.com/s/1VK490PPYyaByW0mML4dy8g?pwd=7n2q",
+      "password": "7n2q",
       "tags": [
         "轻小说",
         "日轻",
@@ -20847,6 +20873,7 @@
       "subsection": "jp",
       "description": "《可塑性记忆》（Plastic Memories）官方 fanbook「Heartfelt Thanks」网盘分享：共 3 个文件。在 SAI 命止不久的 Giftia 与人类搭挡的催泪物语之官方资料集（设定/插画/访谈）。永久有效分享，提取码在链接内自动填充。",
       "url": "https://pan.baidu.com/s/1orPjpKRla_l60FUDJPxgUA?pwd=n3tq",
+      "password": "n3tq",
       "tags": [
         "画集",
         "设定集",
@@ -20866,6 +20893,7 @@
       "subsection": "jp",
       "description": "《恋爱寄生虫》（恋愛寄生虫）网盘分享：共 3 个文件。以「恋爱=寄生」为引子的日式青春猎奇/恋爱小说（同名改编话题作）。永久有效分享，提取码在链接内自动填充。",
       "url": "https://pan.baidu.com/s/14DG8jphmb45SJhXIACqzew?pwd=ua2t",
+      "password": "ua2t",
       "tags": [
         "轻小说",
         "日轻",
