@@ -20576,6 +20576,26 @@
       "need_login": false,
       "update_info": "2026-11-22 实测在更（最新更新当天 09:20）",
       "note": "实测（2026-11-22 17:1x）：站活着（首页 HTTP 200，1.9MB 大页面）；headless 无 UA 直访会被 nginx 403，带浏览器 UA 放行——正常浏览器无碍。首页显示 Total novels: 24862，最新更新 2026-11-22 09:20（几分钟前），筛选支持韩国/中国/日本 + 图像章节；示例条目 Campfire Shelter / Black Summoner / Murabito Desu Ga Nani Ka?，每部有带 token 的 /download.php 下载。与 manual-novel-10（노벨피아 Novelpia 原站）互补：原站韩文付费墙，这里看翻译。adult 未标（未见年龄门；原站 19+ 内容是否被收录未逐部核实）。"
+    },
+    {
+      "id": "manual-pickup-site-abra",
+      "name": "魔曰 Abracadabra（文言文加密）",
+      "section": "pickup",
+      "subsection": "site",
+      "description": "把要说的话加密成一篇文言文/古诗词的伪装加密工具：「话语」里写秘密、填「密钥」点加密，出来就是「荀子悦然曰：……」这样的古文（文体可选古文/古诗/宋词，七言五言四言、骈文对仗、密文稀释控制破绽密度）；底下是真密码学——强 IV + HMAC 消息签名 + PBKDF2 密钥衍生，还支持 TOTP 时效加密（限时失效）与 AONT 分段互锁；文件模式能加密文件，PWA 可装离线版。开源于 GitHub（SheepChef/Abracadabra，AIPL-1.2）。",
+      "url": "https://abra.js.org/",
+      "tags": [
+        "加密",
+        "文言文",
+        "伪装",
+        "隐写",
+        "工具",
+        "开源"
+      ],
+      "kind": "加密工具",
+      "need_login": false,
+      "update_info": "2026-11-22 实测 V3.8.0 在线版",
+      "note": "实测（2026-11-22 19:3x）：站活着（HTTP 200），V3.8.0，作者 SheepChef（shef.cc），仓库 github.com/SheepChef/Abracadabra；真跑了一轮加密：话语「墨站收录测试：今天也要开心」+ 密钥 → 输出「荀子悦然曰：『水请旅光言进，却雀光朗达。』雁绚雨明，则所任得其谜……」文言文成段结果 ✓（解密方向未实测）。本地加密，密钥丢了谁也救不回。"
     }
   ]
 }
