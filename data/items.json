@@ -20636,6 +20636,26 @@
       "need_login": false,
       "update_info": "2026-11-22 实测 1935 个在库",
       "note": "实测（2026-11-22 19:5x）：站活着（HTTP 200），页面显示「找到 1935 个结果」，分类树齐全，示例 Super Tetris SNES Soundfont（237KB，2026-11-22 当天上传）、RetroM 合集 2.43GB（27,475 下载）；授权多为「个人使用」——游戏提取类音色的商用风险自担（页面有标注）。未逐个下载核实（页面级验证）。"
+    },
+    {
+      "id": "manual-pickup-rvc",
+      "name": "RVC 变声器（Retrieval-based Voice Conversion）",
+      "section": "pickup",
+      "subsection": "code",
+      "description": "AI 变声/声线转换的标杆开源框架（GitHub 3.9 万星，MIT）：用不到 10 分钟的目标人声数据就能训练出可用的转换模型，WebUI 一键训练/推理，带实时变声界面（直播/游戏可用）；内置 UVR5 人声伴奏分离、RMVPE 哑音修复（速度快资源占用小），预训练模型在 HuggingFace 直下，还有 ModelScope 在线演示和「AutoDL 5 毛钱训练 AI 歌手」教程。与库内 GPT-SoVITS 同门——GPT-SoVITS 的转换段就是它。",
+      "url": "https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI",
+      "tags": [
+        "变声",
+        "语音克隆",
+        "TTS",
+        "AI",
+        "开源",
+        "GitHub"
+      ],
+      "kind": "开源项目",
+      "need_login": false,
+      "update_info": "2026-11-22 实测 39,245 星在维护",
+      "note": "实测（2026-11-22 20:0x）：仓库活着（API 200）：39,245 星、MIT、最近 push 2026-08-04、未归档；README 自述「简单易用的语音音色转换/变声器框架」，要点：≤10 分钟语音数据训练、实时变声界面、RMVPE 哑音修复、UVR5 分离、HF 预训练模型（lj1995/VoiceConversionWebUI）、ModelScope 在线演示（FlowerCry/RVCv2demo）。未实机训练/推理（仓库级验证）。与 manual-pickup-gpt-sovits、manual-pickup-indextts、manual-pickup-fish-speech、manual-pickup-cosyvoice 同区：那些是 TTS（文生音），RVC 是 VC（声转声）。"
     }
   ]
 }
