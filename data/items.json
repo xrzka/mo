@@ -20556,6 +20556,26 @@
       "update_info": "网盘分享",
       "note": "实测（2026-11-22 12:3x）：度盘分享带 ?pwd=23rh 直开有效（提取码已验证，文件列表直接出来）：分享者缀*成章（与 manual-novel-app-wenku8-flutter、manual-study-doc-yuwen、manual-novel-jp-5、manual-novel-jp-6、manual-novel-dl-12、manual-novel-dl-13、manual-novel-jp-7、manual-novel-dl-15 同一位分享者，第九条），文件夹「全球死考：刚下刑场你让我去考试」内 1 个文件（修改日期 2026-11-22 12:35），页面显示永久有效，未展开内层、未下载核实，作者与卷数以打开为准。",
       "password": "23rh"
+    },
+    {
+      "id": "manual-novel-site-fnp",
+      "name": "FUCKNOVELPIA（网文翻译阅读站 · Novelpia 向）",
+      "section": "novel",
+      "subsection": "site",
+      "description": "免费读/下载翻译网文的大型聚合站：收录 24,800+ 部翻译小说（韩国为主，也含中日），高级搜索（标签/首字母/国家/图像章节筛选）、更新追踪、社区上传与翻译工具，每部能在线读也能整本打包下载（站内 Download 按钮，EPUB/TXT）；站名瞄准 Novelpia（韩国网文平台）的付费墙。浏览无需登录，注册可开更新通知。",
+      "url": "https://fucknovelpia.com/index.php",
+      "tags": [
+        "翻译小说",
+        "韩轻",
+        "网文",
+        "阅读",
+        "下载",
+        "Novelpia"
+      ],
+      "kind": "网文阅读站",
+      "need_login": false,
+      "update_info": "2026-11-22 实测在更（最新更新当天 09:20）",
+      "note": "实测（2026-11-22 17:1x）：站活着（首页 HTTP 200，1.9MB 大页面）；headless 无 UA 直访会被 nginx 403，带浏览器 UA 放行——正常浏览器无碍。首页显示 Total novels: 24862，最新更新 2026-11-22 09:20（几分钟前），筛选支持韩国/中国/日本 + 图像章节；示例条目 Campfire Shelter / Black Summoner / Murabito Desu Ga Nani Ka?，每部有带 token 的 /download.php 下载。与 manual-novel-10（노벨피아 Novelpia 原站）互补：原站韩文付费墙，这里看翻译。adult 未标（未见年龄门；原站 19+ 内容是否被收录未逐部核实）。"
     }
   ]
 }
