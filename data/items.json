@@ -20904,6 +20904,62 @@
       "need_login": false,
       "update_info": "2026-11-22 分享（缀*成章，永久有效）",
       "note": "实测（2026-11-22 22:5x）：链接有效（提取码 ua2t 已在链接内自动填充），分享者「缀*成章」，过期时间：永久有效；共 3 个文件（22:47 分享）。作者与卷数构成未逐页核实。同分享者其余分享见「缀*成章 网盘分享合集」卡。"
+    },
+    {
+      "id": "manual-novel-site-zlib",
+      "name": "Z-Library（z-library.sk 主域）",
+      "section": "novel",
+      "subsection": "site",
+      "description": "Z-Library（全球最大影子图书馆）的 .sk 主域：电子书 + 学术文章千万级馆藏，检索/浏览部分免登录，下载需免费注册（每日限量，会员提额）；支持 EPUB/PDF/MOBI 直下与在线阅读器。域名轮换是常态（老域名屡被查封，.sk 个人域风格是现行方案），失效时去官方公告渠道拿新域名。国内直连被墙，需自备代理。",
+      "url": "https://z-library.sk/",
+      "tags": [
+        "电子书",
+        "影子图书馆",
+        "学术",
+        "英文",
+        "需代理"
+      ],
+      "kind": "电子书库",
+      "need_login": true,
+      "update_info": "2026-11-22 实测在盾后活着",
+      "note": "实测（2026-11-22 23:4x）：走代理可达 DiamWall 人机盾（HTTP 517 Access Denied，headless 指纹被拒——盾在拒自动化，正常浏览器一般放行）；本机直连被拒（被墙现状）。未注册实测下载。镜像：1lib.sk（z-lib.sk 会跳到它）。Z-Library 版权状态敏感，自担风险。"
+    },
+    {
+      "id": "manual-novel-site-1lib",
+      "name": "Z-Library 镜像（1lib.sk）",
+      "section": "novel",
+      "subsection": "site",
+      "description": "Z-Library（全球最大影子图书馆）的 1lib.sk 镜像域：与 z-library.sk 同源同库（电子书 + 学术文章千万级），检索/浏览部分免登录，下载需免费注册（每日限量）；实测 z-lib.sk 会跳转到本域，属三兄弟里的规范域。国内直连被墙，需自备代理。",
+      "url": "https://1lib.sk/",
+      "tags": [
+        "电子书",
+        "影子图书馆",
+        "学术",
+        "镜像",
+        "需代理"
+      ],
+      "kind": "电子书库",
+      "need_login": true,
+      "update_info": "2026-11-22 实测在盾后活着",
+      "note": "实测（2026-11-22 23:4x）：走代理稳定可达 DiamWall 盾（HTTP 517，headless 被拒）；有头浏览器一次被代理节点拖死。z-lib.sk 一次实测发生向本域的跳转（同源互认）。主域卡见 manual-novel-site-zlib。未注册实测下载。"
+    },
+    {
+      "id": "manual-novel-site-zlibsk",
+      "name": "Z-Library 镜像（z-lib.sk）",
+      "section": "novel",
+      "subsection": "site",
+      "description": "Z-Library（全球最大影子图书馆）的 z-lib.sk 短域镜像：与 z-library.sk / 1lib.sk 同源同库，实测访问会跳转到 1lib.sk。检索/浏览部分免登录，下载需免费注册；国内直连被墙，需自备代理。域名轮换常态，失效时走官方公告渠道。",
+      "url": "https://z-lib.sk/",
+      "tags": [
+        "电子书",
+        "影子图书馆",
+        "镜像",
+        "需代理"
+      ],
+      "kind": "电子书库",
+      "need_login": true,
+      "update_info": "2026-11-22 实测跳 1lib.sk",
+      "note": "实测（2026-11-22 23:4x）：走代理可达 DiamWall 盾（HTTP 517）；有头浏览器一次实锤发生向 1lib.sk 的跳转（同源互认，本卡更像别名）。主域卡见 manual-novel-site-zlib，规范域卡见 manual-novel-site-1lib。未注册实测下载。"
     }
   ]
 }
