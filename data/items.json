@@ -20537,6 +20537,25 @@
       "update_info": "网盘分享",
       "note": "实测（2026-11-21 23:4x）：度盘分享带 ?pwd=nbuu 直开有效（提取码已验证，文件列表直接出来）：分享者缀*成章（与 manual-novel-app-wenku8-flutter、manual-study-doc-yuwen、manual-novel-jp-5、manual-novel-jp-6、manual-novel-dl-12、manual-novel-dl-13、manual-novel-jp-7 同一位分享者，第八条），文件夹「网络文学书单（网络文学704部经典电子书！130位大神作家作品合集！）」内 1 个文件（修改日期 2026-03-10 13:01，旧打包重新分享），页面显示永久有效，未展开内层、未下载核实书目。704 部书单按分享名记录，实际以打开为准。",
       "password": "nbuu"
+    },
+    {
+      "id": "manual-novel-dl-16",
+      "name": "全球死考：刚下刑场你让我去考试（度盘资源包）",
+      "section": "novel",
+      "subsection": "download",
+      "description": "网文《全球死考：刚下刑场你让我去考试》度盘资源包：文件夹内 1 个文件，永久有效，提取码 23rh；分享者缀*成章（文库 APP / 语文 / 败犬 / 猪头少年 / 十日终焉 / 龙族 / 魔女之旅 / 网络文学书单同分享者）。按书名看是考试/无限流题材网文，作者与卷数未核实。",
+      "url": "https://pan.baidu.com/s/1VrC7GUCwpTcM8a39Zekrow?pwd=23rh",
+      "tags": [
+        "全球死考",
+        "网文",
+        "网盘",
+        "百度网盘"
+      ],
+      "kind": "中文小说资源包",
+      "need_login": false,
+      "update_info": "网盘分享",
+      "note": "实测（2026-11-22 12:3x）：度盘分享带 ?pwd=23rh 直开有效（提取码已验证，文件列表直接出来）：分享者缀*成章（与 manual-novel-app-wenku8-flutter、manual-study-doc-yuwen、manual-novel-jp-5、manual-novel-jp-6、manual-novel-dl-12、manual-novel-dl-13、manual-novel-jp-7、manual-novel-dl-15 同一位分享者，第九条），文件夹「全球死考：刚下刑场你让我去考试」内 1 个文件（修改日期 2026-11-22 12:35），页面显示永久有效，未展开内层、未下载核实，作者与卷数以打开为准。",
+      "password": "23rh"
     }
   ]
 }
