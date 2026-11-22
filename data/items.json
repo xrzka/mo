@@ -20596,6 +20596,26 @@
       "need_login": false,
       "update_info": "2026-11-22 实测 V3.8.0 在线版",
       "note": "实测（2026-11-22 19:3x）：站活着（HTTP 200），V3.8.0，作者 SheepChef（shef.cc），仓库 github.com/SheepChef/Abracadabra；真跑了一轮加密：话语「墨站收录测试：今天也要开心」+ 密钥 → 输出「荀子悦然曰：『水请旅光言进，却雀光朗达。』雁绚雨明，则所任得其谜……」文言文成段结果 ✓（解密方向未实测）。本地加密，密钥丢了谁也救不回。"
+    },
+    {
+      "id": "manual-pickup-site-jimu-voice",
+      "name": "Jimu Voice 音色库（1248 款试听/下载）",
+      "section": "pickup",
+      "subsection": "site",
+      "description": "积木出品的在线音色库：1248 款真实高质量音色，可按国家/地区（80+ 国，中国 938 款、印度 21、美国 19…）、类型（热门爆款/影视商业旁白/角色与情绪/特色方言/定制克隆参考）、情绪色彩、性别年龄与应用场景组合筛选；在线即点即听，48kHz 无损直接下载。给 TTS/配音找现成声音素材的一站式库，配套积木 API 聚合平台（jimu.chat）与创作者社区（bbs.jimu.chat）。",
+      "url": "https://voice.jimu.chat/library.html",
+      "tags": [
+        "音色库",
+        "TTS",
+        "配音",
+        "语音",
+        "在线试听",
+        "素材"
+      ],
+      "kind": "素材库",
+      "need_login": false,
+      "update_info": "2026-11-22 实测 1248 款在库",
+      "note": "实测（2026-11-22 19:4x）：站活着（HTTP 200），标题「全部音色库 (1248 款) - Jimu Voice (在线试听与直接下载)」，五类分类（popular/narration/character/dialect/clone）与国家筛选齐全（中国 938/美国 19/印度 21…），库页内有 48kHz 无损直下专区。与库内 pickup/code 的 TTS 引擎卡（GPT-SoVITS、IndexTTS、Fish Speech、CosyVoice）互补：那些是引擎，这是现成音色素材。未逐款试听/下载核实（页面级验证）。"
     }
   ]
 }
