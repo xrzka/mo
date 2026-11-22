@@ -20675,6 +20675,132 @@
       "need_login": true,
       "update_info": "2026-11-22 实测 43w 免费在库",
       "note": "实测（2026-11-22 21:1x）：页活着且内容完整渲染（headless 下 HTTP 状态 403 但正文全出——爱给反爬只扣状态码不拦内容，正常浏览器无碍）；该分类 43 万免费 + 4.8 万版权、专辑 577 个、200 页；样例：原神枫原万叶中配 162 首、荒泷一斗 172 首、御姐空灵音演播样例。列表项标「低品质」，完整品质下载需登录/会员（未实测下载）。与 manual-pickup-site-jimu-voice（TTS 音色）、manual-pickup-site-polyphone（SF2 乐器）同区不同类。"
+    },
+    {
+      "id": "manual-pickup-site-zhui-archive",
+      "name": "缀*成章 网盘分享合集（9 条全挂）",
+      "section": "pickup",
+      "subsection": "site",
+      "description": "网盘分享者「缀*成章」的分享总目（截至 2026-11-22 共 9 条，全部实测有效）：轻小说文库 APP、语文资料包、败犬女主、青春猪头少年、十日终焉、龙族、魔女之旅、网络文学书单 704 部合集、全球死考——每行一键直达（提取码就在行内可复制），后续新分享继续往下追加。各条目的详细口径看对应卡。",
+      "url": "https://pan.baidu.com/s/1BLSL_taUlggRpS3B4iw9Pw?pwd=8ea3",
+      "links": [
+        {
+          "name": "轻小说文库 APP（安卓/iOS 全本离线）",
+          "label": "度盘",
+          "password": "cxuh",
+          "url": "https://pan.baidu.com/s/10ll28EZeYy5nK0kyD6lF_A?pwd=cxuh"
+        },
+        {
+          "name": "语文资料包（高考全科）",
+          "label": "度盘",
+          "password": "ju89",
+          "url": "https://pan.baidu.com/s/1wrzrhdbdG6CcRe0rvCjJ_w?pwd=ju89"
+        },
+        {
+          "name": "败犬女主太多了（日轻全本）",
+          "label": "度盘",
+          "password": "tscb",
+          "url": "https://pan.baidu.com/s/1iPcKfNGxZpxZSJ7beTogWQ?pwd=tscb"
+        },
+        {
+          "name": "青春猪头少年系列",
+          "label": "度盘",
+          "password": "gpvz",
+          "url": "https://pan.baidu.com/s/1X9w-pUbxlHK_9zswM2NJpw?pwd=gpvz"
+        },
+        {
+          "name": "十日终焉",
+          "label": "度盘",
+          "password": "8ea3",
+          "url": "https://pan.baidu.com/s/1BLSL_taUlggRpS3B4iw9Pw?pwd=8ea3"
+        },
+        {
+          "name": "龙族",
+          "label": "度盘",
+          "password": "ey3e",
+          "url": "https://pan.baidu.com/s/1dKsgKynpkdYLIYJKbe5evQ?pwd=ey3e"
+        },
+        {
+          "name": "魔女之旅",
+          "label": "度盘",
+          "password": "wfk1",
+          "url": "https://pan.baidu.com/s/10QlOYlt4E3O9PjghaQaw-w?pwd=wfk1"
+        },
+        {
+          "name": "网络文学书单（704 部合集）",
+          "label": "度盘",
+          "password": "nbuu",
+          "url": "https://pan.baidu.com/s/1_FslcL8W0jPGJxDolX8JCg?pwd=nbuu"
+        },
+        {
+          "name": "全球死考",
+          "label": "度盘",
+          "password": "23rh",
+          "url": "https://pan.baidu.com/s/1VrC7GUCwpTcM8a39Zekrow?pwd=23rh"
+        }
+      ],
+      "tags": [
+        "网盘",
+        "分享者",
+        "导航",
+        "合集"
+      ],
+      "kind": "导航卡",
+      "need_login": false,
+      "update_info": "2026-11-22 建档 9 条",
+      "note": "建档（2026-11-22）：汇总九张卡的原链接与提取码，来源 manual-novel-app-wenku8-flutter / manual-study-doc-yuwen / manual-novel-jp-5 / manual-novel-jp-6 / manual-novel-dl-12 / manual-novel-dl-13 / manual-novel-jp-7 / manual-novel-dl-15 / manual-novel-dl-16；九条均于 2026-11-19 ~ 11-22 实测有效。今后缀*成章新分享直接往这张卡的 links 追加。"
+    },
+    {
+      "id": "manual-pickup-site-sound-lab",
+      "name": "声音工坊（变声·克隆·音色·音源·配音）",
+      "section": "pickup",
+      "subsection": "site",
+      "description": "一条龙做声音：变声（RVC 声转声）→ 克隆 TTS（GPT-SoVITS 文生音）→ 人声素材（Jimu Voice 1248 款）→ 乐器音源（Polyphone 1935 个 SF2）→ 配音音效（爱给网 43 万条）。每行直达，各行用途见「备注」部分；各卡详细口径与实测时间看随手安利对应卡。",
+      "url": "https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI",
+      "links": [
+        {
+          "name": "RVC 变声器（声转声 · 开源）",
+          "label": "GitHub",
+          "password": "",
+          "url": "https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI"
+        },
+        {
+          "name": "GPT-SoVITS（少样本克隆 TTS）",
+          "label": "GitHub",
+          "password": "",
+          "url": "https://github.com/RVC-Boss/GPT-SoVITS"
+        },
+        {
+          "name": "Jimu Voice（1248 款人声音色）",
+          "label": "在线",
+          "password": "",
+          "url": "https://voice.jimu.chat/library.html"
+        },
+        {
+          "name": "Polyphone（1935 个 SF2 乐器音源）",
+          "label": "在线",
+          "password": "",
+          "url": "https://www.polyphone.io/zh/soundfonts"
+        },
+        {
+          "name": "爱给网（43 万条配音音效）",
+          "label": "在线",
+          "password": "",
+          "url": "https://www.aigei.com/sound/class/jiao_se_pe/"
+        }
+      ],
+      "tags": [
+        "声音",
+        "变声",
+        "TTS",
+        "音色",
+        "音源",
+        "导航"
+      ],
+      "kind": "导航卡",
+      "need_login": false,
+      "update_info": "2026-11-22 建档 5 卡",
+      "note": "导航卡（2026-11-22 建档）：对应 manual-pickup-rvc / manual-pickup-gpt-sovits / manual-pickup-site-jimu-voice / manual-pickup-site-polyphone / manual-pickup-site-aigei-voice 五卡的入口聚合；爱给那行完整下载需注册（详见其卡）。"
     }
   ]
 }
