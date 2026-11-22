@@ -1174,11 +1174,12 @@ h1 {
   font-size: 10.5px;
   font-style: normal;
 }
-/* 链接按钮文字编辑：每行按钮 = 按钮名 + 备注 两个并排输入 */
+/* 链接按钮文字编辑：每行按钮 = 按钮名 + 备注 + 提取码 三个并排输入 */
 .admin-field-links { display: grid; gap: 6px; }
 .admin-link-row { display: flex; gap: 6px; }
 .admin-link-row input { flex: 1; min-width: 0; }
 .admin-link-row input:first-child { flex: 1.4; }
+.admin-link-row input:nth-child(3) { flex: .7; }
 
 .admin-field input, .admin-field textarea {
   padding: 7px 10px;

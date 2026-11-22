@@ -868,6 +868,8 @@
       if (m && typeof m === "object") {
         if (m.name) next.name = m.name;
         if (m.label !== undefined && m.label !== null) next.label = m.label;
+        // 每行提取码：空串 = 不显示码；没给 = 维持原值
+        if (m.password !== undefined && m.password !== null) next.password = m.password;
       }
       return next;
     });
@@ -3689,10 +3691,15 @@
           lb.type = "text";
           lb.value = l.label || "";
           lb.placeholder = "备注（留空 = 原样）";
+          const pw = document.createElement("input");
+          pw.type = "text";
+          pw.value = l.password || "";
+          pw.placeholder = "提取码（留空 = 原样）";
           line.appendChild(n);
           line.appendChild(lb);
+          line.appendChild(pw);
           rows.appendChild(line);
-          return { name: n, label: lb };
+          return { name: n, label: lb, password: pw };
         });
         row.appendChild(rows);
         inputs[f.key] = pairs;
@@ -3767,9 +3774,10 @@
           const arr = pairs.map((p, i) => {
             const name = p.name.value.trim();
             const label = p.label.value.trim();
+            const password = p.password.value.trim();
             const o = cur[i] || {};
-            if (name !== (o.name || "") || label !== (o.label || "")) changed = true;
-            return { name, label };
+            if (name !== (o.name || "") || label !== (o.label || "") || password !== (o.password || "")) changed = true;
+            return { name, label, password };
           });
           if (changed) fields.links = JSON.stringify(arr);
         }

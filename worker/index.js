@@ -2845,12 +2845,13 @@ async function saveOverride(env, body) {
           !e ||
           typeof e !== "object" ||
           Array.isArray(e) ||
-          Object.keys(e).some((k) => k !== "name" && k !== "label") ||
+          Object.keys(e).some((k) => k !== "name" && k !== "label" && k !== "password") ||
           (e.name !== undefined && typeof e.name !== "string") ||
-          (e.label !== undefined && typeof e.label !== "string")
+          (e.label !== undefined && typeof e.label !== "string") ||
+          (e.password !== undefined && typeof e.password !== "string")
       );
       if (bad) {
-        return { status: 400, body: { error: "links 每项只能是 {name?, label?} 字符串" } };
+        return { status: 400, body: { error: "links 每项只能是 {name?, label?, password?} 字符串" } };
       }
       next[f] = clean;
       continue;
