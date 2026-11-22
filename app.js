@@ -3674,8 +3674,8 @@
         // items.json 的 also_in 都算进去了，比在这里重新解析一遍可靠。
         picker = buildPlacementPicker(row, item.sections || []);
       } else if (f.type === "links") {
-        // 每行按钮两个输入：按钮名 + 备注（「·」后面那段）。行数跟着 item.links 走
-        // （含 url-only 卡兜底出来的「打开」行）。空输入 = 回落原值。
+        // 每行按钮三个输入：按钮名 + 备注（「·」后面那段）+ 提取码。行数跟着
+        // item.links 走（含 url-only 卡兜底出来的「打开」行）。空输入 = 回落原值。
         // 存成 JSON 数组字符串，下标与 item.links 对齐，后端按 TEXT 存。
         const rows = document.createElement("div");
         rows.className = "admin-field-links";
@@ -3764,7 +3764,7 @@
         if (v !== (item[f.key] || "")) fields[f.key] = v;
       });
 
-      // 链接行文字：与当前显示值有差异才提交（JSON 数组字符串，下标对齐 item.links）。
+      // 链接行文字/提取码：与当前显示值有差异才提交（JSON 数组字符串，下标对齐 item.links）。
       // 全空数组等价于没改 —— 不发这个字段，免得把「没覆盖」写成覆盖。
       {
         const pairs = inputs.links;
