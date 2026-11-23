@@ -21013,6 +21013,23 @@
       "update_info": "2026-11-23 分享（缀*成章，永久有效）",
       "note": "实测（2026-11-23 23:0x）：链接有效（提取码 t76k 已在链接内自动填充），分享者「缀*成章」，过期时间：永久有效；共 2 个文件（23:03 分享）。卷数构成未逐文件核实（2 个文件应为正文+番外或分卷包）。同分享者其余分享见「缀*成章 网盘分享合集」卡。",
       "password": "t76k"
+    },
+    {
+      "id": "manual-novel-site-ownnovel",
+      "name": "OwnNovel（小说站 · CF 盾后）",
+      "section": "novel",
+      "subsection": "site",
+      "description": "从域名与站名看是自建/聚合类小说阅读站（OwnNovel）；本站 Cloudflare 人机验证较严，自动化访问一律被拦（正常浏览器一般无碍）。收录依据站长指定与站名，站内功能细节待实测补全——站长可随时经管理面板编辑本卡补充。",
+      "url": "https://www.ownnovel.com/home.html",
+      "tags": [
+        "小说",
+        "阅读",
+        "CF盾"
+      ],
+      "kind": "小说站",
+      "need_login": false,
+      "update_info": "2026-11-24 收录（内容未核实）",
+      "note": "实测（2026-11-24 01:5x）：域名活着，但 Cloudflare JS 验证挑战页把四条自动化通道全拦（headless、真实 Chrome、curl、jina reader 均 403/challenge）——自动访问被拒不代表死链，正常浏览器一般放行；未过盾故站内功能/语言/登录要求均未核实。细节待站长补充（管理面板可编辑）。"
     }
   ]
 }
