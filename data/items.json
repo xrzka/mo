@@ -20761,6 +20761,12 @@
           "label": "度盘",
           "password": "ua2t",
           "url": "https://pan.baidu.com/s/14DG8jphmb45SJhXIACqzew?pwd=ua2t"
+        },
+        {
+          "name": "哔咔漫画（安装包）",
+          "label": "度盘",
+          "password": "7src",
+          "url": "https://pan.baidu.com/s/1nHTSgJFm-0zUW6lG38sbJQ?pwd=7src"
         }
       ],
       "tags": [
@@ -20772,7 +20778,7 @@
       "kind": "导航卡",
       "need_login": false,
       "update_info": "2026-11-22 建档 9 条",
-      "note": "建档（2026-11-22）：汇总十三张卡的原链接与提取码，来源 manual-novel-app-wenku8-flutter / manual-study-doc-yuwen / manual-novel-jp-5 / manual-novel-jp-6 / manual-novel-dl-12 / manual-novel-dl-13 / manual-novel-jp-7 / manual-novel-dl-15 / manual-novel-dl-16；十三条均于 2026-11-19 ~ 11-22 实测有效。今后缀*成章新分享直接往这张卡的 links 追加。"
+      "note": "建档（2026-11-22）：汇总十四张卡的原链接与提取码，来源 manual-novel-app-wenku8-flutter / manual-study-doc-yuwen / manual-novel-jp-5 / manual-novel-jp-6 / manual-novel-dl-12 / manual-novel-dl-13 / manual-novel-jp-7 / manual-novel-dl-15 / manual-novel-dl-16；十四条均于 2026-11-19 ~ 11-22 实测有效。今后缀*成章新分享直接往这张卡的 links 追加。"
     },
     {
       "id": "manual-pickup-site-sound-lab",
@@ -20960,6 +20966,25 @@
       "need_login": true,
       "update_info": "2026-11-22 实测跳 1lib.sk",
       "note": "实测（2026-11-22 23:4x）：走代理可达 DiamWall 盾（HTTP 517）；有头浏览器一次实锤发生向 1lib.sk 的跳转（同源互认，本卡更像别名）。主域卡见 manual-novel-site-zlib，规范域卡见 manual-novel-site-1lib。未注册实测下载。"
+    },
+    {
+      "id": "manual-manga-app-bika",
+      "name": "哔咔漫画（PicaComic · 度盘安装包）",
+      "section": "manga",
+      "subsection": "app",
+      "description": "哔咔（PicACG/PicaComic）网盘分享：老牌漫画 App（海量漫画、社区活跃；官方域名屡被封，客户端历来靠网盘流转），度盘内 1 个文件。安卓安装后分流/ API 地址常需手动换，装完留意版本来源。分享者缀*成章，永久有效，提取码在链接内自动填充。",
+      "url": "https://pan.baidu.com/s/1nHTSgJFm-0zUW6lG38sbJQ?pwd=7src",
+      "tags": [
+        "漫画",
+        "安卓",
+        "APP",
+        "网盘",
+        "度盘"
+      ],
+      "kind": "漫画 App",
+      "need_login": false,
+      "update_info": "2026-11-23 分享（缀*成章，永久有效）",
+      "note": "实测（2026-11-23 14:4x）：链接有效（提取码 7src 已在链接内自动填充），分享者「缀*成章」，过期时间：永久有效；盘内为文件夹「漫画」含 1 个文件（未登录无法核对文件名，按分享名应为哔咔客户端安装包；如实际是资源包再改分区）。同分享者其余分享见「缀*成章 网盘分享合集」卡。"
     }
   ]
 }
