@@ -21030,6 +21030,25 @@
       "need_login": false,
       "update_info": "2026-11-24 收录（内容未核实）",
       "note": "实测（2026-11-24 01:5x）：域名活着，但 Cloudflare JS 验证挑战页把四条自动化通道全拦（headless、真实 Chrome、curl、jina reader 均 403/challenge）——自动访问被拒不代表死链，正常浏览器一般放行；未过盾故站内功能/语言/登录要求均未核实。细节待站长补充（管理面板可编辑）。"
+    },
+    {
+      "id": "manual-novel-dl-18",
+      "name": "轻小说文库-网络优化版（夸克 · 薯条）",
+      "section": "novel",
+      "subsection": "download",
+      "description": "「轻小说文库」网盘资源包（夸克盘）：66 个文件共 1.8G，按分享名应为轻小说文库（wenku8）网络优化版 APP 及配套资源合集（文件名未登录不可见，具体构成未逐文件核对）。分享者「充满*力的薯条」（本站已收其笔趣阁分享），永久有效。与轻小说文库官网（manual-novel-6）和 Wenku8_Flutter APP（manual-novel-app-wenku8-flutter）互补。",
+      "url": "https://pan.quark.cn/s/61ccb96e77f3",
+      "tags": [
+        "轻小说",
+        "文库",
+        "APP",
+        "网盘",
+        "夸克"
+      ],
+      "kind": "网盘分享",
+      "need_login": false,
+      "update_info": "2026-11-25 实测 66 文件 1.8G",
+      "note": "实测（2026-11-25 01:0x）：链接有效（夸克分享页免登录可浏览），分享者「充满*力的薯条」，永久有效；66 个文件共 1.8G（含合集 6 项），文件名未登录不可见——按分享名应为文库网络优化版及配套资源，若实为其他内容再改分区。转存/下载需登录夸克账号。同分享者前例：笔趣阁（manual-novel-dl-14，novel/download）。"
     }
   ]
 }
