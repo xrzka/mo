@@ -20773,6 +20773,12 @@
           "label": "度盘",
           "password": "t76k",
           "url": "https://pan.baidu.com/s/1iB_cdpMrpcIDOcs8minAjg?pwd=t76k"
+        },
+        {
+          "name": "桌面应用隐藏",
+          "label": "度盘",
+          "password": "f9eb",
+          "url": "https://pan.baidu.com/s/1FLfHbO73yiQhLZvmewC7AA?pwd=f9eb"
         }
       ],
       "tags": [
@@ -20784,7 +20790,7 @@
       "kind": "导航卡",
       "need_login": false,
       "update_info": "2026-11-22 建档 9 条",
-      "note": "建档（2026-11-22）：汇总十五张卡的原链接与提取码，来源 manual-novel-app-wenku8-flutter / manual-study-doc-yuwen / manual-novel-jp-5 / manual-novel-jp-6 / manual-novel-dl-12 / manual-novel-dl-13 / manual-novel-jp-7 / manual-novel-dl-15 / manual-novel-dl-16；十五条均于 2026-11-19 ~ 11-22 实测有效。今后缀*成章新分享直接往这张卡的 links 追加。"
+      "note": "建档（2026-11-22）：汇总十六张卡的原链接与提取码，来源 manual-novel-app-wenku8-flutter / manual-study-doc-yuwen / manual-novel-jp-5 / manual-novel-jp-6 / manual-novel-dl-12 / manual-novel-dl-13 / manual-novel-jp-7 / manual-novel-dl-15 / manual-novel-dl-16；十六条均于 2026-11-19 ~ 11-22 实测有效。今后缀*成章新分享直接往这张卡的 links 追加。"
     },
     {
       "id": "manual-pickup-site-sound-lab",
@@ -21049,6 +21055,27 @@
       "need_login": false,
       "update_info": "2026-11-25 实测 66 文件 1.8G",
       "note": "实测（2026-11-25 01:0x）：链接有效（夸克分享页免登录可浏览），分享者「充满*力的薯条」，永久有效；66 个文件共 1.8G（含合集 6 项），文件名未登录不可见——按分享名应为文库网络优化版及配套资源，若实为其他内容再改分区。转存/下载需登录夸克账号。同分享者前例：笔趣阁（manual-novel-dl-14，novel/download）。"
+    },
+    {
+      "id": "manual-pickup-hideapp",
+      "name": "桌面应用隐藏（度盘小工具）",
+      "section": "pickup",
+      "subsection": "app",
+      "description": "Windows 桌面应用隐藏小工具：一键隐藏指定桌面应用/窗口（摸鱼、隐私场景），度盘单文件、免安装即开即用。分享者缀*成章，永久有效，提取码在链接内自动填充。",
+      "url": "https://pan.baidu.com/s/1FLfHbO73yiQhLZvmewC7AA?pwd=f9eb",
+      "tags": [
+        "Windows",
+        "小工具",
+        "隐藏窗口",
+        "隐私",
+        "网盘",
+        "度盘"
+      ],
+      "kind": "桌面工具",
+      "need_login": false,
+      "update_info": "2026-11-25 分享（缀*成章，永久有效）",
+      "note": "实测（2026-11-25 01:3x）：链接有效（提取码 f9eb 已在链接内自动填充），分享者「缀*成章」，过期时间：永久有效；单文件（01:29 分享）。工具未实机运行（未下载验证）；文件名未登录不可见，按分享名「桌面应用隐藏」定性为 Windows 隐藏窗口工具。同分享者其余分享见「缀*成章 网盘分享合集」卡。",
+      "password": "f9eb"
     }
   ]
 }
