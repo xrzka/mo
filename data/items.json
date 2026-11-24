@@ -15314,7 +15314,7 @@
       "kind": "在线工具",
       "need_login": false,
       "update_info": "随时可用",
-      "note": "小技巧：任意 B 站视频链接把 bilibili.com 改成 bilibilia.com 即可直达该视频的封面提取页。"
+      "note": "实测（2026-11-24 12:3x）：站活着（首页 HTTP 200），插件 v1.1.0（2024-12-29 更新）新增视频播放倍速 2.5x-4.0x，Chrome/Edge 双端 + 右键菜单快速提封面。小技巧：任意 B 站视频链接把 bilibili.com 改成 bilibilia.com 即可直达该视频的封面提取页。站长 2026-11-24 再次报链，确认有效，未重复建卡。"
     },
     {
       "id": "manual-pickup-panshi",
