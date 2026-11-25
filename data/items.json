@@ -20779,6 +20779,12 @@
           "label": "度盘",
           "password": "f9eb",
           "url": "https://pan.baidu.com/s/1FLfHbO73yiQhLZvmewC7AA?pwd=f9eb"
+        },
+        {
+          "name": "为了世界放弃与推角谈恋爱结果被病娇化的事件",
+          "label": "度盘",
+          "password": "8ar5",
+          "url": "https://pan.baidu.com/s/1vzHpiNShyzJsTVWmXL17VQ?pwd=8ar5"
         }
       ],
       "tags": [
@@ -20790,7 +20796,7 @@
       "kind": "导航卡",
       "need_login": false,
       "update_info": "2026-11-22 建档 9 条",
-      "note": "建档（2026-11-22）：汇总十六张卡的原链接与提取码，来源 manual-novel-app-wenku8-flutter / manual-study-doc-yuwen / manual-novel-jp-5 / manual-novel-jp-6 / manual-novel-dl-12 / manual-novel-dl-13 / manual-novel-jp-7 / manual-novel-dl-15 / manual-novel-dl-16；十六条均于 2026-11-19 ~ 11-22 实测有效。今后缀*成章新分享直接往这张卡的 links 追加。"
+      "note": "建档（2026-11-22）：汇总十七张卡的原链接与提取码，来源 manual-novel-app-wenku8-flutter / manual-study-doc-yuwen / manual-novel-jp-5 / manual-novel-jp-6 / manual-novel-dl-12 / manual-novel-dl-13 / manual-novel-jp-7 / manual-novel-dl-15 / manual-novel-dl-16；十七条均于 2026-11-19 ~ 11-22 实测有效。今后缀*成章新分享直接往这张卡的 links 追加。"
     },
     {
       "id": "manual-pickup-site-sound-lab",
@@ -21076,6 +21082,27 @@
       "update_info": "2026-11-25 分享（缀*成章，永久有效）",
       "note": "实测（2026-11-25 01:3x）：链接有效（提取码 f9eb 已在链接内自动填充），分享者「缀*成章」，过期时间：永久有效；单文件（01:29 分享）。工具未实机运行（未下载验证）；文件名未登录不可见，按分享名「桌面应用隐藏」定性为 Windows 隐藏窗口工具。同分享者其余分享见「缀*成章 网盘分享合集」卡。",
       "password": "f9eb"
+    },
+    {
+      "id": "manual-novel-kr-9",
+      "name": "为了世界放弃与推角谈恋爱结果被病娇化的事件（度盘）",
+      "section": "novel",
+      "subsection": "kr",
+      "description": "韩网文《为了世界放弃与推角谈恋爱结果被病娇化的事件》（최애계/집착광계）网盘分享：共 3 个文件。设定党狂喜的题名——为了拯救世界而放弃与推角（本命角色）恋爱，结果推角黑化病娇化追杀（追爱）而来。韩式病娇追爱题材，中文翻译版。永久有效分享，提取码在链接内自动填充。",
+      "url": "https://pan.baidu.com/s/1vzHpiNShyzJsTVWmXL17VQ?pwd=8ar5",
+      "tags": [
+        "韩网文",
+        "韩轻",
+        "病娇",
+        "推角",
+        "网盘",
+        "度盘"
+      ],
+      "kind": "网盘分享",
+      "need_login": false,
+      "update_info": "2026-11-25 分享（缀*成章，永久有效）",
+      "note": "实测（2026-11-25 21:3x）：链接有效（提取码 8ar5 已在链接内自动填充），分享者「缀*成章」，过期时间：永久有效；共 3 个文件（21:28 分享）。原文韩文标题与作者未核实（按题名定性为韩网文翻译包；若实为日轻/原创中文再改分区）。同分享者其余分享见「缀*成章 网盘分享合集」卡。",
+      "password": "8ar5"
     }
   ]
 }
